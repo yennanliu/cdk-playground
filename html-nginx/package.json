@@ -8,6 +8,11 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
+    "test:unit": "jest html-nginx.test.ts user-data.test.ts",
+    "test:snapshot": "jest snapshot.test.ts",
+    "test:snapshot:update": "jest snapshot.test.ts -u",
+    "test:integration": "jest integration.test.ts --testNamePattern='^(?!Skip)'",
+    "test:coverage": "jest --coverage",
     "cdk": "cdk"
   },
   "devDependencies": {

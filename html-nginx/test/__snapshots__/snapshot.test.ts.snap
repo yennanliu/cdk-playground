@@ -1,0 +1,694 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Stack creates snapshot 1`] = `
+"{
+  "Resources": {
+    "WebsiteVPCD8B49DC8": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsHostnames": true,
+        "EnableDnsSupport": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC"
+          }
+        ]
+      }
+    },
+    "WebsiteVPCPublicSubnet1Subnet2406F279": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.0.0/18",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC/PublicSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebsiteVPCPublicSubnet1RouteTable6301BDB8": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC/PublicSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebsiteVPCPublicSubnet1RouteTableAssociation6ABF5A2B": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "WebsiteVPCPublicSubnet1RouteTable6301BDB8"
+        },
+        "SubnetId": {
+          "Ref": "WebsiteVPCPublicSubnet1Subnet2406F279"
+        }
+      }
+    },
+    "WebsiteVPCPublicSubnet1DefaultRouteC187236C": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "WebsiteVPCIGWD7296D39"
+        },
+        "RouteTableId": {
+          "Ref": "WebsiteVPCPublicSubnet1RouteTable6301BDB8"
+        }
+      },
+      "DependsOn": [
+        "WebsiteVPCVPCGW9965E50A"
+      ]
+    },
+    "WebsiteVPCPublicSubnet2Subnet8E2CB9C8": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.64.0/18",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC/PublicSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebsiteVPCPublicSubnet2RouteTable3A89D35C": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC/PublicSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebsiteVPCPublicSubnet2RouteTableAssociation95466B5A": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "WebsiteVPCPublicSubnet2RouteTable3A89D35C"
+        },
+        "SubnetId": {
+          "Ref": "WebsiteVPCPublicSubnet2Subnet8E2CB9C8"
+        }
+      }
+    },
+    "WebsiteVPCPublicSubnet2DefaultRoute5760AF69": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "WebsiteVPCIGWD7296D39"
+        },
+        "RouteTableId": {
+          "Ref": "WebsiteVPCPublicSubnet2RouteTable3A89D35C"
+        }
+      },
+      "DependsOn": [
+        "WebsiteVPCVPCGW9965E50A"
+      ]
+    },
+    "WebsiteVPCIsolatedSubnet1Subnet155D5221": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.128.0/18",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC/IsolatedSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebsiteVPCIsolatedSubnet1RouteTable0D7FA7EB": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC/IsolatedSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebsiteVPCIsolatedSubnet1RouteTableAssociation62E83A89": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "WebsiteVPCIsolatedSubnet1RouteTable0D7FA7EB"
+        },
+        "SubnetId": {
+          "Ref": "WebsiteVPCIsolatedSubnet1Subnet155D5221"
+        }
+      }
+    },
+    "WebsiteVPCIsolatedSubnet2SubnetD62B6F84": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.192.0/18",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Isolated"
+          },
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC/IsolatedSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebsiteVPCIsolatedSubnet2RouteTable991E86C1": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC/IsolatedSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebsiteVPCIsolatedSubnet2RouteTableAssociation35362FAF": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "WebsiteVPCIsolatedSubnet2RouteTable991E86C1"
+        },
+        "SubnetId": {
+          "Ref": "WebsiteVPCIsolatedSubnet2SubnetD62B6F84"
+        }
+      }
+    },
+    "WebsiteVPCIGWD7296D39": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SnapshotHtmlNginxStack/WebsiteVPC"
+          }
+        ]
+      }
+    },
+    "WebsiteVPCVPCGW9965E50A": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "WebsiteVPCIGWD7296D39"
+        },
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebSecurityGroup73AF7387": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow HTTP access to web servers",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow HTTP access from anywhere",
+            "FromPort": 80,
+            "IpProtocol": "tcp",
+            "ToPort": 80
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebSecurityGroupfromSnapshotHtmlNginxStackWebLoadBalancerSecurityGroupFA26520F807E48B333": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "Description": "Load balancer to target",
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "WebSecurityGroup73AF7387",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WebLoadBalancerSecurityGroup791DED1A",
+            "GroupId"
+          ]
+        },
+        "ToPort": 80
+      }
+    },
+    "WebServerRole42ABA571": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/AmazonSSMManagedInstanceCore"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "WebServerRoleDefaultPolicy9AFE19CE": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}"
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "WebServerRoleDefaultPolicy9AFE19CE",
+        "Roles": [
+          {
+            "Ref": "WebServerRole42ABA571"
+          }
+        ]
+      }
+    },
+    "WebServerASGInstanceProfile1031076F": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Roles": [
+          {
+            "Ref": "WebServerRole42ABA571"
+          }
+        ]
+      }
+    },
+    "WebServerASGLaunchConfig965C5C3F": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "IamInstanceProfile": {
+          "Ref": "WebServerASGInstanceProfile1031076F"
+        },
+        "ImageId": {
+          "Ref": "SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amikernel510hvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter"
+        },
+        "InstanceType": "t2.micro",
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "WebSecurityGroup73AF7387",
+              "GroupId"
+            ]
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash\\nyum update -y\\namazon-linux-extras install nginx1 -y\\nyum install -y aws-cli\\nmkdir -p /var/www/html\\naws s3 cp ",
+                {
+                  "Fn::Sub": "s3://cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}/497b21ebdb771071ba64a314659780b2a44d930a207513736cdc44dcbe28f4a7.zip"
+                },
+                " /tmp/website.zip\\ncd /var/www/html && unzip /tmp/website.zip\\naws s3 cp ",
+                {
+                  "Fn::Sub": "s3://cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}/4daf42ffaa1611f7878dcab4220e174bf52b519f21f6ce56eab91376dc849e6e.conf"
+                },
+                " /etc/nginx/nginx.conf\\nchmod -R 755 /var/www/html\\nchown -R nginx:nginx /var/www/html\\nsystemctl start nginx\\nsystemctl enable nginx"
+              ]
+            ]
+          }
+        }
+      },
+      "DependsOn": [
+        "WebServerRoleDefaultPolicy9AFE19CE",
+        "WebServerRole42ABA571"
+      ]
+    },
+    "WebServerASG5A722E5A": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "DesiredCapacity": "2",
+        "LaunchConfigurationName": {
+          "Ref": "WebServerASGLaunchConfig965C5C3F"
+        },
+        "MaxSize": "4",
+        "MinSize": "2",
+        "Tags": [
+          {
+            "Key": "Name",
+            "PropagateAtLaunch": true,
+            "Value": "SnapshotHtmlNginxStack/WebServerASG"
+          }
+        ],
+        "TargetGroupARNs": [
+          {
+            "Ref": "WebLoadBalancerHttpListenerWebTargetGroupGroup159A7108"
+          }
+        ],
+        "VPCZoneIdentifier": [
+          {
+            "Ref": "WebsiteVPCIsolatedSubnet1Subnet155D5221"
+          },
+          {
+            "Ref": "WebsiteVPCIsolatedSubnet2SubnetD62B6F84"
+          }
+        ]
+      },
+      "UpdatePolicy": {
+        "AutoScalingScheduledAction": {
+          "IgnoreUnmodifiedGroupSizeProperties": true
+        }
+      }
+    },
+    "WebLoadBalancer3B0ADE5E": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "LoadBalancerAttributes": [
+          {
+            "Key": "deletion_protection.enabled",
+            "Value": "false"
+          }
+        ],
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "WebLoadBalancerSecurityGroup791DED1A",
+              "GroupId"
+            ]
+          }
+        ],
+        "Subnets": [
+          {
+            "Ref": "WebsiteVPCPublicSubnet1Subnet2406F279"
+          },
+          {
+            "Ref": "WebsiteVPCPublicSubnet2Subnet8E2CB9C8"
+          }
+        ],
+        "Type": "application"
+      },
+      "DependsOn": [
+        "WebsiteVPCPublicSubnet1DefaultRouteC187236C",
+        "WebsiteVPCPublicSubnet1RouteTableAssociation6ABF5A2B",
+        "WebsiteVPCPublicSubnet2DefaultRoute5760AF69",
+        "WebsiteVPCPublicSubnet2RouteTableAssociation95466B5A"
+      ]
+    },
+    "WebLoadBalancerSecurityGroup791DED1A": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Automatically created Security Group for ELB SnapshotHtmlNginxStackWebLoadBalancer3AD66B64",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow from anyone on port 80",
+            "FromPort": 80,
+            "IpProtocol": "tcp",
+            "ToPort": 80
+          }
+        ],
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    },
+    "WebLoadBalancerSecurityGrouptoSnapshotHtmlNginxStackWebSecurityGroupF10FD2B780839ADA70": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "Description": "Load balancer to target",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "WebSecurityGroup73AF7387",
+            "GroupId"
+          ]
+        },
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "WebLoadBalancerSecurityGroup791DED1A",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "ToPort": 80
+      }
+    },
+    "WebLoadBalancerHttpListener1488FDD1": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "DefaultActions": [
+          {
+            "TargetGroupArn": {
+              "Ref": "WebLoadBalancerHttpListenerWebTargetGroupGroup159A7108"
+            },
+            "Type": "forward"
+          }
+        ],
+        "LoadBalancerArn": {
+          "Ref": "WebLoadBalancer3B0ADE5E"
+        },
+        "Port": 80,
+        "Protocol": "HTTP"
+      }
+    },
+    "WebLoadBalancerHttpListenerWebTargetGroupGroup159A7108": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "HealthCheckIntervalSeconds": 60,
+        "HealthCheckPath": "/",
+        "HealthCheckTimeoutSeconds": 5,
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetGroupAttributes": [
+          {
+            "Key": "stickiness.enabled",
+            "Value": "false"
+          }
+        ],
+        "TargetType": "instance",
+        "VpcId": {
+          "Ref": "WebsiteVPCD8B49DC8"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amikernel510hvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter": {
+      "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+      "Default": "/aws/service/ami-amazon-linux-latest/amzn2-ami-kernel-5.10-hvm-x86_64-gp2"
+    },
+    "BootstrapVersion": {
+      "Type": "AWS::SSM::Parameter::Value<String>",
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+    }
+  },
+  "Outputs": {
+    "LoadBalancerURL": {
+      "Description": "URL of the load balancer",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "WebLoadBalancer3B0ADE5E",
+                "DNSName"
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5"
+                  ],
+                  {
+                    "Ref": "BootstrapVersion"
+                  }
+                ]
+              }
+            ]
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+        }
+      ]
+    }
+  }
+}"
+`;
