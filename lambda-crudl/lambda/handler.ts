@@ -1,3 +1,5 @@
+// lambda/handler.ts
+
 let items: { [id: string]: any } = {};
 
 export async function main(event: any) {

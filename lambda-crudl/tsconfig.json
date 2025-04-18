@@ -26,6 +26,11 @@
       "./node_modules/@types"
     ]
   },
+  "include": [
+    "bin/**/*",                   // Include all files under the 'bin' directory
+    "lib/**/*",                   // Include all files under the 'lib' directory
+    "lambda/**/*"                 // Include all files under the 'lambda' directory
+  ],
   "exclude": [
     "node_modules",
     "cdk.out"
