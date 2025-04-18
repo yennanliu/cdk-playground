@@ -1,15 +1,138 @@
-# Welcome to your CDK TypeScript project
+# Lambda CRUDL
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`LambdaCrudlStack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+---
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## 🛠️ Simple In-Memory CRUDL API (AWS CDK + TypeScript)
 
-## Useful commands
+This is a super lightweight demo API using:
+- AWS **CDK** (TypeScript)
+- **API Gateway** for the REST API
+- **Lambda** for handling requests
+- **In-memory** storage inside Lambda (no DB!)
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+Great for testing, mocking, or learning CDK.
+
+---
+
+### 📁 Project Structure
+```
+.
+├── bin/
+│   └── lambda-crudl.ts         # CDK entry point
+├── lib/
+│   └── crud-api-stack.ts       # Defines the API + Lambda
+├── lambda/
+│   └── handler.ts              # Lambda function with CRUD logic
+├── package.json
+├── tsconfig.json
+├── cdk.json
+└── README.md
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. 📦 Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. 🛠 Build Project
+
+```bash
+npm run build
+```
+
+### 3. 🧱 Bootstrap CDK (only once per environment)
+
+```bash
+npx cdk bootstrap
+```
+
+### 4. 🚀 Deploy Stack
+
+```bash
+npx cdk deploy
+```
+
+After deployment, you'll see an output like:
+
+```
+Outputs:
+CrudApiStack.CrudApiEndpoint = https://abc123.execute-api.us-east-1.amazonaws.com/prod
+```
+
+Save that base URL! We’ll call it `API_URL` below.
+
+---
+
+## 🧪 Test the API (with `curl`)
+
+Replace `API_URL` with your actual deployed endpoint.
+
+---
+
+### ✅ Create Item
+```bash
+curl -X POST $API_URL/items \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Test Item", "description": "Just testing"}'
+```
+
+---
+
+### 📄 List All Items
+```bash
+curl $API_URL/items
+```
+
+---
+
+### 🔍 Get Specific Item
+```bash
+curl $API_URL/items/{id}
+```
+> Replace `{id}` with the actual ID returned from the POST call.
+
+---
+
+### ✏️ Update Item
+```bash
+curl -X PUT $API_URL/items/{id} \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Updated Item", "description": "Updated details"}'
+```
+
+---
+
+### ❌ Delete Item
+```bash
+curl -X DELETE $API_URL/items/{id}
+```
+
+---
+
+## 🧼 Clean Up
+
+To delete the stack and avoid charges:
+
+```bash
+npx cdk destroy
+```
+
+---
+
+## 🧠 Notes
+- Data is stored **in-memory**, so it will reset on redeploy or Lambda cold start.
+- Useful for **demoing APIs**, **local mocking**, or **learning CDK**.
+
+---
+
+Let me know if you want to add:
+- Swagger/OpenAPI definition
+- Local testing with `sam local` or `cdk synth && curl`
+- Basic auth or API key support
+
+Happy building! 🛠️🚀
