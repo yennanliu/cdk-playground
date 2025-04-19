@@ -4,18 +4,27 @@
 ## Prerequisite
 
 - Install aws CLI
+
 - Install node, npm
-- Install aws-cdk
+	- `brew install node`
+
+- Install CDL CLI
+	- `npm install -g aws-cdk`
+
 - Config aws CLI
+	- `brew install awscli`
+	- `aws configure`
 
+- Install needed pkg
+	- `npm install aws-cdk-lib constructs`
 
-## Run
+- Remove cache & install pkgs
+	- `rm -rf node_modules package-lock.json`
+	- `npm install`
+
+## Init Project
 
 ```bash
-#-----------------------------
-# PART 1
-#-----------------------------
-
 # init project
 cdk init sample-app --language typescript
 
@@ -24,7 +33,12 @@ cdk list # or : cdk list --long
 
 # (ONLY first time) install the bootstrap stack into an environment, save needed pkg in S3
 cdk bootstrap
+```
 
+## Deploy
+
+
+```bash
 # Synthesizes and prints the CloudFormation : template for this stack 
 cdk synth # or : cdk synthesize
 
@@ -45,6 +59,7 @@ cdk watch
 # destroy CDK
 cdk destroy CdkWorkshopStack
 ```
+
 
 ## Ref
 - https://github.com/aws-samples/aws-cdk-examples
