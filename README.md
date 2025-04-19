@@ -28,6 +28,11 @@
 # init project
 cdk init sample-app --language typescript
 
+
+# compile TS code
+npm run build
+
+
 # show all CDK
 cdk list # or : cdk list --long
 
