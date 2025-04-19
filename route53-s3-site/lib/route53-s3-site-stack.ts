@@ -1,19 +1,61 @@
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { CfnOutput, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
+export interface Route53S3SiteStackProps extends StackProps {
+  domainName?: string;
+}
+
 export class Route53S3SiteStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props?: Route53S3SiteStackProps) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, 'Route53S3SiteQueue', {
-      visibilityTimeout: Duration.seconds(300)
+    const domainName = props?.domainName || 'example.com';
+
+    // Create an S3 bucket for static website hosting
+    const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
+      bucketName: domainName,
+      websiteIndexDocument: 'index.html',
+      websiteErrorDocument: 'error.html',
+      publicReadAccess: true,
+      blockPublicAccess: {
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false
+      },
+      removalPolicy: props?.env?.account === 'production' ? undefined : RemovalPolicy.DESTROY,
+      autoDeleteObjects: props?.env?.account === 'production' ? false : true,
     });
 
-    const topic = new sns.Topic(this, 'Route53S3SiteTopic');
+    // Create a Route53 hosted zone for the domain
+    const hostedZone = new route53.PublicHostedZone(this, 'HostedZone', {
+      zoneName: domainName
+    });
 
-    topic.addSubscription(new subs.SqsSubscription(queue));
+    // Create an A record to point the domain to the S3 website
+    new route53.ARecord(this, 'SiteAliasRecord', {
+      zone: hostedZone,
+      recordName: domainName,
+      target: route53.RecordTarget.fromAlias(new targets.BucketWebsiteTarget(websiteBucket))
+    });
+
+    // Output values
+    new CfnOutput(this, 'WebsiteURL', {
+      value: websiteBucket.bucketWebsiteUrl,
+      description: 'The URL of the website'
+    });
+
+    new CfnOutput(this, 'BucketName', {
+      value: websiteBucket.bucketName,
+      description: 'The name of the S3 bucket'
+    });
+
+    new CfnOutput(this, 'DomainName', {
+      value: domainName,
+      description: 'The domain name for the website'
+    });
   }
 }
