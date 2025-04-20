@@ -1,6 +1,6 @@
 # cdk-playground
 
-- Various cloud infra built with AWS cloudformation
+- Various cloud infra built with AWS CloudFormation
 - IAC (Infrastructure As Code)
 
 
