@@ -1,4 +1,4 @@
-# cdk-playground
+# CDK Playground
 
 - Various cloud infra built with AWS CloudFormation
 - IAC (Infrastructure As Code)
@@ -14,7 +14,7 @@
 - Install node, npm
 	- `brew install node`
 
-- Install CDL CLI
+- Install CDK CLI
 	- `npm install -g aws-cdk`
 
 - Config aws CLI
@@ -32,7 +32,7 @@
 </details>
 
 
-## Init CDK Stack
+## Init
 
 <details>
 <summary>Init CDK stack</summary>
@@ -88,10 +88,10 @@ cdk destroy CdkWorkshopStack
 
 </details>
 
-## CDK code structure
+## Project structure
 
 <details>
-<summary>CDK code structure</summary>
+<summary>CDK project structure</summary>
 
 ```
 ├── bin
