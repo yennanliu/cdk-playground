@@ -2,6 +2,8 @@ import { CfnOutput, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as path from 'path';
 import { Construct } from 'constructs';
 
 export interface Route53S3SiteStackProps extends StackProps {
@@ -29,6 +31,13 @@ export class Route53S3SiteStack extends Stack {
       },
       removalPolicy: props?.env?.account === 'production' ? undefined : RemovalPolicy.DESTROY,
       autoDeleteObjects: props?.env?.account === 'production' ? false : true,
+    });
+
+    // Deploy website content to the S3 bucket
+    new s3deploy.BucketDeployment(this, 'DeployWebsite', {
+      sources: [s3deploy.Source.asset(path.join(__dirname, '..', 'sample-website'))],
+      destinationBucket: websiteBucket,
+      retainOnDelete: false,
     });
 
     // Create a Route53 hosted zone for the domain
