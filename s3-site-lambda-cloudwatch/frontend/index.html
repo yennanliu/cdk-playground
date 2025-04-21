@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Guessing Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .game-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #eaeaea;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .stats {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Number Guessing Game</h1>
+        
+        <div class="game-section">
+            <h2>Try to guess the number (1-100)</h2>
+            <div class="form-group">
+                <label for="guess">Your Guess:</label>
+                <input type="number" id="guess" min="1" max="100" required>
+            </div>
+            <button id="submitGuess">Submit Guess</button>
+            <button id="newGame">New Game</button>
+            
+            <div id="result" class="result hidden"></div>
+            
+            <div class="stats">
+                <h3>Game Stats</h3>
+                <p>Attempts: <span id="attempts">0</span></p>
+                <p>Games Completed: <span id="gamesCompleted">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            target: Math.floor(Math.random() * 100) + 1,
+            attempts: 0,
+            gamesCompleted: 0,
+            gameOver: false
+        };
+
+        // Elements
+        const guessInput = document.getElementById('guess');
+        const submitButton = document.getElementById('submitGuess');
+        const newGameButton = document.getElementById('newGame');
+        const resultDiv = document.getElementById('result');
+        const attemptsSpan = document.getElementById('attempts');
+        const gamesCompletedSpan = document.getElementById('gamesCompleted');
+
+        // API URL - This will be replaced by the actual API endpoint
+        // during deployment
+        const API_URL = '##API_ENDPOINT##';
+
+        // Submit guess
+        submitButton.addEventListener('click', async () => {
+            if (gameState.gameOver) {
+                showResult('The game is over. Start a new game!', 'info');
+                return;
+            }
+
+            const guess = parseInt(guessInput.value);
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                showResult('Please enter a valid number between 1 and 100', 'error');
+                return;
+            }
+
+            gameState.attempts++;
+            attemptsSpan.textContent = gameState.attempts;
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        guess: guess,
+                        target: gameState.target
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.correct) {
+                    gameState.gamesCompleted++;
+                    gameState.gameOver = true;
+                    gamesCompletedSpan.textContent = gameState.gamesCompleted;
+                    
+                    // Submit the score (number of attempts)
+                    await submitScore(gameState.attempts);
+                    
+                    showResult(`${data.message} It took you ${gameState.attempts} attempts.`, 'success');
+                } else {
+                    showResult(data.message, 'info');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showResult('Error communicating with the server', 'error');
+            }
+        });
+
+        // Start new game
+        newGameButton.addEventListener('click', () => {
+            gameState.target = Math.floor(Math.random() * 100) + 1;
+            gameState.attempts = 0;
+            gameState.gameOver = false;
+            
+            guessInput.value = '';
+            attemptsSpan.textContent = '0';
+            resultDiv.classList.add('hidden');
+            
+            console.log('New game started, target:', gameState.target);
+        });
+
+        // Submit score to API
+        async function submitScore(score) {
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        score: score
+                    })
+                });
+                console.log('Score submitted:', score);
+            } catch (error) {
+                console.error('Error submitting score:', error);
+            }
+        }
+
+        // Display result message
+        function showResult(message, type) {
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.classList.remove('hidden');
+        }
+
+        // Initialize
+        console.log('Game initialized, target:', gameState.target);
+    </script>
+</body>
+</html> 
