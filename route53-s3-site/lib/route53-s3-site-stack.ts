@@ -12,7 +12,8 @@ export class Route53S3SiteStack extends Stack {
   constructor(scope: Construct, id: string, props?: Route53S3SiteStackProps) {
     super(scope, id, props);
 
-    const domainName = props?.domainName || 'example.com';
+    //const domainName = props?.domainName || 'example.com';
+    const domainName = props?.domainName || 'yen.dev.com';
 
     // Create an S3 bucket for static website hosting
     const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
