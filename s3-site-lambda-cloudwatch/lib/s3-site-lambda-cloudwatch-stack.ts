@@ -4,6 +4,7 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
@@ -23,6 +24,12 @@ export class S3SiteLambdaCloudwatchStack extends Stack {
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
       publicReadAccess: true,
+      blockPublicAccess: {
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false
+      },
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
@@ -171,7 +178,7 @@ export class S3SiteLambdaCloudwatchStack extends Stack {
         alarmDescription: 'Alarm if the error rate is too high',
       });
 
-      errorAlarm.addAlarmAction(new cloudwatch.SnsAction(alarmTopic));
+      errorAlarm.addAlarmAction(new actions.SnsAction(alarmTopic));
     }
 
     // Output the website URL and API endpoint
