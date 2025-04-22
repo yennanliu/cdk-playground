@@ -6,6 +6,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as path from 'path';
@@ -53,6 +54,25 @@ export class S3SiteLambdaCloudwatchStack extends Stack {
       })
     );
 
+    // Create the API Gateway CloudWatch role
+    const apiGatewayCloudWatchRole = new iam.Role(this, 'ApiGatewayCloudWatchRole', {
+      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonAPIGatewayPushToCloudWatchLogs')
+      ]
+    });
+
+    // Create an account-level API Gateway configuration
+    const cfnAccount = new apigateway.CfnAccount(this, 'ApiGatewayAccount', {
+      cloudWatchRoleArn: apiGatewayCloudWatchRole.roleArn
+    });
+
+    // Create a log group for API Gateway access logs
+    const apiLogGroup = new logs.LogGroup(this, 'ApiGatewayAccessLogs', {
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: RemovalPolicy.DESTROY
+    });
+
     // Create API Gateway to expose the Lambda function
     const api = new apigateway.LambdaRestApi(this, 'GameApi', {
       handler: gameFunction,
@@ -62,8 +82,14 @@ export class S3SiteLambdaCloudwatchStack extends Stack {
         metricsEnabled: true,
         loggingLevel: apigateway.MethodLoggingLevel.INFO,
         dataTraceEnabled: true,
+        accessLogDestination: new apigateway.LogGroupLogDestination(apiLogGroup),
+        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
       },
     });
+    
+    // Establish a proper dependency using escape hatches
+    const apiStage = api.deploymentStage.node.defaultChild as apigateway.CfnStage;
+    apiStage.addDependency(cfnAccount);
 
     // Add a resource and method for the game API
     const gameResource = api.root.addResource('game');
