@@ -42,6 +42,9 @@
 # init project
 cdk init sample-app --language typescript
 
+# install pkg
+npm install
+
 
 # compile TS code
 npm run build
