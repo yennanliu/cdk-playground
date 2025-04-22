@@ -10,7 +10,8 @@ export class PrivateNetworkEc2Stack extends Stack {
     const keyNameParam = new CfnParameter(this, 'KeyName', {
       type: 'String',
       description: 'Name of an existing EC2 KeyPair to enable SSH access to the instances',
-      default: 'private-network-key',
+     // default: 'private-network-key',
+      default: 'yen-wipro-aws-dev-key-2',
     });
 
     // 1. Create a VPC with public and private subnets in 2 AZs
