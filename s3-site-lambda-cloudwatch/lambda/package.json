@@ -1,0 +1,9 @@
+{
+  "name": "game-api-lambda",
+  "version": "1.0.0",
+  "description": "Lambda function for number guessing game",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1464.0"
+  }
+} 
