@@ -74,7 +74,18 @@ export class DistributedBiAppStack extends cdk.Stack {
     const cluster = new Cluster(this, "RedashCluster", { vpc });
 
     // 4. Fargate Task Definition
-    //const taskDef = new FargateTaskDefinition(this, 'RedashTask');
+    /**
+     * 1) FargateTaskDefinition is your compute + runtime config
+     * 2)  A FargateTaskDefinition is a blueprint that defines:
+     *      •	CPU & memory for the task (required in Fargate)
+     *     	•	CPU & memory for the task (required in Fargate)
+     *      •	Docker containers that run inside the task
+     *      •	Environment variables
+     *      •	Volumes
+     *      •	Networking mode
+     *      •	Logging configuration
+     *
+     */
     const taskDef = new FargateTaskDefinition(this, "RedashTask", {
       memoryLimitMiB: 1024, // 👈 Task-level memory
       cpu: 512, // 👈 Task-level CPU (optional but good)
