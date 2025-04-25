@@ -3,6 +3,25 @@
 You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`DistributedBiAppStack`)
 which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
 
+```
+        [ Users ]
+           |
+           v
+ ┌────────────────────┐
+ │  ALB (port 80)     │
+ └────────────────────┘
+     |           |
+     v           v
+ ┌────────┐   ┌────────┐
+ │Redash #1│  │Redash #2│ ← Dockerized Redash containers (Fargate)
+ └────────┘   └────────┘
+      ↘         ↙
+        ┌────────────┐
+        │ PostgreSQL │ ← RDS for Redash metadata + configs
+        └────────────┘
+
+```
+
 The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 ## Useful commands
