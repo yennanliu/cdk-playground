@@ -80,7 +80,7 @@ export class GitlabDeploymentStack extends Stack {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.XLARGE),
       machineImage: ec2.MachineImage.latestAmazonLinux2023(),
       role: ec2Role,
-      keyName: 'gitlab-key', // Note: You need to create this key pair in the AWS console
+      keyName: 'yen-wipro-aws-dev-key-2', // Note: You need to create this key pair in the AWS console
     });
 
     // Install GitLab using user data script
