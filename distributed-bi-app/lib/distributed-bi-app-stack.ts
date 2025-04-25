@@ -34,7 +34,6 @@ import { SecretValue, Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Protocol as EcsProtocol } from 'aws-cdk-lib/aws-ecs';
 
-
 export class DistributedBiAppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -113,8 +112,20 @@ export class DistributedBiAppStack extends cdk.Stack {
       open: true,
     });
 
+    // listener.addTargets('RedashTargets', {
+    //   port: 5000,
+    //   targets: [service],
+    //   healthCheck: {
+    //     path: '/',
+    //     interval: Duration.seconds(30),
+    //     timeout: Duration.seconds(5),
+    //     healthyHttpCodes: '200',
+    //   },
+    // });
+
     listener.addTargets('RedashTargets', {
       port: 5000,
+      protocol: ApplicationProtocol.HTTP, // 👈 ADD THIS LINE
       targets: [service],
       healthCheck: {
         path: '/',
