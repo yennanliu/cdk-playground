@@ -11,7 +11,9 @@ export class LambdaCrudlStack extends Stack {
     const crudLambda = new lambda.Function(this, 'CrudLambda', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'handler.main',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+
+      //code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
     });
 
     const api = new apigateway.RestApi(this, 'CrudApi', {
