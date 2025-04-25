@@ -1,4 +1,15 @@
-// lambda/handler.ts
+// AWS Lambda function to handle CRUD operations
+/** NOTE !!! 
+     *  
+     * AWS CDK expects `lambda code` written in javascript (instead of typescript)
+     * so we need to compile the typescript code to javascript first
+     * then we are able to refer to the compiled javascript code
+     * as below
+     * 
+     *  1) add `lambda-crudl/tsconfig.lambda.json` 
+     *  2) compile the typescript code to javascript : npx tsc -p tsconfig.lambda.json
+     *  3) cdk deploy
+     */
 
 let items: { [id: string]: any } = {};
 
