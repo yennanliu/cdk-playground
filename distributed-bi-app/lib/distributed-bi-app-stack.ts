@@ -67,7 +67,11 @@ export class DistributedBiAppStack extends cdk.Stack {
     const cluster = new Cluster(this, 'RedashCluster', { vpc });
 
     // 4. Fargate Task Definition
-    const taskDef = new FargateTaskDefinition(this, 'RedashTask');
+    //const taskDef = new FargateTaskDefinition(this, 'RedashTask');
+    const taskDef = new FargateTaskDefinition(this, 'RedashTask', {
+      memoryLimitMiB: 1024, // 👈 Task-level memory
+      cpu: 512,             // 👈 Task-level CPU (optional but good)
+    });
 
     const container = taskDef.addContainer('RedashContainer', {
       image: ContainerImage.fromRegistry('redash/redash:latest'),
