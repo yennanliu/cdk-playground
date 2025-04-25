@@ -43,6 +43,9 @@ npm install
 
 ```bash
 npm run build
+
+# compile TS to JS
+npx tsc -p tsconfig.lambda.json
 ```
 
 ### 3. 🧱 Bootstrap CDK (only once per environment)
