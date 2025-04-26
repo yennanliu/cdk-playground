@@ -73,7 +73,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Generate a unique short URL
-    let shortUrl: string;
+    let shortUrl = '';
     let isUnique = false;
 
     while (!isUnique) {

@@ -72,6 +72,7 @@ export class UrlShortenerAppStack extends Stack {
     const uiHostingBucket = new s3.Bucket(this, 'UrlShortenerUi', {
       websiteIndexDocument: 'index.html',
       publicReadAccess: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
       removalPolicy: RemovalPolicy.DESTROY, // Use RETAIN in production
     });
 
