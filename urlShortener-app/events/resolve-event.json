@@ -1,0 +1,18 @@
+{
+  "resource": "/url/{shortUrl}",
+  "path": "/url/abc123",
+  "httpMethod": "GET",
+  "headers": {
+    "Accept": "application/json",
+    "Host": "api-id.execute-api.region.amazonaws.com"
+  },
+  "pathParameters": {
+    "shortUrl": "abc123"
+  },
+  "requestContext": {
+    "resourcePath": "/url/{shortUrl}",
+    "httpMethod": "GET",
+    "stage": "prod"
+  },
+  "isBase64Encoded": false
+} 

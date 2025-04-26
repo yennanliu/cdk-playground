@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 2rem;
+        }
+        .url-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+        .result-container {
+            margin-top: 2rem;
+            display: none;
+        }
+        .short-url {
+            font-weight: bold;
+            word-break: break-all;
+        }
+        .nav-tabs {
+            margin-bottom: 1.5rem;
+        }
+        .tab-content {
+            padding: 1rem 0;
+        }
+        h1 {
+            color: #0d6efd;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        #error-message {
+            color: #dc3545;
+            display: none;
+            margin-top: 1rem;
+        }
+        .loader {
+            display: none;
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #0d6efd;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .expiration-container {
+            margin-top: 1rem;
+        }
+        .copy-btn {
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="url-container">
+            <h1 class="text-center">URL Shortener</h1>
+            
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="shorten-tab" data-bs-toggle="tab" data-bs-target="#shorten" type="button" role="tab" aria-controls="shorten" aria-selected="true">Shorten URL</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="expand-tab" data-bs-toggle="tab" data-bs-target="#expand" type="button" role="tab" aria-controls="expand" aria-selected="false">Expand URL</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="myTabContent">
+                <!-- Shorten URL Tab -->
+                <div class="tab-pane fade show active" id="shorten" role="tabpanel" aria-labelledby="shorten-tab">
+                    <form id="url-form">
+                        <div class="mb-3">
+                            <label for="original-url" class="form-label">Enter a long URL to shorten</label>
+                            <input type="url" class="form-control" id="original-url" placeholder="https://example.com/very/long/url" required>
+                        </div>
+                        
+                        <div class="expiration-container">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="set-expiration">
+                                <label class="form-check-label" for="set-expiration">
+                                    Set expiration time
+                                </label>
+                            </div>
+                            
+                            <div id="expiration-options" style="display: none; margin-top: 10px;">
+                                <select class="form-select" id="expiration-time">
+                                    <option value="3600">1 hour</option>
+                                    <option value="86400" selected>1 day</option>
+                                    <option value="604800">1 week</option>
+                                    <option value="2592000">30 days</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                Shorten URL
+                                <span class="loader" id="shorten-loader"></span>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="error-message" class="alert alert-danger"></div>
+                    
+                    <div class="result-container" id="result-container">
+                        <h4>Your shortened URL:</h4>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control short-url" id="short-url" readonly>
+                            <button class="btn btn-outline-secondary copy-btn" type="button" id="copy-btn">Copy</button>
+                        </div>
+                        <div class="d-grid gap-2 mt-3">
+                            <a href="#" class="btn btn-outline-primary" id="visit-link" target="_blank">Visit URL</a>
+                        </div>
+                        <div id="expiration-info" class="mt-3 small text-muted"></div>
+                    </div>
+                </div>
+                
+                <!-- Expand URL Tab -->
+                <div class="tab-pane fade" id="expand" role="tabpanel" aria-labelledby="expand-tab">
+                    <form id="expand-form">
+                        <div class="mb-3">
+                            <label for="short-url-input" class="form-label">Enter a short URL to expand</label>
+                            <input type="text" class="form-control" id="short-url-input" placeholder="https://example.com/url/abc123" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                Expand URL
+                                <span class="loader" id="expand-loader"></span>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="expand-error" class="alert alert-danger mt-3" style="display: none;"></div>
+                    
+                    <div class="result-container" id="expand-result">
+                        <h4>Original URL:</h4>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="original-url-result" readonly>
+                            <button class="btn btn-outline-secondary copy-btn" type="button" id="copy-original-btn">Copy</button>
+                        </div>
+                        <div class="d-grid gap-2 mt-3">
+                            <a href="#" class="btn btn-outline-primary" id="visit-original" target="_blank">Visit URL</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

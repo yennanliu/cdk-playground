@@ -1,0 +1,17 @@
+{
+  "resource": "/shorten",
+  "path": "/shorten",
+  "httpMethod": "POST",
+  "headers": {
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+    "Host": "api-id.execute-api.region.amazonaws.com"
+  },
+  "requestContext": {
+    "resourcePath": "/shorten",
+    "httpMethod": "POST",
+    "stage": "prod"
+  },
+  "body": "{\"url\":\"https://aws.amazon.com/cdk/\",\"expiration\":86400}",
+  "isBase64Encoded": false
+} 
