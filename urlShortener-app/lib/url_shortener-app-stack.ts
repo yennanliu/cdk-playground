@@ -98,6 +98,7 @@ export class UrlShortenerAppStack extends Stack {
       publicReadAccess: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
       removalPolicy: RemovalPolicy.DESTROY, // Use RETAIN in production
+      autoDeleteObjects: true, // Automatically delete objects when bucket is deleteds
     });
 
     // Deploy UI assets to S3
