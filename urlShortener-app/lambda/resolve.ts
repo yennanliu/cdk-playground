@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DynamoDB } from "aws-sdk";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 
 // Initialize DynamoDB client
 /** NOTE !!!
@@ -13,7 +14,8 @@ import { DynamoDB } from "aws-sdk";
  *  2) compile the typescript code to javascript : npx tsc -p tsconfig.lambda.json
  *  3) cdk deploy
  */
-const dynamoDb = new DynamoDB.DocumentClient();
+const client = new DynamoDBClient({});
+const dynamoDb = DynamoDBDocumentClient.from(client);
 const tableName = process.env.TABLE_NAME || "";
 
 export const handler = async (
@@ -42,7 +44,7 @@ export const handler = async (
       },
     };
 
-    const result = await dynamoDb.get(params).promise();
+    const result = await dynamoDb.send(new GetCommand(params));
 
     // If the short URL doesn't exist
     if (!result.Item) {

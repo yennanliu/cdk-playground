@@ -57,7 +57,7 @@ export class UrlShortenerAppStack extends Stack {
     const resolveUrlFunction = new lambda.Function(this, "ResolveUrlFunction", {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: "resolve.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda")),
+      code: lambda.Code.fromAsset(path.join(__dirname, "../dist/lambda")),
       environment: {
         TABLE_NAME: urlTable.tableName,
       },
