@@ -102,6 +102,8 @@ export class UrlShortenerAppStack extends Stack {
     });
 
     // Deploy UI assets to S3
+    // upload all files in the ui folder to the S3 bucket
+    // and set the index.html as the default document
     new s3deploy.BucketDeployment(this, "DeployUrlShortenerUi", {
       sources: [s3deploy.Source.asset(path.join(__dirname, "../ui"))],
       destinationBucket: uiHostingBucket,
