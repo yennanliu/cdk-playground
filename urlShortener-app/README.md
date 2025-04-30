@@ -48,11 +48,18 @@ npm run build
 
 4. Deploy the application to AWS:
 
+- Step 1)
+
 ```bash
 cdk deploy
 ```
 
+- Step 2)
+
 After deployment, the CDK will output the API Gateway endpoint URL and the S3 website URL. You will need to update the `API_ENDPOINT` value in `ui/script.js` with the deployed API Gateway URL.
+
+
+- NOTE !!! need to update `API_ENDPOINT` value in `ui/script.js`  after 1st deployment
 
 ## Usage
 
