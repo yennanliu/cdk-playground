@@ -1,15 +1,29 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { DynamoDB } from 'aws-sdk';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 // Initialize DynamoDB client
-const dynamoDb = new DynamoDB.DocumentClient();
-const tableName = process.env.TABLE_NAME || '';
-const shortUrlLength = parseInt(process.env.SHORT_URL_LENGTH || '7', 10);
+/** NOTE !!!
+ *
+ * AWS CDK expects `lambda code` written in javascript (instead of typescript)
+ * so we need to compile the typescript code to javascript first
+ * then we are able to refer to the compiled javascript code
+ * as below
+ *
+ *  1) add `lambda-crudl/tsconfig.lambda.json`
+ *  2) compile the typescript code to javascript : npx tsc -p tsconfig.lambda.json
+ *  3) cdk deploy
+ */
+const client = new DynamoDBClient({});
+const dynamoDb = DynamoDBDocumentClient.from(client);
+const tableName = process.env.TABLE_NAME || "";
+const shortUrlLength = parseInt(process.env.SHORT_URL_LENGTH || "7", 10);
 
 // Function to generate a random short URL key
 const generateShortUrl = (length: number): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -25,22 +39,24 @@ const shortUrlExists = async (shortUrl: string): Promise<boolean> => {
     },
   };
 
-  const result = await dynamoDb.get(params).promise();
+  const result = await dynamoDb.send(new GetCommand(params));
   return !!result.Item;
 };
 
 // Handler function for the Lambda
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
     // Parse the request body
     if (!event.body) {
       return {
         statusCode: 400,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
-        body: JSON.stringify({ error: 'Request body is required' }),
+        body: JSON.stringify({ error: "Request body is required" }),
       };
     }
 
@@ -51,10 +67,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return {
         statusCode: 400,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
-        body: JSON.stringify({ error: 'URL is required' }),
+        body: JSON.stringify({ error: "URL is required" }),
       };
     }
 
@@ -65,15 +81,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return {
         statusCode: 400,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
-        body: JSON.stringify({ error: 'Invalid URL format' }),
+        body: JSON.stringify({ error: "Invalid URL format" }),
       };
     }
 
     // Generate a unique short URL
-    let shortUrl = '';
+    let shortUrl = "";
     let isUnique = false;
 
     while (!isUnique) {
@@ -101,37 +117,41 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       },
     };
 
-    await dynamoDb.put(params).promise();
+    await dynamoDb.send(new PutCommand(params));
 
     // Build the short URL path (excluding domain)
-    const apiGatewayUrl = event.headers.Host || '';
-    const apiStage = event.requestContext?.stage ? `/${event.requestContext.stage}` : '';
+    const apiGatewayUrl = event.headers.Host || "";
+    const apiStage = event.requestContext?.stage
+      ? `/${event.requestContext.stage}`
+      : "";
     const shortUrlPath = `/url/${shortUrl}`;
 
     // Return the shortened URL
     return {
       statusCode: 201,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
       body: JSON.stringify({
         shortUrl,
         shortUrlPath,
         fullShortUrl: `https://${apiGatewayUrl}${apiStage}${shortUrlPath}`,
         originalUrl: url,
-        ...(expirationTime && { expiresAt: new Date(expirationTime * 1000).toISOString() }),
+        ...(expirationTime && {
+          expiresAt: new Date(expirationTime * 1000).toISOString(),
+        }),
       }),
     };
   } catch (error) {
-    console.error('Error shortening URL:', error);
+    console.error("Error shortening URL:", error);
     return {
       statusCode: 500,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
-      body: JSON.stringify({ error: 'Failed to shorten URL' }),
+      body: JSON.stringify({ error: "Failed to shorten URL" }),
     };
   }
-}; 
+};

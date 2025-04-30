@@ -1,11 +1,26 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { DynamoDB } from 'aws-sdk';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 
 // Initialize DynamoDB client
-const dynamoDb = new DynamoDB.DocumentClient();
-const tableName = process.env.TABLE_NAME || '';
+/** NOTE !!!
+ *
+ * AWS CDK expects `lambda code` written in javascript (instead of typescript)
+ * so we need to compile the typescript code to javascript first
+ * then we are able to refer to the compiled javascript code
+ * as below
+ *
+ *  1) add `lambda-crudl/tsconfig.lambda.json`
+ *  2) compile the typescript code to javascript : npx tsc -p tsconfig.lambda.json
+ *  3) cdk deploy
+ */
+const client = new DynamoDBClient({});
+const dynamoDb = DynamoDBDocumentClient.from(client);
+const tableName = process.env.TABLE_NAME || "";
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
     // Get the short URL ID from the path parameter
     const shortUrlId = event.pathParameters?.shortUrl;
@@ -14,10 +29,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return {
         statusCode: 400,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
-        body: JSON.stringify({ error: 'Short URL ID is required' }),
+        body: JSON.stringify({ error: "Short URL ID is required" }),
       };
     }
 
@@ -29,32 +44,33 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       },
     };
 
-    const result = await dynamoDb.get(params).promise();
+    const result = await dynamoDb.send(new GetCommand(params));
 
     // If the short URL doesn't exist
     if (!result.Item) {
       return {
         statusCode: 404,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
-        body: JSON.stringify({ error: 'Short URL not found' }),
+        body: JSON.stringify({ error: "Short URL not found" }),
       };
     }
 
     const originalUrl = result.Item.original_url;
 
     // Determine whether to return JSON or redirect based on Accept header
-    const acceptHeader = event.headers['Accept'] || event.headers['accept'] || '';
-    
-    if (acceptHeader.includes('application/json')) {
+    const acceptHeader =
+      event.headers["Accept"] || event.headers["accept"] || "";
+
+    if (acceptHeader.includes("application/json")) {
       // Return the original URL as JSON
       return {
         statusCode: 200,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
         body: JSON.stringify({
           originalUrl,
@@ -66,21 +82,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return {
         statusCode: 302,
         headers: {
-          'Location': originalUrl,
-          'Access-Control-Allow-Origin': '*',
+          Location: originalUrl,
+          "Access-Control-Allow-Origin": "*",
         },
-        body: '',
+        body: "",
       };
     }
   } catch (error) {
-    console.error('Error resolving URL:', error);
+    console.error("Error resolving URL:", error);
     return {
       statusCode: 500,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
-      body: JSON.stringify({ error: 'Failed to resolve URL' }),
+      body: JSON.stringify({ error: "Failed to resolve URL" }),
     };
   }
-}; 
+};
