@@ -1,15 +1,49 @@
-# Welcome to your CDK TypeScript project
+# GitLab Deployment on AWS using CDK
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`GitlabDeploymentV2Stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+This is a project for deploying GitLab on AWS using AWS CDK with TypeScript.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Architecture
 
-## Useful commands
+The infrastructure includes:
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+* VPC with public and private subnets across 2 availability zones
+* ECS Fargate Cluster for containerized GitLab deployment
+* EFS for persistent storage of GitLab data
+* Application Load Balancer for public access
+* Security Groups to control network access
+
+## Prerequisites
+
+* AWS CLI configured with appropriate credentials
+* Node.js 14.x or later
+* AWS CDK installed (`npm install -g aws-cdk`)
+
+## Deployment
+
+1. Install dependencies:
+```
+npm install
+```
+
+2. Synthesize CloudFormation template:
+```
+npx cdk synth
+```
+
+3. Deploy the stack:
+```
+npx cdk deploy
+```
+
+After deployment, the GitLab URL will be displayed in the outputs section.
+
+## Cleanup
+
+To destroy the resources:
+```
+npx cdk destroy
+```
+
+## Configuration
+
+If you need to customize the GitLab deployment, edit the stack in `lib/gitlab-deployment-v2-stack.ts`.
