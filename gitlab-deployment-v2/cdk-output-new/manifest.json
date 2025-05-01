@@ -1,0 +1,905 @@
+{
+  "version": "41.0.0",
+  "artifacts": {
+    "GitlabDeploymentV2Stack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "GitlabDeploymentV2Stack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "GitlabDeploymentV2Stack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "GitlabDeploymentV2Stack.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "Environment": "Production",
+          "ManagedBy": "CDK",
+          "Project": "GitLabDeployment",
+          "Service": "GitLab"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/7f35e2c40544a5816f5aa004cafb4bb669d944ea6e7e16610353f041980c4e79.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "GitlabDeploymentV2Stack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "GitlabDeploymentV2Stack.assets"
+      ],
+      "metadata": {
+        "/GitlabDeploymentV2Stack": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "Environment",
+                "Value": "Production"
+              },
+              {
+                "Key": "ManagedBy",
+                "Value": "CDK"
+              },
+              {
+                "Key": "Project",
+                "Value": "GitLabDeployment"
+              },
+              {
+                "Key": "Service",
+                "Value": "GitLab"
+              }
+            ]
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "maxAzs": "*",
+              "natGateways": "*"
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcF01E4F19"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addNatGateway": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet1Subnet6406932B"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet1RouteTable4A23D685"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet1RouteTableAssociation163C4E4A"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet1DefaultRouteBD3EDF71"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet1EIP4B5C22A0"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet1NATGateway98CB4BF0"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet2SubnetC167E9B2"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet2RouteTable84B4A91B"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet2RouteTableAssociationC1D5A167"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPublicSubnet2DefaultRoute9F76EAE4"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPrivateSubnet1SubnetEE762472"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPrivateSubnet1RouteTableF31D3984"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPrivateSubnet1RouteTableAssociation447B4D09"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPrivateSubnet1DefaultRoute3E366601"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPrivateSubnet2SubnetAF7DC831"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPrivateSubnet2RouteTable6484C8D7"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPrivateSubnet2RouteTableAssociation8E119A63"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcPrivateSubnet2DefaultRoute4352D571"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcIGW90FF228C"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcVPCGW92CC6D99"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/RestrictDefaultSecurityGroupCustomResource": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabVpc/RestrictDefaultSecurityGroupCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabVpcRestrictDefaultSecurityGroupCustomResource920717EC"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/Custom::VpcRestrictDefaultSGCustomResourceProvider": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
+            "data": true
+          }
+        ],
+        "/GitlabDeploymentV2Stack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabCluster": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "containerInsights": true
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabCluster8F3D84F8"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/EfsSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": true
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*"
+              ]
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/EfsSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EfsSecurityGroupEC5F36AC"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/EfsSecurityGroup/from GitlabDeploymentV2StackGitLabServiceSG754A9B3D:2049": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EfsSecurityGroupfromGitlabDeploymentV2StackGitLabServiceSG754A9B3D20494030DCE3"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabServiceSG": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": true
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*",
+                false
+              ]
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabServiceSG/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabServiceSG1BB4E6B9"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabServiceSG/from GitlabDeploymentV2StackGitLabALBSecurityGroupC83A6F9D:80": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabServiceSGfromGitlabDeploymentV2StackGitLabALBSecurityGroupC83A6F9D80F53D767F"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabEfsFileSystem": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "securityGroup": "*",
+              "lifecyclePolicy": "AFTER_14_DAYS",
+              "performanceMode": "generalPurpose",
+              "encrypted": true,
+              "removalPolicy": "retain",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              }
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabEfsFileSystem/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabEfsFileSystemB390755C"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabEfsFileSystem/EfsMountTarget-PrivateSubnet1": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabEfsFileSystemEfsMountTargetPrivateSubnet1C9785BA5"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabEfsFileSystem/EfsMountTarget-PrivateSubnet2": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabEfsFileSystemEfsMountTargetPrivateSubnet2CB01A78C"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabEfsAccessPoint": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "fileSystem": "*",
+              "path": "*",
+              "createAcl": {
+                "ownerGid": "*",
+                "ownerUid": "*",
+                "permissions": "*"
+              },
+              "posixUser": {
+                "gid": "*",
+                "uid": "*"
+              }
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabEfsAccessPoint/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabEfsAccessPointF85115A9"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabALB": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabALB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabALB76D2807C"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabALB/SecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": false
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*",
+                false
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEgressRule": [
+                "*",
+                {},
+                "*",
+                true
+              ]
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabALB/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabALBSecurityGroup75240F19"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabALB/SecurityGroup/to GitlabDeploymentV2StackGitLabServiceSG754A9B3D:80": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabALBSecurityGrouptoGitlabDeploymentV2StackGitLabServiceSG754A9B3D80C34B6997"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabALB/PublicListener": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabALB/PublicListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabALBPublicListener1AD54483"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskExecutionRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "managedPolicies": [
+                {
+                  "managedPolicyArn": "*"
+                }
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskExecutionRole/ImportGitLabTaskExecutionRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabTaskExecutionRoleFC638663"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskExecutionRole/DefaultPolicy": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabTaskExecutionRoleDefaultPolicy7452F206"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskDef": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabTaskDef151F57C6"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskDef/InitContainer/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "retention": "*"
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskDef/InitContainer/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabTaskDefInitContainerLogGroupC9F42326"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskDef/GitLabContainer/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "retention": "*"
+            }
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTaskDef/GitLabContainer/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabTaskDefGitLabContainerLogGroupCE3B5865"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabService": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
+            "trace": [
+              "Annotations.addMessage (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1608)",
+              "Annotations.addWarningV2 (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/aws-cdk-lib/core/lib/annotations.js:1:825)",
+              "new BaseService (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:8100)",
+              "new FargateService (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:3551)",
+              "new GitlabDeploymentV2Stack (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/lib/gitlab-deployment-v2-stack.ts:213:27)",
+              "Object.<anonymous> (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/bin/gitlab-deployment-v2.ts:6:1)",
+              "Module._compile (node:internal/modules/cjs/loader:1254:14)",
+              "Module.m._compile (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/ts-node/src/index.ts:1618:23)",
+              "Module._extensions..js (node:internal/modules/cjs/loader:1308:10)",
+              "Object.require.extensions.<computed> [as .ts] (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/ts-node/src/index.ts:1621:12)",
+              "Module.load (node:internal/modules/cjs/loader:1117:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:958:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)",
+              "phase4 (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/ts-node/src/bin.ts:649:14)",
+              "bootstrap (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/ts-node/src/bin.ts:95:10)",
+              "main (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/ts-node/src/bin.ts:55:10)",
+              "Object.<anonymous> (/Users/yennanliu/cdk-playground/gitlab-deployment-v2/node_modules/ts-node/src/bin.ts:800:3)",
+              "Module._compile (node:internal/modules/cjs/loader:1254:14)",
+              "Object.Module._extensions..js (node:internal/modules/cjs/loader:1308:10)",
+              "Module.load (node:internal/modules/cjs/loader:1117:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:958:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)",
+              "node:internal/main/run_main_module:23:47"
+            ]
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabService/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabServiceD802A281"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabTargetGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabTargetGroup36F12099"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/GitLabUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GitLabUrl"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/EfsFileSystemId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EfsFileSystemId"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/CDKMetadata/Condition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadataAvailable"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/GitlabDeploymentV2Stack/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "GitlabDeploymentV2Stack"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  },
+  "minimumCliVersion": "2.1005.0"
+}
