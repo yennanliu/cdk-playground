@@ -72,6 +72,28 @@ This is usually due to one of the following issues:
 
 4. **EFS Access Point**: Using an EFS access point can help with proper permissions and mounting.
 
+### Permission Issues
+
+If GitLab container starts but fails with permission errors like:
+
+```
+Errno::EACCES: Permission denied @ rb_sysopen - /var/opt/gitlab/.gitconfig
+```
+
+This indicates a permission issue with the EFS-mounted volume. The solution involves:
+
+1. **Initialization Container**: The stack now includes an initialization container that properly prepares directory structure and permissions.
+
+2. **Directory Ownership**: GitLab processes run as user with UID/GID 998, so mounted directories need these permissions.
+
+3. **Access Point Configuration**: The EFS access point's POSIX user settings should allow proper permissions management.
+
+4. **Manual Intervention**: If issues persist, you may need to manually fix permissions using the following steps:
+   - Launch a temporary EC2 instance in the same VPC
+   - Mount the EFS file system
+   - Run `sudo chown -R 998:998 /mnt/efs/*` 
+   - Run `sudo chmod -R 775 /mnt/efs/`
+
 ### Service Discovery Issues
 
 If GitLab container starts but cannot be accessed:

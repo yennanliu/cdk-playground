@@ -1,0 +1,1998 @@
+{
+ "Resources": {
+  "GitLabVpcF01E4F19": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/Resource"
+   }
+  },
+  "GitLabVpcPublicSubnet1Subnet6406932B": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.0.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/Subnet"
+   }
+  },
+  "GitLabVpcPublicSubnet1RouteTable4A23D685": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/RouteTable"
+   }
+  },
+  "GitLabVpcPublicSubnet1RouteTableAssociation163C4E4A": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "GitLabVpcPublicSubnet1RouteTable4A23D685"
+    },
+    "SubnetId": {
+     "Ref": "GitLabVpcPublicSubnet1Subnet6406932B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "GitLabVpcPublicSubnet1DefaultRouteBD3EDF71": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "GitLabVpcIGW90FF228C"
+    },
+    "RouteTableId": {
+     "Ref": "GitLabVpcPublicSubnet1RouteTable4A23D685"
+    }
+   },
+   "DependsOn": [
+    "GitLabVpcVPCGW92CC6D99"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "GitLabVpcPublicSubnet1EIP4B5C22A0": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/EIP"
+   }
+  },
+  "GitLabVpcPublicSubnet1NATGateway98CB4BF0": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "GitLabVpcPublicSubnet1EIP4B5C22A0",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "GitLabVpcPublicSubnet1Subnet6406932B"
+    },
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ]
+   },
+   "DependsOn": [
+    "GitLabVpcPublicSubnet1DefaultRouteBD3EDF71",
+    "GitLabVpcPublicSubnet1RouteTableAssociation163C4E4A"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet1/NATGateway"
+   }
+  },
+  "GitLabVpcPublicSubnet2SubnetC167E9B2": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.64.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2/Subnet"
+   }
+  },
+  "GitLabVpcPublicSubnet2RouteTable84B4A91B": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2/RouteTable"
+   }
+  },
+  "GitLabVpcPublicSubnet2RouteTableAssociationC1D5A167": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "GitLabVpcPublicSubnet2RouteTable84B4A91B"
+    },
+    "SubnetId": {
+     "Ref": "GitLabVpcPublicSubnet2SubnetC167E9B2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "GitLabVpcPublicSubnet2DefaultRoute9F76EAE4": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "GitLabVpcIGW90FF228C"
+    },
+    "RouteTableId": {
+     "Ref": "GitLabVpcPublicSubnet2RouteTable84B4A91B"
+    }
+   },
+   "DependsOn": [
+    "GitLabVpcVPCGW92CC6D99"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "GitLabVpcPrivateSubnet1SubnetEE762472": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.128.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1/Subnet"
+   }
+  },
+  "GitLabVpcPrivateSubnet1RouteTableF31D3984": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1/RouteTable"
+   }
+  },
+  "GitLabVpcPrivateSubnet1RouteTableAssociation447B4D09": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "GitLabVpcPrivateSubnet1RouteTableF31D3984"
+    },
+    "SubnetId": {
+     "Ref": "GitLabVpcPrivateSubnet1SubnetEE762472"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1/RouteTableAssociation"
+   }
+  },
+  "GitLabVpcPrivateSubnet1DefaultRoute3E366601": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "GitLabVpcPublicSubnet1NATGateway98CB4BF0"
+    },
+    "RouteTableId": {
+     "Ref": "GitLabVpcPrivateSubnet1RouteTableF31D3984"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet1/DefaultRoute"
+   }
+  },
+  "GitLabVpcPrivateSubnet2SubnetAF7DC831": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.192.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2/Subnet"
+   }
+  },
+  "GitLabVpcPrivateSubnet2RouteTable6484C8D7": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2/RouteTable"
+   }
+  },
+  "GitLabVpcPrivateSubnet2RouteTableAssociation8E119A63": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "GitLabVpcPrivateSubnet2RouteTable6484C8D7"
+    },
+    "SubnetId": {
+     "Ref": "GitLabVpcPrivateSubnet2SubnetAF7DC831"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2/RouteTableAssociation"
+   }
+  },
+  "GitLabVpcPrivateSubnet2DefaultRoute4352D571": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "GitLabVpcPublicSubnet1NATGateway98CB4BF0"
+    },
+    "RouteTableId": {
+     "Ref": "GitLabVpcPrivateSubnet2RouteTable6484C8D7"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/PrivateSubnet2/DefaultRoute"
+   }
+  },
+  "GitLabVpcIGW90FF228C": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabVpc"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/IGW"
+   }
+  },
+  "GitLabVpcVPCGW92CC6D99": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "GitLabVpcIGW90FF228C"
+    },
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/VPCGW"
+   }
+  },
+  "GitLabVpcRestrictDefaultSecurityGroupCustomResource920717EC": {
+   "Type": "Custom::VpcRestrictDefaultSG",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E",
+      "Arn"
+     ]
+    },
+    "DefaultSecurityGroupId": {
+     "Fn::GetAtt": [
+      "GitLabVpcF01E4F19",
+      "DefaultSecurityGroup"
+     ]
+    },
+    "Account": {
+     "Ref": "AWS::AccountId"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabVpc/RestrictDefaultSecurityGroupCustomResource/Default"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ],
+    "Policies": [
+     {
+      "PolicyName": "Inline",
+      "PolicyDocument": {
+       "Version": "2012-10-17",
+       "Statement": [
+        {
+         "Effect": "Allow",
+         "Action": [
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress"
+         ],
+         "Resource": [
+          {
+           "Fn::Join": [
+            "",
+            [
+             "arn:",
+             {
+              "Ref": "AWS::Partition"
+             },
+             ":ec2:",
+             {
+              "Ref": "AWS::Region"
+             },
+             ":",
+             {
+              "Ref": "AWS::AccountId"
+             },
+             ":security-group/",
+             {
+              "Fn::GetAtt": [
+               "GitLabVpcF01E4F19",
+               "DefaultSecurityGroup"
+              ]
+             }
+            ]
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "__entrypoint__.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs20.x",
+    "Description": "Lambda function for removing all inbound/outbound rules from the VPC default security group"
+   },
+   "DependsOn": [
+    "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200",
+    "aws:asset:property": "Code"
+   }
+  },
+  "GitLabCluster8F3D84F8": {
+   "Type": "AWS::ECS::Cluster",
+   "Properties": {
+    "ClusterSettings": [
+     {
+      "Name": "containerInsights",
+      "Value": "enabled"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabCluster/Resource"
+   }
+  },
+  "EfsSecurityGroupEC5F36AC": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Allow EFS access from ECS tasks",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/EfsSecurityGroup/Resource"
+   }
+  },
+  "EfsSecurityGroupfromGitlabDeploymentV2StackGitLabServiceSG754A9B3D20494030DCE3": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow NFS access from the GitLab service",
+    "FromPort": 2049,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "EfsSecurityGroupEC5F36AC",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "GitLabServiceSG1BB4E6B9",
+      "GroupId"
+     ]
+    },
+    "ToPort": 2049
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/EfsSecurityGroup/from GitlabDeploymentV2StackGitLabServiceSG754A9B3D:2049"
+   }
+  },
+  "GitLabServiceSG1BB4E6B9": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for GitLab service",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTP traffic",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTPS traffic",
+      "FromPort": 443,
+      "IpProtocol": "tcp",
+      "ToPort": 443
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow SSH traffic",
+      "FromPort": 22,
+      "IpProtocol": "tcp",
+      "ToPort": 22
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabServiceSG/Resource"
+   }
+  },
+  "GitLabServiceSGfromGitlabDeploymentV2StackGitLabALBSecurityGroupC83A6F9D80F53D767F": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 80,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "GitLabServiceSG1BB4E6B9",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "GitLabALBSecurityGroup75240F19",
+      "GroupId"
+     ]
+    },
+    "ToPort": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabServiceSG/from GitlabDeploymentV2StackGitLabALBSecurityGroupC83A6F9D:80"
+   }
+  },
+  "GitLabEfsFileSystemB390755C": {
+   "Type": "AWS::EFS::FileSystem",
+   "Properties": {
+    "Encrypted": true,
+    "FileSystemPolicy": {
+     "Statement": [
+      {
+       "Action": [
+        "elasticfilesystem:ClientRootAccess",
+        "elasticfilesystem:ClientWrite"
+       ],
+       "Condition": {
+        "Bool": {
+         "elasticfilesystem:AccessedViaMountTarget": "true"
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": "*"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "FileSystemTags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabEfsFileSystem"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "LifecyclePolicies": [
+     {
+      "TransitionToIA": "AFTER_14_DAYS"
+     }
+    ],
+    "PerformanceMode": "generalPurpose"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabEfsFileSystem/Resource"
+   }
+  },
+  "GitLabEfsFileSystemEfsMountTargetPrivateSubnet1C9785BA5": {
+   "Type": "AWS::EFS::MountTarget",
+   "Properties": {
+    "FileSystemId": {
+     "Ref": "GitLabEfsFileSystemB390755C"
+    },
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "EfsSecurityGroupEC5F36AC",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": {
+     "Ref": "GitLabVpcPrivateSubnet1SubnetEE762472"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabEfsFileSystem/EfsMountTarget-PrivateSubnet1"
+   }
+  },
+  "GitLabEfsFileSystemEfsMountTargetPrivateSubnet2CB01A78C": {
+   "Type": "AWS::EFS::MountTarget",
+   "Properties": {
+    "FileSystemId": {
+     "Ref": "GitLabEfsFileSystemB390755C"
+    },
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "EfsSecurityGroupEC5F36AC",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": {
+     "Ref": "GitLabVpcPrivateSubnet2SubnetAF7DC831"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabEfsFileSystem/EfsMountTarget-PrivateSubnet2"
+   }
+  },
+  "GitLabEfsAccessPointF85115A9": {
+   "Type": "AWS::EFS::AccessPoint",
+   "Properties": {
+    "AccessPointTags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Name",
+      "Value": "GitlabDeploymentV2Stack/GitLabEfsAccessPoint"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "FileSystemId": {
+     "Ref": "GitLabEfsFileSystemB390755C"
+    },
+    "PosixUser": {
+     "Gid": "0",
+     "Uid": "0"
+    },
+    "RootDirectory": {
+     "CreationInfo": {
+      "OwnerGid": "0",
+      "OwnerUid": "0",
+      "Permissions": "755"
+     },
+     "Path": "/"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabEfsAccessPoint/Resource"
+   }
+  },
+  "GitLabALB76D2807C": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "GitLabALBSecurityGroup75240F19",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "GitLabVpcPublicSubnet1Subnet6406932B"
+     },
+     {
+      "Ref": "GitLabVpcPublicSubnet2SubnetC167E9B2"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "GitLabVpcPublicSubnet1DefaultRouteBD3EDF71",
+    "GitLabVpcPublicSubnet1RouteTableAssociation163C4E4A",
+    "GitLabVpcPublicSubnet2DefaultRoute9F76EAE4",
+    "GitLabVpcPublicSubnet2RouteTableAssociationC1D5A167"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabALB/Resource"
+   }
+  },
+  "GitLabALBSecurityGroup75240F19": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB GitlabDeploymentV2StackGitLabALB08539C9A",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabALB/SecurityGroup/Resource"
+   }
+  },
+  "GitLabALBSecurityGrouptoGitlabDeploymentV2StackGitLabServiceSG754A9B3D80C34B6997": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "GitLabServiceSG1BB4E6B9",
+      "GroupId"
+     ]
+    },
+    "FromPort": 80,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "GitLabALBSecurityGroup75240F19",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabALB/SecurityGroup/to GitlabDeploymentV2StackGitLabServiceSG754A9B3D:80"
+   }
+  },
+  "GitLabALBPublicListener1AD54483": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "GitLabTargetGroup36F12099"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "GitLabALB76D2807C"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabALB/PublicListener/Resource"
+   }
+  },
+  "GitLabTaskExecutionRoleFC638663": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabTaskExecutionRole/Resource"
+   }
+  },
+  "GitLabTaskExecutionRoleDefaultPolicy7452F206": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "elasticfilesystem:ClientMount",
+        "elasticfilesystem:ClientWrite",
+        "elasticfilesystem:DescribeMountTargets"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "GitLabEfsFileSystemB390755C",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "GitLabTaskDefGitLabContainerLogGroupCE3B5865",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
+          "GitLabTaskDefInitContainerLogGroupC9F42326",
+          "Arn"
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "GitLabTaskExecutionRoleDefaultPolicy7452F206",
+    "Roles": [
+     {
+      "Ref": "GitLabTaskExecutionRoleFC638663"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabTaskExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "GitLabTaskDef151F57C6": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Command": [
+       "sh",
+       "-c",
+       "mkdir -p /var/opt/gitlab/git-data && mkdir -p /var/opt/gitlab/.ssh && mkdir -p /var/opt/gitlab/gitlab-rails && mkdir -p /var/opt/gitlab/gitlab-ci && mkdir -p /var/opt/gitlab/postgresql && mkdir -p /var/opt/gitlab/redis && mkdir -p /var/opt/gitlab/nginx && mkdir -p /var/opt/gitlab/prometheus && chown -R 998:998 /var/opt/gitlab && chmod -R 775 /var/opt/gitlab"
+      ],
+      "Essential": false,
+      "Image": "amazonlinux:2",
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "GitLabTaskDefInitContainerLogGroupC9F42326"
+        },
+        "awslogs-stream-prefix": "gitlab-init",
+        "awslogs-region": {
+         "Ref": "AWS::Region"
+        }
+       }
+      },
+      "MountPoints": [
+       {
+        "ContainerPath": "/var/opt/gitlab",
+        "ReadOnly": false,
+        "SourceVolume": "gitlab-data"
+       }
+      ],
+      "Name": "InitContainer"
+     },
+     {
+      "DependsOn": [
+       {
+        "Condition": "COMPLETE",
+        "ContainerName": "InitContainer"
+       }
+      ],
+      "Environment": [
+       {
+        "Name": "GITLAB_OMNIBUS_CONFIG",
+        "Value": {
+         "Fn::Join": [
+          "",
+          [
+           "external_url \"http://",
+           {
+            "Fn::GetAtt": [
+             "GitLabALB76D2807C",
+             "DNSName"
+            ]
+           },
+           "\";gitlab_rails['gitlab_shell_ssh_port'] = 22;git_data_dirs({\"default\" => { \"path\" => \"/var/opt/gitlab/git-data\"} });unicorn['worker_processes'] = 2;postgresql['shared_buffers'] = \"256MB\";prometheus_monitoring['enable'] = false;"
+          ]
+         ]
+        }
+       }
+      ],
+      "Essential": true,
+      "Image": "gitlab/gitlab-ce:latest",
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "GitLabTaskDefGitLabContainerLogGroupCE3B5865"
+        },
+        "awslogs-stream-prefix": "gitlab",
+        "awslogs-region": {
+         "Ref": "AWS::Region"
+        }
+       }
+      },
+      "MountPoints": [
+       {
+        "ContainerPath": "/var/opt/gitlab",
+        "ReadOnly": false,
+        "SourceVolume": "gitlab-data"
+       }
+      ],
+      "Name": "GitLabContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 80,
+        "Protocol": "tcp"
+       },
+       {
+        "ContainerPort": 443,
+        "Protocol": "tcp"
+       },
+       {
+        "ContainerPort": 22,
+        "Protocol": "tcp"
+       }
+      ],
+      "Ulimits": [
+       {
+        "HardLimit": 65535,
+        "Name": "nofile",
+        "SoftLimit": 65535
+       }
+      ]
+     }
+    ],
+    "Cpu": "2048",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "GitLabTaskExecutionRoleFC638663",
+      "Arn"
+     ]
+    },
+    "Family": "GitlabDeploymentV2StackGitLabTaskDef12C63BB3",
+    "Memory": "4096",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "GitLabTaskExecutionRoleFC638663",
+      "Arn"
+     ]
+    },
+    "Volumes": [
+     {
+      "EFSVolumeConfiguration": {
+       "AuthorizationConfig": {
+        "AccessPointId": {
+         "Ref": "GitLabEfsAccessPointF85115A9"
+        },
+        "IAM": "ENABLED"
+       },
+       "FilesystemId": {
+        "Ref": "GitLabEfsFileSystemB390755C"
+       },
+       "TransitEncryption": "ENABLED"
+      },
+      "Name": "gitlab-data"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabTaskDef/Resource"
+   }
+  },
+  "GitLabTaskDefInitContainerLogGroupC9F42326": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabTaskDef/InitContainer/LogGroup/Resource"
+   }
+  },
+  "GitLabTaskDefGitLabContainerLogGroupCE3B5865": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabTaskDef/GitLabContainer/LogGroup/Resource"
+   }
+  },
+  "GitLabServiceD802A281": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "CapacityProviderStrategy": [
+     {
+      "CapacityProvider": "FARGATE",
+      "Weight": 1
+     }
+    ],
+    "Cluster": {
+     "Ref": "GitLabCluster8F3D84F8"
+    },
+    "DeploymentConfiguration": {
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LoadBalancers": [
+     {
+      "ContainerName": "GitLabContainer",
+      "ContainerPort": 80,
+      "TargetGroupArn": {
+       "Ref": "GitLabTargetGroup36F12099"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "ENABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "GitLabServiceSG1BB4E6B9",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "GitLabVpcPrivateSubnet1SubnetEE762472"
+       },
+       {
+        "Ref": "GitLabVpcPrivateSubnet2SubnetAF7DC831"
+       }
+      ]
+     }
+    },
+    "PlatformVersion": "1.4.0",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "TaskDefinition": {
+     "Ref": "GitLabTaskDef151F57C6"
+    }
+   },
+   "DependsOn": [
+    "GitLabALBPublicListener1AD54483",
+    "GitLabTaskExecutionRoleDefaultPolicy7452F206",
+    "GitLabTaskExecutionRoleFC638663"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabService/Service"
+   }
+  },
+  "GitLabTargetGroup36F12099": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckIntervalSeconds": 60,
+    "HealthCheckPath": "/",
+    "HealthCheckTimeoutSeconds": 30,
+    "HealthyThresholdCount": 2,
+    "Matcher": {
+     "HttpCode": "200-499"
+    },
+    "Port": 80,
+    "Protocol": "HTTP",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "Production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "GitLabDeployment"
+     },
+     {
+      "Key": "Service",
+      "Value": "GitLab"
+     }
+    ],
+    "TargetGroupAttributes": [
+     {
+      "Key": "deregistration_delay.timeout_seconds",
+      "Value": "30"
+     },
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "UnhealthyThresholdCount": 5,
+    "VpcId": {
+     "Ref": "GitLabVpcF01E4F19"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/GitLabTargetGroup/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/9VXbW/bNhD+LdXHQdGaoCi6fFPcJDCQNobtFtiCIKDJs8KGIjm+KPUE//cdRUpWYjQothZwPwQW743PHR/eMSfF8bs/itevyKM9ouzhSPBV0S4coQ85iu5aoCdF+1nTmzarydfyH5udZr9leSaJuyQOHskmSra3+WQtP88m+cyvBKcLv5Lg0Is0hAuy4oK7zV9KQvJvNJ2y9E05M2dC0Ye0romOQab6Wl4RL+l9duqMhzzjunk7eWZOrOWVnKKmZMyAtddyYoA4rmSElh8Iig4IYx+H0mWnN6i5PRiAh4EiUikSKHzNlXewJCsBO/lOVlqrKO8CDMbh43w6Cz+7Yuczwxv8/OHMXBNhD6Dm/w/G4SA5EBiRhVPpwCBdeg7FHpdWpcM+eV+DdPkCqDeI99Ior5FbCDZtxcBSw/UQGjcXQj2WQlx7t1JesnhdUnOYyirgmXsBsTuEo+mbxA+K2maUYGaCS4iSeF2pkhJoCNk3eS/53x5S1bdjJL9szF1F844f/6Gund9PADwChJHPv4E6hLxNLXJMuj1BgrYnj4G3OVBbtBPhLTL8CWMRriOYgplKvCX3ziYqdXsmh/yCmIqEFmwf3sOaSx7S63C+8NdFeOqST/rdRrIUfAGm4RRues+0RuhrhH7BBSw2CKZ+gt6Oc00ywddAN1TATGGPwLGblRfL8/nd8Zu79+WfC7TQYNbK1ERS+KBYaDkVICYiZt5oZQFNQFKz0Q5Yf6wGatWgRR/TQEgkdqo4ZLBybWa7z+VGh6hpBmXbWM1dDmH1Afnllpg7zr2SUjylmeIyjKr1YJcy0sTd98cVGheUVITN1COivuR9n+yWn4YlZllzbH09EZFRmBz/+smCCd7VYOnTV8I5QoPVF8Q6ToUibEUElozLqsFXYqk1VqJroleoO+t0yK3x4Y8V+diBY3JyZ7xzSIqxcSzRwPrRcptzUhftXAkIA95aXwM724TctOGIVBOBuYQ67yYB2gSHko7aP04USSpg3eFysN3lHss2pUm2/YVdqp4JN+1Y2O+7p+2mR+wWg27oWy8qX477be1tfCHhQyqKY19Jmy1V0Oxh2Bczhv8fIBVx7tkn236vuIMREWxzoSq8zFeq6kcnXiO0HT8InkkSkaLDdpvPwSpvhj6B/UnVz2SYdRI808+MajgDc0bwqYBPSXCItkJCBx9s+doj4SV2hOKL/b05flccvylOXn2xnB8ZJBGvoZjH338BsJEw+kkNAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "GitlabDeploymentV2Stack/CDKMetadata/Default"
+   },
+   "Condition": "CDKMetadataAvailable"
+  }
+ },
+ "Outputs": {
+  "GitLabUrl": {
+   "Description": "The URL of the GitLab instance",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "http://",
+      {
+       "Fn::GetAtt": [
+        "GitLabALB76D2807C",
+        "DNSName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "EfsFileSystemId": {
+   "Description": "The ID of the EFS file system used for GitLab data",
+   "Value": {
+    "Ref": "GitLabEfsFileSystemB390755C"
+   }
+  }
+ },
+ "Conditions": {
+  "CDKMetadataAvailable": {
+   "Fn::Or": [
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "af-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-3"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-4"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-northwest-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-2"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "il-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "sa-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-west-1"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "AWS::Region"
+      },
+      "us-west-2"
+     ]
+    }
+   ]
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
