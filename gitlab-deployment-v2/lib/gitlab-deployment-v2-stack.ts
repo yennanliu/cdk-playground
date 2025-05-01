@@ -5,6 +5,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as efs from 'aws-cdk-lib/aws-efs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as cdk from 'aws-cdk-lib';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 export class GitlabDeploymentV2Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -22,16 +23,7 @@ export class GitlabDeploymentV2Stack extends Stack {
       containerInsights: true
     });
 
-    // Create an EFS file system for GitLab persistent storage
-    const fileSystem = new efs.FileSystem(this, 'GitLabEfsFileSystem', {
-      vpc: vpc,
-      lifecyclePolicy: efs.LifecyclePolicy.AFTER_14_DAYS,
-      performanceMode: efs.PerformanceMode.GENERAL_PURPOSE,
-      encrypted: true,
-      removalPolicy: RemovalPolicy.RETAIN
-    });
-
-    // Security group for the EFS mount targets
+    // Security group for the EFS file system
     const efsSecurityGroup = new ec2.SecurityGroup(this, 'EfsSecurityGroup', {
       vpc: vpc,
       description: 'Allow EFS access from ECS tasks',
@@ -51,6 +43,34 @@ export class GitlabDeploymentV2Stack extends Stack {
       ec2.Port.tcp(2049),
       'Allow NFS access from the GitLab service'
     );
+
+    // Create an EFS file system for GitLab persistent storage
+    const fileSystem = new efs.FileSystem(this, 'GitLabEfsFileSystem', {
+      vpc: vpc,
+      securityGroup: efsSecurityGroup,
+      lifecyclePolicy: efs.LifecyclePolicy.AFTER_14_DAYS,
+      performanceMode: efs.PerformanceMode.GENERAL_PURPOSE,
+      encrypted: true,
+      removalPolicy: RemovalPolicy.RETAIN,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+      }
+    });
+
+    // Create an access point for GitLab data
+    const accessPoint = new efs.AccessPoint(this, 'GitLabEfsAccessPoint', {
+      fileSystem: fileSystem,
+      path: '/',
+      createAcl: {
+        ownerGid: '998',  // gitlab user gid
+        ownerUid: '998',  // gitlab user uid
+        permissions: '755'
+      },
+      posixUser: {
+        gid: '998',
+        uid: '998'
+      }
+    });
 
     // Allow inbound HTTP traffic to the GitLab service
     gitlabServiceSG.addIngressRule(
@@ -83,18 +103,41 @@ export class GitlabDeploymentV2Stack extends Stack {
       open: true,
     });
 
+    // Grant ECS task execution role permissions to access EFS
+    const executionRole = new iam.Role(this, 'GitLabTaskExecutionRole', {
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy')
+      ]
+    });
+
+    executionRole.addToPolicy(new iam.PolicyStatement({
+      actions: [
+        'elasticfilesystem:ClientMount',
+        'elasticfilesystem:ClientWrite',
+        'elasticfilesystem:DescribeMountTargets'
+      ],
+      resources: [fileSystem.fileSystemArn]
+    }));
+
     // Create a Fargate task definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'GitLabTaskDef', {
       memoryLimitMiB: 4096,
-      cpu: 2048
+      cpu: 2048,
+      executionRole: executionRole,
+      taskRole: executionRole
     });
 
-    // Add EFS volume to task definition
+    // Add EFS volume to task definition using the access point
     taskDefinition.addVolume({
       name: 'gitlab-data',
       efsVolumeConfiguration: {
         fileSystemId: fileSystem.fileSystemId,
-        transitEncryption: 'ENABLED'
+        transitEncryption: 'ENABLED',
+        authorizationConfig: {
+          accessPointId: accessPoint.accessPointId,
+          iam: 'ENABLED'
+        }
       }
     });
 
@@ -108,7 +151,8 @@ export class GitlabDeploymentV2Stack extends Stack {
         { containerPort: 22 }     // SSH
       ],
       environment: {
-        'GITLAB_OMNIBUS_CONFIG': 'external_url "http://' + alb.loadBalancerDnsName + '";'
+        'GITLAB_OMNIBUS_CONFIG': 'external_url "http://' + alb.loadBalancerDnsName + '";' +
+                                'gitlab_rails[\'gitlab_shell_ssh_port\'] = 22;'
       },
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'gitlab' })
     });
@@ -125,13 +169,12 @@ export class GitlabDeploymentV2Stack extends Stack {
       cluster: cluster,
       taskDefinition: taskDefinition,
       desiredCount: 1,
-      // Place the task in private subnets but enable public IP for initial setup
-      // This ensures that the task can pull the GitLab image from Docker Hub
-      assignPublicIp: true,
+      assignPublicIp: true,  // Required to pull Docker images
       securityGroups: [gitlabServiceSG],
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
-      }
+      },
+      platformVersion: ecs.FargatePlatformVersion.VERSION1_4  // Latest platform version for better EFS support
     });
 
     // Create target group for the service
@@ -163,6 +206,12 @@ export class GitlabDeploymentV2Stack extends Stack {
     new cdk.CfnOutput(this, 'GitLabUrl', {
       value: 'http://' + alb.loadBalancerDnsName,
       description: 'The URL of the GitLab instance'
+    });
+
+    // Output the EFS file system ID for reference
+    new cdk.CfnOutput(this, 'EfsFileSystemId', {
+      value: fileSystem.fileSystemId,
+      description: 'The ID of the EFS file system used for GitLab data'
     });
 
     // Add tags to all resources for cost tracking and management
