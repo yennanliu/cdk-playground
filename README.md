@@ -132,10 +132,7 @@ cdk destroy CdkWorkshopStack
 
 ## Todo
 
-1. try EC2 SSM (session manager)
-2. airflow ecs
-3. k8s
-
+- [todo.md](./doc/todo.md)
 
 ## Ref
 
