@@ -85,7 +85,8 @@ export class EcsSpringPetclinicRestStack extends Stack {
     });
 
     taskDef.addContainer("AppContainer", {
-      image: ContainerImage.fromRegistry("openjdk:17"), // Replace with your app image
+      //image: ContainerImage.fromRegistry("openjdk:17"), // Replace with your app image
+      image: ContainerImage.fromRegistry('springcommunity/spring-petclinic-rest'),
       logging: LogDrivers.awsLogs({ streamPrefix: "App" }),
       environment: {
         DB_HOST: db.dbInstanceEndpointAddress,
