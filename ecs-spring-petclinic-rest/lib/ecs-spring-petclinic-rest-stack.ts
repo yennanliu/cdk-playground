@@ -22,14 +22,7 @@ import {
   ListenerAction,
   TargetType,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import {
-  DatabaseInstance,
-  DatabaseInstanceEngine,
-  PostgresEngineVersion,
-  Credentials,
-} from "aws-cdk-lib/aws-rds";
 import { InstanceType, InstanceClass, InstanceSize } from "aws-cdk-lib/aws-ec2";
-import { SecretValue } from "aws-cdk-lib";
 
 export class EcsSpringPetclinicRestStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -50,53 +43,22 @@ export class EcsSpringPetclinicRestStack extends Stack {
       ],
     });
 
-    // 2. RDS (PostgreSQL)
-    const dbSecurityGroup = new SecurityGroup(this, "DbSG", {
-      vpc,
-      description: "Allow ECS to access RDS",
-      allowAllOutbound: true,
-    });
-
-    const db = new DatabaseInstance(this, "JavaAppDb", {
-      engine: DatabaseInstanceEngine.postgres({
-        version: PostgresEngineVersion.VER_15,
-      }),
-      vpc,
-      vpcSubnets: {
-        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
-      },
-      instanceType: InstanceType.of(InstanceClass.T3, InstanceSize.MICRO),
-      credentials: Credentials.fromGeneratedSecret("postgres"),
-      allocatedStorage: 20,
-      maxAllocatedStorage: 100,
-      securityGroups: [dbSecurityGroup],
-      databaseName: "javaapp",
-      removalPolicy: RemovalPolicy.DESTROY, // NOT FOR PRODUCTION
-      publiclyAccessible: false,
-    });
-
-    // 3. ECS Cluster
+    // 2. ECS Cluster
     const cluster = new Cluster(this, "AppCluster", { vpc });
 
-    // 4. Fargate Task
+    // 3. Fargate Task
     const taskDef = new FargateTaskDefinition(this, "JavaAppTask", {
       memoryLimitMiB: 1024,
       cpu: 512,
     });
 
     taskDef.addContainer("AppContainer", {
-      //image: ContainerImage.fromRegistry("openjdk:17"), // Replace with your app image
       image: ContainerImage.fromRegistry('springcommunity/spring-petclinic-rest'),
       logging: LogDrivers.awsLogs({ streamPrefix: "App" }),
       environment: {
-        DB_HOST: db.dbInstanceEndpointAddress,
-        DB_PORT: db.dbInstanceEndpointPort,
-        DB_USER: "postgres",
-        DB_NAME: "javaapp",
-        SPRING_PROFILES_ACTIVE: "postgresql",
+        SPRING_PROFILES_ACTIVE: "default", // Use default H2 database profile
         SERVER_SERVLET_CONTEXT_PATH: "/petclinic",
         SERVER_PORT: "9966",
-        // Use Secrets Manager in real app for password
       },
       portMappings: [
         {
@@ -106,20 +68,14 @@ export class EcsSpringPetclinicRestStack extends Stack {
       ],
     });
 
-    // 5. ECS Service + SG
+    // 4. ECS Service Security Group
     const appSG = new SecurityGroup(this, "AppSG", {
       vpc,
-      description: "App access to DB",
+      description: "App security group",
       allowAllOutbound: true,
     });
 
-    // Allow app SG to connect to DB SG
-    dbSecurityGroup.addIngressRule(
-      appSG,
-      Port.tcp(5432),
-      "App access to Postgres"
-    );
-
+    // 5. ECS Service
     const service = new FargateService(this, "JavaAppService", {
       cluster,
       taskDefinition: taskDef,
