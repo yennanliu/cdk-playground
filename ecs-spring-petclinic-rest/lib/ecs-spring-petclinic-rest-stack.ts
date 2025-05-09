@@ -93,6 +93,9 @@ export class EcsSpringPetclinicRestStack extends Stack {
         DB_PORT: db.dbInstanceEndpointPort,
         DB_USER: "postgres",
         DB_NAME: "javaapp",
+        SPRING_PROFILES_ACTIVE: "postgresql",
+        SERVER_SERVLET_CONTEXT_PATH: "/petclinic",
+        SERVER_PORT: "9966",
         // Use Secrets Manager in real app for password
       },
       portMappings: [
@@ -141,8 +144,10 @@ export class EcsSpringPetclinicRestStack extends Stack {
       port: 80,
       targets: [service],
       healthCheck: {
-        path: "/",
+        path: "/petclinic/api",
         interval: Duration.seconds(60),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 5,
       },
     });
   }
