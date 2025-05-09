@@ -95,6 +95,12 @@ export class EcsSpringPetclinicRestStack extends Stack {
         DB_NAME: "javaapp",
         // Use Secrets Manager in real app for password
       },
+      portMappings: [
+        {
+          containerPort: 9966,
+          protocol: Protocol.TCP,
+        }
+      ],
     });
 
     // 5. ECS Service + SG
@@ -121,7 +127,7 @@ export class EcsSpringPetclinicRestStack extends Stack {
     // 6. Load Balancer
     const lb = new ApplicationLoadBalancer(this, "AppLB", {
       vpc,
-      internetConnected: true,
+      internetFacing: true,
       loadBalancerName: "JavaAppLB",
       vpcSubnets: { subnetType: SubnetType.PUBLIC },
     });
