@@ -54,11 +54,12 @@ export class EcsSpringPetclinicRestStack extends Stack {
 
     taskDef.addContainer("AppContainer", {
       image: ContainerImage.fromRegistry('springcommunity/spring-petclinic-rest'),
-      logging: LogDrivers.awsLogs({ streamPrefix: "App" }),
+      logging: LogDrivers.awsLogs({ streamPrefix: "EcsSpringPetclinicRestStack" }),
       environment: {
         SPRING_PROFILES_ACTIVE: "default", // Use default H2 database profile
         SERVER_SERVLET_CONTEXT_PATH: "/petclinic",
         SERVER_PORT: "9966",
+        SPRING_JPA_PROPERTIES_HIBERNATE_TRANSACTION_JTA_PLATFORM: "org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform",
       },
       portMappings: [
         {
