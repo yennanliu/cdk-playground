@@ -33,6 +33,9 @@ export class EcsN8nStack extends cdk.Stack {
           N8N_BASIC_AUTH_ACTIVE: "true",
           N8N_BASIC_AUTH_USER: "admin",
           N8N_BASIC_AUTH_PASSWORD: "admin",
+          N8N_SECURE_COOKIE: "false",
+          N8N_PROTOCOL: "http",
+          N8N_HOST: "localhost",
         },
       },
     });
