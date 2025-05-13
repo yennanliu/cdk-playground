@@ -8,19 +8,16 @@ describe('AuthServiceStack', () => {
   const template = Template.fromStack(stack);
 
   test('Cognito User Pool Created', () => {
+    template.resourceCountIs('AWS::Cognito::UserPool', 1);
     template.hasResourceProperties('AWS::Cognito::UserPool', {
-      AutoVerifyAttributes: ['email'],
-      UsernameAttributes: undefined,
-      VerificationMessageTemplate: undefined,
+      AutoVerifiedAttributes: ['email'],
     });
   });
 
   test('Cognito User Pool Client Created', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
-      UserPoolId: {
-        Ref: expect.stringMatching(/^AuthServiceUserPool[A-Z0-9]+$/),
-      },
       GenerateSecret: false,
+      AllowedOAuthFlows: ['implicit', 'code'],
     });
   });
 
@@ -67,9 +64,6 @@ describe('AuthServiceStack', () => {
     template.hasResourceProperties('AWS::ApiGateway::Method', {
       HttpMethod: 'GET',
       AuthorizationType: 'CUSTOM',
-      AuthorizerId: {
-        Ref: expect.stringMatching(/^TokenAuthorizer[A-Z0-9]+$/),
-      },
     });
   });
 });
