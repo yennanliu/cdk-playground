@@ -18,8 +18,8 @@ export class ApiGatewayLambdaTokenAuthorizerStack extends cdk.Stack {
   readonly operationalLambda: cdk.aws_lambda.IFunction;
   readonly lambdaIntegration: cdk.aws_apigateway.LambdaIntegration;
 
-  readonly operationalEntryPath = path.join(__dirname + "/lambdas/operational/index.ts")
-  readonly authLambdaEntryPath = path.join(__dirname + "/lambdas/authorizer/index.ts")
+  readonly operationalEntryPath = path.join(__dirname + "/../lambdas/operational/index.ts")
+  readonly authLambdaEntryPath = path.join(__dirname + "/../lambdas/authorizer/index.ts")
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);

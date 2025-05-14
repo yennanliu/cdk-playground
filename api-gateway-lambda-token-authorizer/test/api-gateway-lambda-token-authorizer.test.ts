@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import * as ApiGatewayLambdaTokenAuthorizer from '../lib/api-gateway-lambda-token-authorizer-stack';
+import * as ApiGatewayLambdaTokenAuthorizer from '../lib/stack/api-gateway-lambda-token-authorizer-stack';
 
 test('SQS Queue and SNS Topic Created', () => {
   const app = new cdk.App();
