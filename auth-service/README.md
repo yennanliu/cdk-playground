@@ -126,3 +126,8 @@ To avoid incurring charges, delete the stack when you're done:
 ```
 cdk destroy
 ```
+
+
+## Ref
+
+- https://github.com/aws-samples/aws-cdk-examples/tree/main/typescript/api-gateway-lambda-token-authorizer
