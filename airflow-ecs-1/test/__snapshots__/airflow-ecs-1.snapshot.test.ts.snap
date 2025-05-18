@@ -1,0 +1,1434 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Airflow ECS Stack Snapshot 1`] = `
+{
+  "ecsCluster": {
+    "AirflowClusterB7CCAD66": {
+      "Type": "AWS::ECS::Cluster",
+    },
+  },
+  "ecsService": {
+    "AirflowInitTaskService0C508D97": {
+      "DependsOn": [
+        "AirflowTaskRoleDefaultPolicyC2C180F9",
+        "AirflowTaskRole069B1496",
+      ],
+      "Properties": {
+        "Cluster": {
+          "Ref": "AirflowClusterB7CCAD66",
+        },
+        "DeploymentConfiguration": {
+          "Alarms": {
+            "AlarmNames": [],
+            "Enable": false,
+            "Rollback": false,
+          },
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 50,
+        },
+        "DesiredCount": 0,
+        "EnableECSManagedTags": false,
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "SecurityGroups": [
+              {
+                "Fn::GetAtt": [
+                  "AirflowSecurityGroup8876E150",
+                  "GroupId",
+                ],
+              },
+            ],
+            "Subnets": [
+              {
+                "Ref": "AirflowVPCPrivateSubnet1Subnet8F21CEC8",
+              },
+              {
+                "Ref": "AirflowVPCPrivateSubnet2Subnet71676687",
+              },
+            ],
+          },
+        },
+        "TaskDefinition": {
+          "Ref": "AirflowInitTaskDefinitionC2273661",
+        },
+      },
+      "Type": "AWS::ECS::Service",
+    },
+    "AirflowServiceFF7231C1": {
+      "DependsOn": [
+        "AirflowALBAirflowListenerAirflowTargetGroup889865DC",
+        "AirflowALBAirflowListener2383B0D3",
+        "AirflowInitTaskService0C508D97",
+        "AirflowInitTaskTaskCountTarget3F7208AE",
+        "AirflowInitTaskTaskCountTargetRunInitTask48371778",
+        "AirflowTaskRoleDefaultPolicyC2C180F9",
+        "AirflowTaskRole069B1496",
+      ],
+      "Properties": {
+        "Cluster": {
+          "Ref": "AirflowClusterB7CCAD66",
+        },
+        "DeploymentConfiguration": {
+          "Alarms": {
+            "AlarmNames": [],
+            "Enable": false,
+            "Rollback": false,
+          },
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 50,
+        },
+        "DesiredCount": 1,
+        "EnableECSManagedTags": false,
+        "HealthCheckGracePeriodSeconds": 60,
+        "LaunchType": "FARGATE",
+        "LoadBalancers": [
+          {
+            "ContainerName": "webserver",
+            "ContainerPort": 8080,
+            "TargetGroupArn": {
+              "Ref": "AirflowALBAirflowListenerAirflowTargetGroup889865DC",
+            },
+          },
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "SecurityGroups": [
+              {
+                "Fn::GetAtt": [
+                  "AirflowSecurityGroup8876E150",
+                  "GroupId",
+                ],
+              },
+            ],
+            "Subnets": [
+              {
+                "Ref": "AirflowVPCPrivateSubnet1Subnet8F21CEC8",
+              },
+              {
+                "Ref": "AirflowVPCPrivateSubnet2Subnet71676687",
+              },
+            ],
+          },
+        },
+        "TaskDefinition": {
+          "Ref": "AirflowTaskDefinition08B0985B",
+        },
+      },
+      "Type": "AWS::ECS::Service",
+    },
+  },
+  "ecsTaskDefinition": {
+    "AirflowInitTaskDefinitionC2273661": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "bash",
+              "-c",
+              "airflow db init && airflow users create --username airflow --password airflow --firstname Admin --lastname User --role Admin --email admin@example.com",
+            ],
+            "Environment": [
+              {
+                "Name": "AIRFLOW__CORE__EXECUTOR",
+                "Value": "LocalExecutor",
+              },
+              {
+                "Name": "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW_HOME",
+                "Value": "/opt/airflow",
+              },
+              {
+                "Name": "AIRFLOW__CORE__LOAD_EXAMPLES",
+                "Value": "false",
+              },
+            ],
+            "Essential": true,
+            "Image": "apache/airflow:3.0.1",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "InitLogGroup7C7B1EFA",
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region",
+                },
+                "awslogs-stream-prefix": "init",
+              },
+            },
+            "Name": "init",
+          },
+        ],
+        "Cpu": "1024",
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "AirflowTaskExecutionRoleFD98F5B3",
+            "Arn",
+          ],
+        },
+        "Family": "MyTestStackAirflowInitTaskDefinitionB659BB67",
+        "Memory": "2048",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE",
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "AirflowTaskRole069B1496",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+    },
+    "AirflowTaskDefinition08B0985B": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              "webserver",
+            ],
+            "Environment": [
+              {
+                "Name": "AIRFLOW__CORE__EXECUTOR",
+                "Value": "CeleryExecutor",
+              },
+              {
+                "Name": "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW__CELERY__BROKER_URL",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "redis://",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowRedis",
+                          "RedisEndpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowRedis",
+                          "RedisEndpoint.Port",
+                        ],
+                      },
+                      "/0",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW__CELERY__RESULT_BACKEND",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "db+postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW_HOME",
+                "Value": "/opt/airflow",
+              },
+              {
+                "Name": "AIRFLOW__CORE__DAGS_FOLDER",
+                "Value": "/opt/airflow/dags",
+              },
+              {
+                "Name": "AIRFLOW__CORE__LOAD_EXAMPLES",
+                "Value": "false",
+              },
+              {
+                "Name": "AIRFLOW__WEBSERVER__RBAC",
+                "Value": "true",
+              },
+              {
+                "Name": "AIRFLOW__WEBSERVER__EXPOSE_CONFIG",
+                "Value": "true",
+              },
+            ],
+            "Essential": true,
+            "HealthCheck": {
+              "Command": [
+                "CMD-SHELL",
+                "curl --fail http://localhost:8080/health || exit 1",
+              ],
+              "Interval": 30,
+              "Retries": 3,
+              "StartPeriod": 60,
+              "Timeout": 5,
+            },
+            "Image": "apache/airflow:3.0.1",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "WebserverLogGroup7C50F534",
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region",
+                },
+                "awslogs-stream-prefix": "webserver",
+              },
+            },
+            "MountPoints": [
+              {
+                "ContainerPath": "/opt/airflow/dags",
+                "ReadOnly": false,
+                "SourceVolume": "efs-dags",
+              },
+            ],
+            "Name": "webserver",
+            "PortMappings": [
+              {
+                "ContainerPort": 8080,
+                "HostPort": 8080,
+                "Protocol": "tcp",
+              },
+            ],
+          },
+          {
+            "Command": [
+              "scheduler",
+            ],
+            "Environment": [
+              {
+                "Name": "AIRFLOW__CORE__EXECUTOR",
+                "Value": "CeleryExecutor",
+              },
+              {
+                "Name": "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW__CELERY__BROKER_URL",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "redis://",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowRedis",
+                          "RedisEndpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowRedis",
+                          "RedisEndpoint.Port",
+                        ],
+                      },
+                      "/0",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW__CELERY__RESULT_BACKEND",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "db+postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW_HOME",
+                "Value": "/opt/airflow",
+              },
+              {
+                "Name": "AIRFLOW__CORE__DAGS_FOLDER",
+                "Value": "/opt/airflow/dags",
+              },
+              {
+                "Name": "AIRFLOW__CORE__LOAD_EXAMPLES",
+                "Value": "false",
+              },
+              {
+                "Name": "AIRFLOW__WEBSERVER__RBAC",
+                "Value": "true",
+              },
+            ],
+            "Essential": true,
+            "Image": "apache/airflow:3.0.1",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "SchedulerLogGroup44AAF3AB",
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region",
+                },
+                "awslogs-stream-prefix": "scheduler",
+              },
+            },
+            "MountPoints": [
+              {
+                "ContainerPath": "/opt/airflow/dags",
+                "ReadOnly": false,
+                "SourceVolume": "efs-dags",
+              },
+            ],
+            "Name": "scheduler",
+          },
+          {
+            "Command": [
+              "celery",
+              "worker",
+            ],
+            "Environment": [
+              {
+                "Name": "AIRFLOW__CORE__EXECUTOR",
+                "Value": "CeleryExecutor",
+              },
+              {
+                "Name": "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW__CELERY__BROKER_URL",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "redis://",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowRedis",
+                          "RedisEndpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowRedis",
+                          "RedisEndpoint.Port",
+                        ],
+                      },
+                      "/0",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW__CELERY__RESULT_BACKEND",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "db+postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW_HOME",
+                "Value": "/opt/airflow",
+              },
+              {
+                "Name": "AIRFLOW__CORE__DAGS_FOLDER",
+                "Value": "/opt/airflow/dags",
+              },
+              {
+                "Name": "AIRFLOW__CORE__LOAD_EXAMPLES",
+                "Value": "false",
+              },
+              {
+                "Name": "AIRFLOW__WEBSERVER__RBAC",
+                "Value": "true",
+              },
+            ],
+            "Essential": true,
+            "Image": "apache/airflow:3.0.1",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "WorkerLogGroup31FDBE4A",
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region",
+                },
+                "awslogs-stream-prefix": "worker",
+              },
+            },
+            "MountPoints": [
+              {
+                "ContainerPath": "/opt/airflow/dags",
+                "ReadOnly": false,
+                "SourceVolume": "efs-dags",
+              },
+            ],
+            "Name": "worker",
+          },
+          {
+            "Command": [
+              "triggerer",
+            ],
+            "Environment": [
+              {
+                "Name": "AIRFLOW__CORE__EXECUTOR",
+                "Value": "CeleryExecutor",
+              },
+              {
+                "Name": "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW__CELERY__BROKER_URL",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "redis://",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowRedis",
+                          "RedisEndpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowRedis",
+                          "RedisEndpoint.Port",
+                        ],
+                      },
+                      "/0",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW__CELERY__RESULT_BACKEND",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "db+postgresql://postgres:postgres@",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Address",
+                        ],
+                      },
+                      ":",
+                      {
+                        "Fn::GetAtt": [
+                          "AirflowPostgresDBB9737A43",
+                          "Endpoint.Port",
+                        ],
+                      },
+                      "/airflow",
+                    ],
+                  ],
+                },
+              },
+              {
+                "Name": "AIRFLOW_HOME",
+                "Value": "/opt/airflow",
+              },
+              {
+                "Name": "AIRFLOW__CORE__DAGS_FOLDER",
+                "Value": "/opt/airflow/dags",
+              },
+              {
+                "Name": "AIRFLOW__CORE__LOAD_EXAMPLES",
+                "Value": "false",
+              },
+              {
+                "Name": "AIRFLOW__WEBSERVER__RBAC",
+                "Value": "true",
+              },
+            ],
+            "Essential": true,
+            "Image": "apache/airflow:3.0.1",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "TriggerLogGroupFBBB7007",
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region",
+                },
+                "awslogs-stream-prefix": "triggerer",
+              },
+            },
+            "MountPoints": [
+              {
+                "ContainerPath": "/opt/airflow/dags",
+                "ReadOnly": false,
+                "SourceVolume": "efs-dags",
+              },
+            ],
+            "Name": "triggerer",
+          },
+        ],
+        "Cpu": "2048",
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "AirflowTaskExecutionRoleFD98F5B3",
+            "Arn",
+          ],
+        },
+        "Family": "MyTestStackAirflowTaskDefinition7E026181",
+        "Memory": "4096",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE",
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "AirflowTaskRole069B1496",
+            "Arn",
+          ],
+        },
+        "Volumes": [
+          {
+            "EFSVolumeConfiguration": {
+              "AuthorizationConfig": {
+                "AccessPointId": {
+                  "Ref": "AirflowEfsFileSystemDagsAccessPoint81601CA0",
+                },
+                "IAM": "ENABLED",
+              },
+              "FilesystemId": {
+                "Ref": "AirflowEfsFileSystemB901FA9D",
+              },
+              "TransitEncryption": "ENABLED",
+            },
+            "Name": "efs-dags",
+          },
+        ],
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+    },
+  },
+  "efs": {
+    "AirflowEfsFileSystemB901FA9D": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Encrypted": true,
+        "FileSystemPolicy": {
+          "Statement": [
+            {
+              "Action": [
+                "elasticfilesystem:ClientWrite",
+                "elasticfilesystem:ClientRootAccess",
+              ],
+              "Condition": {
+                "Bool": {
+                  "elasticfilesystem:AccessedViaMountTarget": "true",
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "*",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "FileSystemTags": [
+          {
+            "Key": "Name",
+            "Value": "MyTestStack/AirflowEfsFileSystem",
+          },
+        ],
+        "LifecyclePolicies": [
+          {
+            "TransitionToIA": "AFTER_14_DAYS",
+          },
+        ],
+        "PerformanceMode": "generalPurpose",
+        "ThroughputMode": "bursting",
+      },
+      "Type": "AWS::EFS::FileSystem",
+      "UpdateReplacePolicy": "Delete",
+    },
+  },
+  "efsAccessPoint": {
+    "AirflowEfsFileSystemDagsAccessPoint81601CA0": {
+      "Properties": {
+        "AccessPointTags": [
+          {
+            "Key": "Name",
+            "Value": "MyTestStack/AirflowEfsFileSystem/DagsAccessPoint",
+          },
+        ],
+        "FileSystemId": {
+          "Ref": "AirflowEfsFileSystemB901FA9D",
+        },
+        "PosixUser": {
+          "Gid": "50000",
+          "Uid": "50000",
+        },
+        "RootDirectory": {
+          "CreationInfo": {
+            "OwnerGid": "50000",
+            "OwnerUid": "50000",
+            "Permissions": "755",
+          },
+          "Path": "/dags",
+        },
+      },
+      "Type": "AWS::EFS::AccessPoint",
+    },
+  },
+  "iamRoles": {
+    "AirflowTaskExecutionRoleFD98F5B3": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "AirflowTaskRole069B1496": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+  },
+  "loadBalancer": {
+    "AirflowALB50CCFAF5": {
+      "DependsOn": [
+        "AirflowVPCPublicSubnet1DefaultRoute14C7B73C",
+        "AirflowVPCPublicSubnet1RouteTableAssociationEBEF6641",
+        "AirflowVPCPublicSubnet2DefaultRoute6CEAFB25",
+        "AirflowVPCPublicSubnet2RouteTableAssociationBA316E5B",
+      ],
+      "Properties": {
+        "LoadBalancerAttributes": [
+          {
+            "Key": "deletion_protection.enabled",
+            "Value": "false",
+          },
+        ],
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "AirflowALBSecurityGroup51AB6154",
+              "GroupId",
+            ],
+          },
+        ],
+        "Subnets": [
+          {
+            "Ref": "AirflowVPCPublicSubnet1SubnetCCE6CD91",
+          },
+          {
+            "Ref": "AirflowVPCPublicSubnet2SubnetC859CA8C",
+          },
+        ],
+        "Type": "application",
+      },
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+    },
+  },
+  "logGroups": {
+    "InitLogGroup7C7B1EFA": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "LogGroupName": "/ecs/airflow-init",
+        "RetentionInDays": 7,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "SchedulerLogGroup44AAF3AB": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "LogGroupName": "/ecs/airflow-scheduler",
+        "RetentionInDays": 7,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "TriggerLogGroupFBBB7007": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "LogGroupName": "/ecs/airflow-triggerer",
+        "RetentionInDays": 7,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WebserverLogGroup7C50F534": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "LogGroupName": "/ecs/airflow-webserver",
+        "RetentionInDays": 7,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerLogGroup31FDBE4A": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "LogGroupName": "/ecs/airflow-worker",
+        "RetentionInDays": 7,
+      },
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Delete",
+    },
+  },
+  "outputs": {
+    "AirflowCredentials": {
+      "Description": "Default Airflow UI credentials",
+      "Export": {
+        "Name": "AirflowCredentials",
+      },
+      "Value": "Username: airflow, Password: airflow",
+    },
+    "AirflowDBEndpoint": {
+      "Description": "Endpoint of the Airflow PostgreSQL database",
+      "Export": {
+        "Name": "AirflowDBEndpoint",
+      },
+      "Value": {
+        "Fn::GetAtt": [
+          "AirflowPostgresDBB9737A43",
+          "Endpoint.Address",
+        ],
+      },
+    },
+    "AirflowRedisEndpoint": {
+      "Description": "Endpoint of the Airflow Redis instance",
+      "Export": {
+        "Name": "AirflowRedisEndpoint",
+      },
+      "Value": {
+        "Fn::GetAtt": [
+          "AirflowRedis",
+          "RedisEndpoint.Address",
+        ],
+      },
+    },
+    "AirflowUIUrl": {
+      "Description": "URL for Airflow UI",
+      "Export": {
+        "Name": "AirflowUIUrl",
+      },
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "AirflowALB50CCFAF5",
+                "DNSName",
+              ],
+            },
+          ],
+        ],
+      },
+    },
+  },
+  "rds": {
+    "AirflowPostgresDBB9737A43": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AllocatedStorage": "20",
+        "BackupRetentionPeriod": 7,
+        "CopyTagsToSnapshot": true,
+        "DBInstanceClass": "db.t3.small",
+        "DBName": "airflow",
+        "DBSubnetGroupName": {
+          "Ref": "AirflowPostgresDBSubnetGroupF6A4A484",
+        },
+        "DeletionProtection": false,
+        "Engine": "postgres",
+        "EngineVersion": "13",
+        "MasterUserPassword": {
+          "Fn::Join": [
+            "",
+            [
+              "{{resolve:secretsmanager:",
+              {
+                "Ref": "AirflowDBSecret340D1EF9",
+              },
+              ":SecretString:password::}}",
+            ],
+          ],
+        },
+        "MasterUsername": {
+          "Fn::Join": [
+            "",
+            [
+              "{{resolve:secretsmanager:",
+              {
+                "Ref": "AirflowDBSecret340D1EF9",
+              },
+              ":SecretString:username::}}",
+            ],
+          ],
+        },
+        "PubliclyAccessible": false,
+        "StorageType": "gp2",
+        "VPCSecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "PostgresSecurityGroupEA9E32B6",
+              "GroupId",
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::RDS::DBInstance",
+      "UpdateReplacePolicy": "Delete",
+    },
+  },
+  "redis": {
+    "AirflowRedis": {
+      "Properties": {
+        "AutoMinorVersionUpgrade": true,
+        "CacheNodeType": "cache.t3.small",
+        "CacheSubnetGroupName": {
+          "Ref": "RedisSubnetGroup",
+        },
+        "Engine": "redis",
+        "NumCacheNodes": 1,
+        "VpcSecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "RedisSecurityGroupB05951F6",
+              "GroupId",
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::ElastiCache::CacheCluster",
+    },
+  },
+  "securityGroupIngress": {
+    "AirflowSecurityGroupfromMyTestStackAirflowALBSecurityGroup4F8E0F4B8080C329440B": {
+      "Properties": {
+        "Description": "Load balancer to target",
+        "FromPort": 8080,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "AirflowSecurityGroup8876E150",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "AirflowALBSecurityGroup51AB6154",
+            "GroupId",
+          ],
+        },
+        "ToPort": 8080,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "EfsSecurityGroupfromMyTestStackAirflowSecurityGroupD8EED687204905740FFE": {
+      "Properties": {
+        "Description": "Allow NFS access from Airflow",
+        "FromPort": 2049,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "EfsSecurityGroupEC5F36AC",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "AirflowSecurityGroup8876E150",
+            "GroupId",
+          ],
+        },
+        "ToPort": 2049,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "PostgresSecurityGroupfromMyTestStackAirflowSecurityGroupD8EED6875432A982EE93": {
+      "Properties": {
+        "Description": "Allow PostgreSQL access from Airflow",
+        "FromPort": 5432,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "PostgresSecurityGroupEA9E32B6",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "AirflowSecurityGroup8876E150",
+            "GroupId",
+          ],
+        },
+        "ToPort": 5432,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+    "RedisSecurityGroupfromMyTestStackAirflowSecurityGroupD8EED6876379C5EE2B54": {
+      "Properties": {
+        "Description": "Allow Redis access from Airflow",
+        "FromPort": 6379,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "RedisSecurityGroupB05951F6",
+            "GroupId",
+          ],
+        },
+        "IpProtocol": "tcp",
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "AirflowSecurityGroup8876E150",
+            "GroupId",
+          ],
+        },
+        "ToPort": 6379,
+      },
+      "Type": "AWS::EC2::SecurityGroupIngress",
+    },
+  },
+  "securityGroups": {
+    "AirflowALBSecurityGroup51AB6154": {
+      "Properties": {
+        "GroupDescription": "Automatically created Security Group for ELB MyTestStackAirflowALB4714EF5A",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow from anyone on port 80",
+            "FromPort": 80,
+            "IpProtocol": "tcp",
+            "ToPort": 80,
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "AirflowSecurityGroup8876E150": {
+      "Properties": {
+        "GroupDescription": "Security group for Airflow ECS service",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow Airflow UI access",
+            "FromPort": 8080,
+            "IpProtocol": "tcp",
+            "ToPort": 8080,
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "EfsSecurityGroupEC5F36AC": {
+      "Properties": {
+        "GroupDescription": "Security group for EFS",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "PostgresSecurityGroupEA9E32B6": {
+      "Properties": {
+        "GroupDescription": "Security group for PostgreSQL",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+    "RedisSecurityGroupB05951F6": {
+      "Properties": {
+        "GroupDescription": "Security group for Redis",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1",
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::SecurityGroup",
+    },
+  },
+  "subnets": {
+    "AirflowVPCPrivateSubnet1Subnet8F21CEC8": {
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": "",
+            },
+          ],
+        },
+        "CidrBlock": "10.0.128.0/18",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Private",
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private",
+          },
+          {
+            "Key": "Name",
+            "Value": "MyTestStack/AirflowVPC/PrivateSubnet1",
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::Subnet",
+    },
+    "AirflowVPCPrivateSubnet2Subnet71676687": {
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": "",
+            },
+          ],
+        },
+        "CidrBlock": "10.0.192.0/18",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Private",
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private",
+          },
+          {
+            "Key": "Name",
+            "Value": "MyTestStack/AirflowVPC/PrivateSubnet2",
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::Subnet",
+    },
+    "AirflowVPCPublicSubnet1SubnetCCE6CD91": {
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": "",
+            },
+          ],
+        },
+        "CidrBlock": "10.0.0.0/18",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public",
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public",
+          },
+          {
+            "Key": "Name",
+            "Value": "MyTestStack/AirflowVPC/PublicSubnet1",
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::Subnet",
+    },
+    "AirflowVPCPublicSubnet2SubnetC859CA8C": {
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": "",
+            },
+          ],
+        },
+        "CidrBlock": "10.0.64.0/18",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public",
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public",
+          },
+          {
+            "Key": "Name",
+            "Value": "MyTestStack/AirflowVPC/PublicSubnet2",
+          },
+        ],
+        "VpcId": {
+          "Ref": "AirflowVPCBC79BCAC",
+        },
+      },
+      "Type": "AWS::EC2::Subnet",
+    },
+  },
+  "vpc": {
+    "AirflowVPCBC79BCAC": {
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsHostnames": true,
+        "EnableDnsSupport": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MyTestStack/AirflowVPC",
+          },
+        ],
+      },
+      "Type": "AWS::EC2::VPC",
+    },
+  },
+}
+`;
