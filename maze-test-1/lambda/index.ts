@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 const dynamoDB = new DynamoDB.DocumentClient();
 const TABLE_NAME = process.env.TABLE_NAME || '';
 
+console.log('Lambda cold start: TABLE_NAME =', TABLE_NAME);
+
 interface Maze {
   id: string;
   width: number;
@@ -57,6 +59,7 @@ function generateMaze(width: number, height: number): number[][] {
 }
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  console.log('Received event:', JSON.stringify(event));
   try {
     switch (event.httpMethod) {
       case 'POST':
@@ -136,13 +139,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
   } catch (error) {
     console.error('Error:', error);
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
     return {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
-      body: JSON.stringify({ message: 'Internal server error' }),
+      body: JSON.stringify({ message: 'Internal server error', error: String(error) }),
     };
   }
 }; 

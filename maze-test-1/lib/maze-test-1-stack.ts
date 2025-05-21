@@ -27,17 +27,17 @@ export class MazeTest1Stack extends Stack {
     });
 
     // Lambda function for maze operations
-    const mazeLambda = new lambda.Function(this, 'MazeHandler', {
-      runtime: lambda.Runtime.NODEJS_18_X,
+    const mazeFunction = new lambda.Function(this, 'MazeGeneratorFunction', {
+      runtime: lambda.Runtime.NODEJS_14_X,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+      code: lambda.Code.fromAsset('lambda'),
       environment: {
         TABLE_NAME: mazeTable.tableName,
       },
     });
 
     // Grant DynamoDB permissions to Lambda
-    mazeTable.grantReadWriteData(mazeLambda);
+    mazeTable.grantReadWriteData(mazeFunction);
 
     // API Gateway
     const api = new apigateway.RestApi(this, 'MazeApi', {
@@ -56,11 +56,11 @@ export class MazeTest1Stack extends Stack {
 
     // Add the methods
     const mazes = api.root.addResource('mazes');
-    mazes.addMethod('POST', new apigateway.LambdaIntegration(mazeLambda));
-    mazes.addMethod('GET', new apigateway.LambdaIntegration(mazeLambda));
+    mazes.addMethod('POST', new apigateway.LambdaIntegration(mazeFunction));
+    mazes.addMethod('GET', new apigateway.LambdaIntegration(mazeFunction));
 
     const mazeById = mazes.addResource('{id}');
-    mazeById.addMethod('GET', new apigateway.LambdaIntegration(mazeLambda));
+    mazeById.addMethod('GET', new apigateway.LambdaIntegration(mazeFunction));
 
     // S3 bucket for frontend
     const websiteBucket = new s3.Bucket(this, 'MazeWebsiteBucket', {
