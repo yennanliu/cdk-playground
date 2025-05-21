@@ -6,6 +6,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as fs from 'fs';
 
 export class MazeTest2Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -32,7 +33,44 @@ export class MazeTest2Stack extends Stack {
     const mazeHandler = new lambda.Function(this, 'MazeHandler', {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'maze-handler.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda'), {
+        bundling: {
+          image: lambda.Runtime.NODEJS_18_X.bundlingImage,
+          local: {
+            tryBundle(outputDir: string) {
+              try {
+                // Run TypeScript compiler
+                require('child_process').execSync('npx tsc', {
+                  cwd: path.join(__dirname, '../lambda'),
+                  stdio: 'inherit'
+                });
+
+                // Copy compiled files and package.json
+                fs.copyFileSync(
+                  path.join(__dirname, '../lambda/package.json'),
+                  path.join(outputDir, 'package.json')
+                );
+                fs.cpSync(
+                  path.join(__dirname, '../lambda/dist'),
+                  outputDir,
+                  { recursive: true }
+                );
+
+                // Install production dependencies
+                require('child_process').execSync('npm install --production', {
+                  cwd: outputDir,
+                  stdio: 'inherit'
+                });
+
+                return true;
+              } catch (error) {
+                console.error('Local bundling failed:', error);
+                return false;
+              }
+            }
+          }
+        }
+      }),
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
       },
