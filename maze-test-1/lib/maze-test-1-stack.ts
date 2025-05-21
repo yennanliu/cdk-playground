@@ -13,6 +13,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
+import * as fs from 'fs';
 
 export class MazeTest1Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -45,13 +46,21 @@ export class MazeTest1Stack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token'],
+        maxAge: Duration.days(1),
+      },
+      deployOptions: {
+        stageName: 'prod',
       },
     });
 
+    // Add the methods
     const mazes = api.root.addResource('mazes');
     mazes.addMethod('POST', new apigateway.LambdaIntegration(mazeLambda));
     mazes.addMethod('GET', new apigateway.LambdaIntegration(mazeLambda));
-    mazes.addResource('{id}').addMethod('GET', new apigateway.LambdaIntegration(mazeLambda));
+
+    const mazeById = mazes.addResource('{id}');
+    mazeById.addMethod('GET', new apigateway.LambdaIntegration(mazeLambda));
 
     // S3 bucket for frontend
     const websiteBucket = new s3.Bucket(this, 'MazeWebsiteBucket', {
@@ -71,12 +80,33 @@ export class MazeTest1Stack extends Stack {
       defaultRootObject: 'index.html',
     });
 
+    // Create a temporary directory for the frontend files
+    const frontendDir = path.join(__dirname, '../frontend');
+    const tempDir = path.join(__dirname, '../temp-frontend');
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    // Copy frontend files to temp directory
+    fs.readdirSync(frontendDir).forEach(file => {
+      if (file === 'config.js') {
+        // Replace API URL in config.js
+        const configContent = fs.readFileSync(path.join(frontendDir, file), 'utf8');
+        const updatedConfig = configContent.replace('{{API_URL}}', api.url);
+        fs.writeFileSync(path.join(tempDir, file), updatedConfig);
+      } else {
+        // Copy other files as is
+        fs.copyFileSync(path.join(frontendDir, file), path.join(tempDir, file));
+      }
+    });
+
     // Deploy frontend to S3
     new s3deploy.BucketDeployment(this, 'DeployWebsite', {
-      sources: [s3deploy.Source.asset(path.join(__dirname, '../frontend'))],
+      sources: [s3deploy.Source.asset(tempDir)],
       destinationBucket: websiteBucket,
       distribution,
     });
+
+    // Clean up temp directory
+    fs.rmSync(tempDir, { recursive: true, force: true });
 
     // Output the CloudFront URL
     new cdk.CfnOutput(this, 'DistributionDomainName', {
