@@ -28,7 +28,7 @@ export class MazeTest1Stack extends Stack {
 
     // Lambda function for maze operations
     const mazeFunction = new lambda.Function(this, 'MazeGeneratorFunction', {
-      runtime: lambda.Runtime.NODEJS_14_X,
+      runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset('lambda'),
       environment: {
