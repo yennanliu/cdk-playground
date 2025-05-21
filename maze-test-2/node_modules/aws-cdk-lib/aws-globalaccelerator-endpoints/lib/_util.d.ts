@@ -1,2 +1,0 @@
-import { IConstruct } from 'constructs';
-export declare function validateWeight(scope: IConstruct, x?: number): void;
