@@ -1,4 +1,4 @@
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
+import { Duration, Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
@@ -69,8 +69,15 @@ export class MazeCdkStack extends Stack {
     });
 
     // 9. Optional: S3 bucket
-    const bucket = new s3.Bucket(this, 'MazeBucket', {
-      versioned: true
+    // const bucket = new s3.Bucket(this, 'MazeBucket', {
+    //   versioned: true
+    // });
+
+    // print url
+    new CfnOutput(this, 'MazeAppUrl', {
+      value: `http://${alb.loadBalancerDnsName}`,
+      description: 'URL of the Maze App'
     });
+
   }
 }
