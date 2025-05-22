@@ -59,7 +59,9 @@ export class MazeCdkStack extends Stack {
       runtimePlatform: {
         cpuArchitecture: ecs.CpuArchitecture.X86_64,
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX
-      }
+      },
+      memoryLimitMiB: 1024,
+      cpu: 512
     });
 
     // 5. Add container exposing port 8080
@@ -73,11 +75,13 @@ export class MazeCdkStack extends Stack {
         'SPRING_DATASOURCE_USERNAME': 'maze_admin',
         'SPRING_JPA_HIBERNATE_DDL_AUTO': 'update',
         'SPRING_JPA_SHOW_SQL': 'true',
-        'SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT': 'org.hibernate.dialect.MySQL8Dialect'
+        'SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT': 'org.hibernate.dialect.MySQL8Dialect',
+        'JAVA_TOOL_OPTIONS': '-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0'
       },
       secrets: {
         'SPRING_DATASOURCE_PASSWORD': ecs.Secret.fromSecretsManager(dbInstance.secret!, 'password')
-      }
+      },
+      essential: true
     });
 
     container.addPortMappings({
