@@ -55,7 +55,12 @@ export class MazeCdkStack extends Stack {
     );
 
     // 4. Define a Fargate task definition
-    const taskDefinition = new ecs.FargateTaskDefinition(this, 'MazeTaskDef');
+    const taskDefinition = new ecs.FargateTaskDefinition(this, 'MazeTaskDef', {
+      runtimePlatform: {
+        cpuArchitecture: ecs.CpuArchitecture.X86_64,
+        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX
+      }
+    });
 
     // 5. Add container exposing port 8080
     const container = taskDefinition.addContainer('MazeContainer', {
