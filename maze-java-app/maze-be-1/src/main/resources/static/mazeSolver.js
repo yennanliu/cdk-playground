@@ -135,6 +135,103 @@ function displayMaze(mazeData) {
     });
 }
 
-// function solveMaze() {
-//     alert('Maze solving logic will be implemented here.');
-// }
+function displaySolvedMaze(solvedMaze) {
+    const mazeContainer = document.getElementById('maze-container');
+    mazeContainer.innerHTML = '';
+
+    for (let i = 0; i < solvedMaze.length; i++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.style.display = 'flex';
+
+        for (let j = 0; j < solvedMaze[i].length; j++) {
+            const cellDiv = document.createElement('div');
+            cellDiv.style.width = '24px';
+            cellDiv.style.height = '24px';
+            cellDiv.style.border = '1px solid #aaa';
+            
+            // Special handling for start and end points
+            if (i === 0 && j === 0) {
+                // Start point
+                cellDiv.className = 'start-point';
+                cellDiv.title = 'Start';
+            } else if (i === solvedMaze.length - 1 && j === solvedMaze[i].length - 1) {
+                // End point
+                cellDiv.className = 'end-point';
+                cellDiv.title = 'End';
+            } else {
+                // 0 = path, 1 = wall, 2 = solution path
+                if (solvedMaze[i][j] === 1) {
+                    cellDiv.style.backgroundColor = '#333';
+                    cellDiv.title = 'Wall';
+                } else if (solvedMaze[i][j] === 2) {
+                    cellDiv.style.backgroundColor = '#4CAF50';
+                    cellDiv.className = 'maze-cell solution';
+                    cellDiv.title = 'Solution Path';
+                } else {
+                    cellDiv.style.backgroundColor = 'white';
+                    cellDiv.title = 'Path';
+                }
+            }
+            
+            rowDiv.appendChild(cellDiv);
+        }
+
+        mazeContainer.appendChild(rowDiv);
+    }
+}
+
+async function solveMaze2() {
+    const mazeContainer = document.getElementById('maze-container');
+    const rows = mazeContainer.children.length;
+    const cols = mazeContainer.children[0].children.length;
+
+    const maze = [];
+    for (let i = 0; i < rows; i++) {
+        const row = [];
+        for (let j = 0; j < cols; j++) {
+            const cell = mazeContainer.children[i].children[j];
+            row.push(cell.style.backgroundColor === 'black' ? 1 : 0);
+        }
+        maze.push(row);
+    }
+
+    try {
+        const response = await fetch('/api/maze/solve', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ maze }),
+        });
+
+        const result = await response.json();
+        console.log("Solve result:", result);
+        
+        if (result.solved) {
+            // Display the solved maze with the path
+            displaySolvedMaze(result.solvedMaze);
+            document.getElementById('result').innerHTML = `
+                <div style="margin-top: 10px; padding: 10px; background-color: #e8f5e9; border-radius: 4px;">
+                    <p style="color: green; font-weight: bold;">${result.message}</p>
+                    <details>
+                        <summary>View Path Details</summary>
+                        <p style="font-family: monospace;">${result.path}</p>
+                    </details>
+                </div>
+            `;
+        } else {
+            document.getElementById('result').innerHTML = `
+                <div style="margin-top: 10px; padding: 10px; background-color: #ffebee; border-radius: 4px;">
+                    <p style="color: red; font-weight: bold;">${result.message}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error solving maze:', error);
+        document.getElementById('result').innerHTML = `
+            <div style="margin-top: 10px; padding: 10px; background-color: #ffebee; border-radius: 4px;">
+                <p style="color: red; font-weight: bold;">Error solving maze. Please try again.</p>
+            </div>
+        `;
+    }
+}

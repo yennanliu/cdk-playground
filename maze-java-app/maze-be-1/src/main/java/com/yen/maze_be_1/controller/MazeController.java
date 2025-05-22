@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/maze")
@@ -66,7 +68,7 @@ public class MazeController {
     }
 
     @PostMapping("/solve")
-    public ResponseEntity<String> solveMaze(@RequestBody Map<String, List<List<Integer>>> request) {
+    public ResponseEntity<Map<String, Object>> solveMaze(@RequestBody Map<String, List<List<Integer>>> request) {
         List<List<Integer>> mazeList = request.get("maze");
         int rows = mazeList.size();
         int cols = mazeList.get(0).size();
@@ -83,13 +85,39 @@ public class MazeController {
 
         boolean[][] visited = new boolean[rows][cols];
         StringBuilder path = new StringBuilder();
+        List<int[]> pathCoordinates = new ArrayList<>();
 
-        if (dfs(maze, 0, 0, rows, cols, visited, path)) {
+        Map<String, Object> response = new HashMap<>();
+        
+        if (dfs(maze, 0, 0, rows, cols, visited, path, pathCoordinates)) {
             logger.info("Maze solved successfully");
-            return ResponseEntity.ok("Solved Path: " + path.toString());
+            
+            // Create visual representation of solved maze
+            int[][] solvedMaze = new int[rows][cols];
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    solvedMaze[i][j] = maze[i][j];
+                }
+            }
+            
+            // Mark path with special value 2
+            for (int[] coord : pathCoordinates) {
+                solvedMaze[coord[0]][coord[1]] = 2;  // 2 represents path
+            }
+            
+            response.put("solved", true);
+            response.put("path", path.toString());
+            response.put("solvedMaze", solvedMaze);
+            response.put("message", "Maze solved successfully");
+            
+            return ResponseEntity.ok(response);
         } else {
             logger.warn("Maze could not be solved");
-            return ResponseEntity.ok("Maze cannot be solved.");
+            
+            response.put("solved", false);
+            response.put("message", "Maze cannot be solved");
+            
+            return ResponseEntity.ok(response);
         }
     }
 
@@ -150,31 +178,35 @@ public class MazeController {
         return sb.toString();
     }
 
-    private boolean dfs(int[][] maze, int x, int y, int rows, int cols, boolean[][] visited, StringBuilder path) {
+    private boolean dfs(int[][] maze, int x, int y, int rows, int cols, boolean[][] visited, 
+                         StringBuilder path, List<int[]> pathCoordinates) {
         if (x < 0 || y < 0 || x >= rows || y >= cols || maze[x][y] == 1 || visited[x][y]) {
             return false;
         }
 
         if (x == rows - 1 && y == cols - 1) {
             path.append("(").append(x).append(",").append(y).append(")");
+            pathCoordinates.add(new int[]{x, y});
             logger.trace("Found path to exit at ({},{})", x, y);
             return true;
         }
 
         visited[x][y] = true;
         path.append("(").append(x).append(",").append(y).append(") -> ");
+        pathCoordinates.add(new int[]{x, y});
         logger.trace("Visiting ({},{})", x, y);
 
         // Explore all directions: right, down, left, up
-        if (dfs(maze, x, y + 1, rows, cols, visited, path) ||
-            dfs(maze, x + 1, y, rows, cols, visited, path) ||
-            dfs(maze, x, y - 1, rows, cols, visited, path) ||
-            dfs(maze, x - 1, y, rows, cols, visited, path)) {
+        if (dfs(maze, x, y + 1, rows, cols, visited, path, pathCoordinates) ||
+            dfs(maze, x + 1, y, rows, cols, visited, path, pathCoordinates) ||
+            dfs(maze, x, y - 1, rows, cols, visited, path, pathCoordinates) ||
+            dfs(maze, x - 1, y, rows, cols, visited, path, pathCoordinates)) {
             return true;
         }
 
         // Backtrack
         path.setLength(path.length() - 7); // Remove last " -> "
+        pathCoordinates.remove(pathCoordinates.size() - 1); // Remove the last coordinate
         logger.trace("Backtracking from ({},{})", x, y);
         visited[x][y] = false;
         return false;
