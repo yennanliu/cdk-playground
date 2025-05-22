@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maze Solver</title>
     <script src="mazeSolver.js" defer></script>
+    <style>
+        .maze-container {
+            margin: 20px 0;
+        }
+        .maze-row {
+            display: flex;
+        }
+        .maze-cell {
+            width: 20px;
+            height: 20px;
+            border: 1px solid black;
+        }
+        .maze-cell.wall {
+            background-color: black;
+        }
+        .maze-cell.path {
+            background-color: white;
+        }
+    </style>
 </head>
 <body>
     <h1>Maze Solver</h1>
@@ -15,7 +34,7 @@
         <input type="number" id="cols" value="5">
         <button onclick="generateMaze()">Generate Maze</button>
     </div>
-    <div id="maze-container"></div>
+    <div id="maze-container" class="maze-container"></div>
     <button onclick="solveMaze2()">Solve Maze</button>
     <div id="result"></div>
     <script>
@@ -34,7 +53,7 @@
                 maze.push(row);
             }
 
-            const response = await fetch('/solve-maze', {
+            const response = await fetch('/api/maze/solve', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
