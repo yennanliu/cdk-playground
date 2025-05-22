@@ -5,20 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maze Solver</title>
     <script src="mazeSolver.js" defer></script>
+    <style>
+        .maze-container {
+            margin: 20px 0;
+        }
+        .maze-row {
+            display: flex;
+        }
+        .maze-cell {
+            width: 20px;
+            height: 20px;
+            border: 1px solid black;
+        }
+        .maze-cell.wall {
+            background-color: black;
+        }
+        .maze-cell.path {
+            background-color: white;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        .controls > div {
+            margin: 10px 0;
+        }
+        select, input, button {
+            margin: 0 5px;
+            padding: 5px;
+        }
+        .saved-mazes {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .saved-mazes h3 {
+            margin-top: 0;
+        }
+        .maze-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .maze-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .maze-item:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
 </head>
 <body>
     <h1>Maze Solver</h1>
-    <div>
-        <label for="rows">Rows:</label>
-        <input type="number" id="rows" value="5">
-        <label for="cols">Columns:</label>
-        <input type="number" id="cols" value="5">
-        <button onclick="generateMaze()">Generate Maze</button>
+    
+    <div class="controls">
+        <div>
+            <label for="rows">Rows:</label>
+            <input type="number" id="rows" value="5">
+            <label for="cols">Columns:</label>
+            <input type="number" id="cols" value="5">
+            <button onclick="generateMaze()">Generate Maze</button>
+        </div>
+        
+        <div>
+            <button onclick="saveMaze()">Save Maze</button>
+            <input type="text" id="mazeName" placeholder="Enter maze name">
+        </div>
     </div>
-    <div id="maze-container"></div>
+
+    <div id="maze-container" class="maze-container"></div>
     <button onclick="solveMaze2()">Solve Maze</button>
     <div id="result"></div>
+
+    <div class="saved-mazes">
+        <h3>Saved Mazes</h3>
+        <button onclick="loadSavedMazesList()">Refresh List</button>
+        <div id="saved-mazes-list" class="maze-list">
+            <!-- Saved mazes will be displayed here -->
+        </div>
+    </div>
+
     <script>
+        // Load saved mazes when page loads
+        document.addEventListener('DOMContentLoaded', loadSavedMazesList);
+
         async function solveMaze2() {
             const mazeContainer = document.getElementById('maze-container');
             const rows = mazeContainer.children.length;
@@ -34,7 +108,7 @@
                 maze.push(row);
             }
 
-            const response = await fetch('/solve-maze', {
+            const response = await fetch('/api/maze/solve', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

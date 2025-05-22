@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class MazeBe1Application {
 
 	public static void main(String[] args) {
+
 		SpringApplication.run(MazeBe1Application.class, args);
 	}
 
