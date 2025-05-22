@@ -3,6 +3,8 @@ package com.yen.maze_be_1.controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.Random;
 
@@ -27,8 +29,8 @@ public class MazeController {
         return maze;
     }
 
-    @GetMapping("/solve-maze")
-    public String solveMaze(@RequestParam int[][] maze) {
+    @PostMapping("/solve-maze")
+    public String solveMaze(@RequestBody int[][] maze) {
         int rows = maze.length;
         int cols = maze[0].length;
 
