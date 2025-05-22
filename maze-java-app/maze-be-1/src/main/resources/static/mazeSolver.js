@@ -66,31 +66,50 @@ async function saveMaze() {
 }
 
 async function loadSavedMazesList() {
-    const response = await fetch('/api/maze');
-    const mazes = await response.json();
-    
-    const select = document.getElementById('savedMazes');
-    select.innerHTML = '<option value="">Select a maze...</option>';
-    
-    mazes.forEach(maze => {
-        const option = document.createElement('option');
-        option.value = maze.id;
-        option.textContent = `${maze.name} (${maze.width}x${maze.height})`;
-        select.appendChild(option);
-    });
+    try {
+        const response = await fetch('/api/maze');
+        const mazes = await response.json();
+        
+        const mazeListContainer = document.getElementById('saved-mazes-list');
+        mazeListContainer.innerHTML = '';
+        
+        if (mazes.length === 0) {
+            mazeListContainer.innerHTML = '<p>No saved mazes yet.</p>';
+            return;
+        }
+        
+        mazes.forEach(maze => {
+            const mazeItem = document.createElement('div');
+            mazeItem.className = 'maze-item';
+            mazeItem.innerHTML = `
+                <strong>${maze.name}</strong><br>
+                Size: ${maze.width}x${maze.height}<br>
+                Created: ${new Date(maze.createdAt).toLocaleString()}
+            `;
+            mazeItem.onclick = () => loadSavedMaze(maze.id);
+            mazeListContainer.appendChild(mazeItem);
+        });
+    } catch (error) {
+        console.error('Error loading saved mazes:', error);
+        document.getElementById('saved-mazes-list').innerHTML = 
+            '<p>Error loading saved mazes. Please try again.</p>';
+    }
 }
 
-async function loadSavedMaze() {
-    const select = document.getElementById('savedMazes');
-    const mazeId = select.value;
-    
-    if (!mazeId) return;
-    
-    const response = await fetch(`/api/maze/${mazeId}`);
-    const maze = await response.json();
-    
-    currentMazeId = maze.id;
-    displayMaze(maze.mazeData);
+async function loadSavedMaze(mazeId) {
+    try {
+        const response = await fetch(`/api/maze/${mazeId}`);
+        const maze = await response.json();
+        
+        currentMazeId = maze.id;
+        displayMaze(maze.mazeData);
+        
+        // Update the name input field
+        document.getElementById('mazeName').value = maze.name;
+    } catch (error) {
+        console.error('Error loading maze:', error);
+        alert('Error loading maze. Please try again.');
+    }
 }
 
 function displayMaze(mazeData) {

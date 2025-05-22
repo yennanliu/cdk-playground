@@ -33,6 +33,30 @@
             margin: 0 5px;
             padding: 5px;
         }
+        .saved-mazes {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .saved-mazes h3 {
+            margin-top: 0;
+        }
+        .maze-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .maze-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .maze-item:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -51,21 +75,23 @@
             <button onclick="saveMaze()">Save Maze</button>
             <input type="text" id="mazeName" placeholder="Enter maze name">
         </div>
-        
-        <div>
-            <label for="savedMazes">Load Saved Maze:</label>
-            <select id="savedMazes" onchange="loadSavedMaze()">
-                <option value="">Select a maze...</option>
-            </select>
-        </div>
     </div>
 
     <div id="maze-container" class="maze-container"></div>
     <button onclick="solveMaze2()">Solve Maze</button>
     <div id="result"></div>
+
+    <div class="saved-mazes">
+        <h3>Saved Mazes</h3>
+        <button onclick="loadSavedMazesList()">Refresh List</button>
+        <div id="saved-mazes-list" class="maze-list">
+            <!-- Saved mazes will be displayed here -->
+        </div>
+    </div>
+
     <script>
         // Load saved mazes when page loads
-        window.onload = loadSavedMazesList;
+        document.addEventListener('DOMContentLoaded', loadSavedMazesList);
 
         async function solveMaze2() {
             const mazeContainer = document.getElementById('maze-container');
