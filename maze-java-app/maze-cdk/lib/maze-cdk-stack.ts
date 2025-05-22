@@ -45,7 +45,14 @@ export class MazeCdkStack extends Stack {
     });
 
     container.addPortMappings({
-      containerPort: 8080
+      containerPort: 80,
+    });
+
+    // Update ECS service to map container port 8080 to ALB port 80
+    container.addPortMappings({
+      containerPort: 8080,
+      hostPort: 8080, // Map container port 8080 to host port 8080
+      protocol: ecs.Protocol.TCP
     });
 
     // Create an ECS service
@@ -65,10 +72,18 @@ export class MazeCdkStack extends Stack {
       port: 80
     });
 
-    // Update ALB listener to forward traffic to port 8080
+    // Update ALB listener to forward traffic from port 80 to port 8080
     listener.addTargets('MazeEcsTargets', {
-      port: 8080, // Forward traffic to port 8080
-      targets: [service]
+      port: 80, // ALB listens on port 80
+      targets: [service],
+      healthCheck: {
+        port: '8080', // Health check on the backend app's port
+        path: '/',
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(5),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 2
+      }
     });
 
     // Create an S3 bucket
