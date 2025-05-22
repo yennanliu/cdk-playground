@@ -1,0 +1,854 @@
+{
+  "version": "41.0.0",
+  "artifacts": {
+    "MazeCdkStack-3.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "MazeCdkStack-3.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "MazeCdkStack-3": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "MazeCdkStack-3.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/fbf585b09bb75f1e01635b7d5b3c2972b5f1fde385aa4129b82eb5d5236a0355.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "MazeCdkStack-3.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "MazeCdkStack-3.assets"
+      ],
+      "metadata": {
+        "/MazeCdkStack-3/MazeVpc": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "maxAzs": "*",
+              "natGateways": "*"
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcAC2E4A3B"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addNatGateway": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet1Subnet9ACBA050"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet1RouteTableFC1246BF"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet1RouteTableAssociation4E758BE0"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet1DefaultRouteE955BAC3"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet1EIPBE38552C"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet1NATGatewayD7238F51"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet2Subnet69D189F2"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet2RouteTableFB3EA336"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet2RouteTableAssociation09D62AAD"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PublicSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPublicSubnet2DefaultRoute7BC50F1B"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPrivateSubnet1SubnetD0794F91"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPrivateSubnet1RouteTable3C070E73"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPrivateSubnet1RouteTableAssociationEE71BC9F"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPrivateSubnet1DefaultRoute1BCE263E"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPrivateSubnet2SubnetBF331A0C"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPrivateSubnet2RouteTable4A7A4C5D"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPrivateSubnet2RouteTableAssociationF7028FAA"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/PrivateSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcPrivateSubnet2DefaultRoute5B62BAEC"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcIGW9535A224"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcVPCGW64A86570"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/RestrictDefaultSecurityGroupCustomResource": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/MazeCdkStack-3/MazeVpc/RestrictDefaultSecurityGroupCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeVpcRestrictDefaultSecurityGroupCustomResource12993334"
+          }
+        ],
+        "/MazeCdkStack-3/Custom::VpcRestrictDefaultSGCustomResourceProvider": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
+            "data": true
+          }
+        ],
+        "/MazeCdkStack-3/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+          }
+        ],
+        "/MazeCdkStack-3/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E"
+          }
+        ],
+        "/MazeCdkStack-3/MazeEcsCluster": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*"
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeEcsCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeEcsClusterF88CB655"
+          }
+        ],
+        "/MazeCdkStack-3/MazeDbSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": true
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*",
+                false
+              ]
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeDbSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeDbSecurityGroup7E3E9114"
+          }
+        ],
+        "/MazeCdkStack-3/MazeDatabase": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "engine": {
+                "engineType": "*",
+                "singleUserRotationApplication": "*",
+                "engineVersion": {
+                  "fullVersion": "*",
+                  "majorVersion": "*"
+                },
+                "parameterGroupFamily": "*",
+                "engineFamily": "*",
+                "supportsReadReplicaBackups": true
+              },
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "instanceType": "*",
+              "allocatedStorage": "*",
+              "maxAllocatedStorage": "*",
+              "databaseName": "*",
+              "removalPolicy": "snapshot",
+              "backupRetention": "*",
+              "credentials": "*",
+              "securityGroups": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeDatabase/SubnetGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "description": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "removalPolicy": "*"
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeDatabase/SubnetGroup/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeDatabaseSubnetGroup24D16C74"
+          }
+        ],
+        "/MazeCdkStack-3/MazeDatabase/Secret": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "encryptionKey": "*",
+              "secretName": "*",
+              "replicaRegions": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "username": "*",
+              "secretName": "*",
+              "encryptionKey": "*",
+              "excludeCharacters": "*",
+              "replaceOnPasswordCriteriaChanges": true,
+              "replicaRegions": "*"
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeDatabase/Secret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeCdkStack3MazeDatabaseSecret42B6C26E3fdaad7efa858a3daf9490cf0a702aeb"
+          }
+        ],
+        "/MazeCdkStack-3/MazeDatabase/Secret/Attachment": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "secret": "*",
+              "target": "*"
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeDatabase/Secret/Attachment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeDatabaseSecretAttachmentCF8A2EE5"
+          }
+        ],
+        "/MazeCdkStack-3/MazeDatabase/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeDatabaseF02F1276"
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/TaskRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              }
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/TaskRole/ImportTaskRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeTaskDefTaskRoleBA47DE06"
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeTaskDef5C51DBFF"
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/MazeContainer/LogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "retention": "*"
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/MazeContainer/LogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeTaskDefMazeContainerLogGroup4C11E95F"
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/ExecutionRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "roleName": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/ExecutionRole/ImportExecutionRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeTaskDefExecutionRole9294BB9E"
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/ExecutionRole/DefaultPolicy": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeTaskDef/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeTaskDefExecutionRoleDefaultPolicy30037A97"
+          }
+        ],
+        "/MazeCdkStack-3/MazeService": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
+            "trace": [
+              "Annotations.addMessage (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1608)",
+              "Annotations.addWarningV2 (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/aws-cdk-lib/core/lib/annotations.js:1:825)",
+              "new BaseService (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:8100)",
+              "new FargateService (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:3551)",
+              "new MazeCdkStack (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/lib/maze-cdk-stack.ts:93:21)",
+              "Object.<anonymous> (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/bin/maze-cdk.ts:6:1)",
+              "Module._compile (node:internal/modules/cjs/loader:1254:14)",
+              "Module.m._compile (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/ts-node/src/index.ts:1618:23)",
+              "Module._extensions..js (node:internal/modules/cjs/loader:1308:10)",
+              "Object.require.extensions.<computed> [as .ts] (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/ts-node/src/index.ts:1621:12)",
+              "Module.load (node:internal/modules/cjs/loader:1117:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:958:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)",
+              "phase4 (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/ts-node/src/bin.ts:649:14)",
+              "bootstrap (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/ts-node/src/bin.ts:95:10)",
+              "main (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/ts-node/src/bin.ts:55:10)",
+              "Object.<anonymous> (/Users/yennanliu/cdk-playground/maze-java-app/maze-cdk/node_modules/ts-node/src/bin.ts:800:3)",
+              "Module._compile (node:internal/modules/cjs/loader:1254:14)",
+              "Object.Module._extensions..js (node:internal/modules/cjs/loader:1308:10)",
+              "Module.load (node:internal/modules/cjs/loader:1117:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:958:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)",
+              "node:internal/main/run_main_module:23:47"
+            ]
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/MazeCdkStack-3/MazeService/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeService6FC1F94C"
+          }
+        ],
+        "/MazeCdkStack-3/MazeService/SecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*",
+                false
+              ]
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeService/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeServiceSecurityGroup266646EE"
+          }
+        ],
+        "/MazeCdkStack-3/MazeService/SecurityGroup/from MazeCdkStack3MazeALBSecurityGroupA628F41F:8080": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeServiceSecurityGroupfromMazeCdkStack3MazeALBSecurityGroupA628F41F8080295749E4"
+          }
+        ],
+        "/MazeCdkStack-3/MazeALB": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/MazeCdkStack-3/MazeALB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeALBD0E6A4EB"
+          }
+        ],
+        "/MazeCdkStack-3/MazeALB/SecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": false
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*",
+                false
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEgressRule": [
+                "*",
+                {},
+                "*",
+                true
+              ]
+            }
+          }
+        ],
+        "/MazeCdkStack-3/MazeALB/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeALBSecurityGroup8DA20196"
+          }
+        ],
+        "/MazeCdkStack-3/MazeALB/SecurityGroup/to MazeCdkStack3MazeServiceSecurityGroup8250EE33:8080": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeALBSecurityGrouptoMazeCdkStack3MazeServiceSecurityGroup8250EE3380809E9A0F52"
+          }
+        ],
+        "/MazeCdkStack-3/MazeALB/MazeListener": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/MazeCdkStack-3/MazeALB/MazeListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeALBMazeListenerA68FF3C3"
+          }
+        ],
+        "/MazeCdkStack-3/MazeALB/MazeListener/MazeEcsTargetsGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeALBMazeListenerMazeEcsTargetsGroupCE3C4808"
+          }
+        ],
+        "/MazeCdkStack-3/MazeAppUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "MazeAppUrl"
+          }
+        ],
+        "/MazeCdkStack-3/DatabaseEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseEndpoint"
+          }
+        ],
+        "/MazeCdkStack-3/DatabaseSecretArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecretArn"
+          }
+        ],
+        "/MazeCdkStack-3/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/MazeCdkStack-3/CDKMetadata/Condition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadataAvailable"
+          }
+        ],
+        "/MazeCdkStack-3/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/MazeCdkStack-3/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "MazeCdkStack-3"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  },
+  "minimumCliVersion": "2.1005.0"
+}
