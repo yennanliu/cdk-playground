@@ -5,7 +5,7 @@ async function generateMaze() {
     const cols = document.getElementById('cols').value;
     
     // Show loading state
-    document.getElementById('maze-container').innerHTML = '<div style="padding: 20px; text-align: center;">Generating maze...</div>';
+    document.getElementById('maze-container').innerHTML = '<div style="padding: 40px; text-align: center; font-size: 16px;">Generating maze...</div>';
 
     try {
         const response = await fetch('/api/maze/generate', {
@@ -27,7 +27,7 @@ async function generateMaze() {
     } catch (error) {
         console.error("Error generating maze:", error);
         document.getElementById('maze-container').innerHTML = 
-            '<div style="padding: 20px; color: var(--danger); text-align: center;">Error generating maze. Please try again.</div>';
+            '<div style="padding: 40px; color: var(--danger); text-align: center; font-size: 16px;">Error generating maze. Please try again.</div>';
     }
 }
 
@@ -52,7 +52,7 @@ async function saveMaze() {
         const row = [];
         for (let j = 0; j < cols; j++) {
             const cell = mazeContainer.children[i].children[j];
-            row.push(cell.classList.contains('wall') || cell.style.backgroundColor === '#1F2937' ? 1 : 0);
+            row.push(cell.classList.contains('wall') || cell.style.backgroundColor === '#000000' ? 1 : 0);
         }
         mazeData.push(row);
     }
@@ -107,7 +107,7 @@ async function loadSavedMazesList() {
         mazeListContainer.innerHTML = '';
         
         if (mazes.length === 0) {
-            mazeListContainer.innerHTML = '<p style="text-align: center; color: var(--gray);">No saved mazes yet.</p>';
+            mazeListContainer.innerHTML = '<p style="text-align: center; color: var(--dark-gray); padding: 20px;">No saved mazes yet. Create and save a maze to see it here.</p>';
             return;
         }
         
@@ -115,9 +115,9 @@ async function loadSavedMazesList() {
             const mazeItem = document.createElement('div');
             mazeItem.className = 'maze-item';
             mazeItem.innerHTML = `
-                <strong>${maze.name}</strong>
-                <span style="font-size: 0.8rem; color: var(--gray-dark);">Size: ${maze.width}x${maze.height}</span><br>
-                <span style="font-size: 0.7rem; color: var(--gray);">${new Date(maze.createdAt).toLocaleString()}</span>
+                <div class="maze-item-name">${maze.name}</div>
+                <div class="maze-item-info">Size: ${maze.width}x${maze.height}</div>
+                <div class="maze-item-date">${new Date(maze.createdAt).toLocaleString()}</div>
             `;
             mazeItem.onclick = () => loadSavedMaze(maze.id);
             mazeListContainer.appendChild(mazeItem);
@@ -125,7 +125,7 @@ async function loadSavedMazesList() {
     } catch (error) {
         console.error('Error loading saved mazes:', error);
         document.getElementById('saved-mazes-list').innerHTML = 
-            '<p style="text-align: center; color: var(--danger);">Error loading saved mazes. Please try again.</p>';
+            '<p style="text-align: center; color: var(--danger); padding: 20px;">Error loading saved mazes. Please try again.</p>';
     }
 }
 
@@ -141,7 +141,7 @@ async function loadSavedMaze(mazeId) {
         document.getElementById('mazeName').value = maze.name;
         
         // Scroll to the maze
-        document.getElementById('maze-container').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('maze-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (error) {
         console.error('Error loading maze:', error);
         showNotification('Error loading maze. Please try again.', 'error');
@@ -165,19 +165,19 @@ function displayMaze(mazeData) {
             
             if (cell === '1') {
                 cellDiv.classList.add('wall');
-                cellDiv.style.backgroundColor = '#1F2937';
             } else {
                 cellDiv.classList.add('path');
-                cellDiv.style.backgroundColor = 'white';
             }
             
             // Add special styling for start and end points
             if (rowIndex === 0 && colIndex === 0) {
                 cellDiv.classList.add('start-point');
+                cellDiv.title = 'Start Point';
             }
             
             if (rowIndex === mazeRows.length - 1 && colIndex === cells.length - 1) {
                 cellDiv.classList.add('end-point');
+                cellDiv.title = 'End Point';
             }
             
             rowDiv.appendChild(cellDiv);
@@ -206,11 +206,11 @@ function displaySolvedMaze(solvedMaze) {
             if (i === 0 && j === 0) {
                 // Start point
                 cellDiv.classList.add('start-point');
-                cellDiv.title = 'Start';
+                cellDiv.title = 'Start Point';
             } else if (i === solvedMaze.length - 1 && j === solvedMaze[i].length - 1) {
                 // End point
                 cellDiv.classList.add('end-point');
-                cellDiv.title = 'End';
+                cellDiv.title = 'End Point';
             } else {
                 // 0 = path, 1 = wall, 2 = solution path
                 if (solvedMaze[i][j] === 1) {
@@ -234,7 +234,7 @@ function displaySolvedMaze(solvedMaze) {
 
 async function solveMaze2() {
     const mazeContainer = document.getElementById('maze-container');
-    if (!mazeContainer.children.length) {
+    if (!mazeContainer.children.length || mazeContainer.children[0].tagName !== 'DIV') {
         showNotification('Please generate a maze first', 'error');
         return;
     }
@@ -244,8 +244,8 @@ async function solveMaze2() {
 
     // Show loading state
     document.getElementById('result').innerHTML = `
-        <div style="padding: 15px; background-color: var(--gray-light); border-radius: 8px; text-align: center;">
-            <p>Solving maze...</p>
+        <div style="padding: 16px; background-color: var(--light-gray); border-radius: 8px; text-align: center;">
+            <p style="font-size: 16px;">Solving maze...</p>
         </div>
     `;
 
@@ -255,7 +255,7 @@ async function solveMaze2() {
         for (let j = 0; j < cols; j++) {
             const cell = mazeContainer.children[i].children[j];
             // Check both class and background color to handle both initial and solution views
-            row.push(cell.classList.contains('wall') || cell.style.backgroundColor === '#1F2937' ? 1 : 0);
+            row.push(cell.classList.contains('wall') ? 1 : 0);
         }
         maze.push(row);
     }
@@ -277,17 +277,20 @@ async function solveMaze2() {
             displaySolvedMaze(result.solvedMaze);
             document.getElementById('result').innerHTML = `
                 <div class="result-success">
-                    <p style="font-weight: 500;">${result.message}</p>
+                    <p style="font-weight: 500; font-size: 16px;">${result.message}</p>
                     <details>
                         <summary>View Path Details</summary>
                         <p>${result.path}</p>
                     </details>
                 </div>
             `;
+            
+            // Scroll to show both maze and result
+            mazeContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             document.getElementById('result').innerHTML = `
                 <div class="result-error">
-                    <p style="font-weight: 500;">${result.message}</p>
+                    <p style="font-weight: 500; font-size: 16px;">${result.message}</p>
                 </div>
             `;
         }
@@ -295,7 +298,7 @@ async function solveMaze2() {
         console.error('Error solving maze:', error);
         document.getElementById('result').innerHTML = `
             <div class="result-error">
-                <p style="font-weight: 500;">Error solving maze. Please try again.</p>
+                <p style="font-weight: 500; font-size: 16px;">Error solving maze. Please try again.</p>
             </div>
         `;
     }
