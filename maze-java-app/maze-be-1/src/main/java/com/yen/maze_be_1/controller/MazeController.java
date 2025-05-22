@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.Random;
+import java.util.List;
 
 @RestController
 public class MazeController {
@@ -30,7 +31,11 @@ public class MazeController {
     }
 
     @PostMapping("/solve-maze")
-    public String solveMaze(@RequestBody int[][] maze) {
+    public String solveMaze(@RequestBody MazeRequest mazeRequest) {
+
+        System.out.println(">>> solveMaze start");
+
+        int[][] maze = mazeRequest.to2DArray();
         int rows = maze.length;
         int cols = maze[0].length;
 
@@ -69,5 +74,31 @@ public class MazeController {
         path.setLength(path.length() - 7); // Remove last " -> "
         visited[x][y] = false;
         return false;
+    }
+
+    public static class MazeRequest {
+        private List<List<Integer>> maze;
+
+        public List<List<Integer>> getMaze() {
+            return maze;
+        }
+
+        public void setMaze(List<List<Integer>> maze) {
+            this.maze = maze;
+        }
+
+        public int[][] to2DArray() {
+            int rows = maze.size();
+            int cols = maze.get(0).size();
+            int[][] array = new int[rows][cols];
+
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    array[i][j] = maze.get(i).get(j);
+                }
+            }
+
+            return array;
+        }
     }
 }
