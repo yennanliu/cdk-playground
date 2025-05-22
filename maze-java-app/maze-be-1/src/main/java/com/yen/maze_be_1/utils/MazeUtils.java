@@ -3,6 +3,8 @@ package com.yen.maze_be_1.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
+import java.util.Random;
+import com.yen.maze_be_1.model.Maze;
 
 public class MazeUtils {
     
@@ -17,6 +19,41 @@ public class MazeUtils {
             sb.append("\n");
         }
         return sb.toString();
+    }
+    
+    public static int[][] generateMazeArray(int width, int height) {
+        logger.debug("Generating maze array with dimensions: {}x{}", width, height);
+        int[][] maze = new int[height][width];
+        Random random = new Random();
+
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                maze[i][j] = random.nextDouble() < 0.7 ? 0 : 1; // 70% chance for space (0), 30% for blocker (1)
+            }
+        }
+
+        // Ensure start and end points are paths
+        maze[0][0] = 0;
+        maze[height - 1][width - 1] = 0;
+
+        return maze;
+    }
+    
+    public static Maze generateMaze(int width, int height) {
+        logger.info("Generating maze with dimensions: {}x{}", width, height);
+        
+        // Generate maze array
+        int[][] mazeArray = generateMazeArray(width, height);
+        
+        // Create maze entity
+        Maze mazeEntity = new Maze();
+        mazeEntity.setName("Maze " + System.currentTimeMillis());
+        mazeEntity.setWidth(width);
+        mazeEntity.setHeight(height);
+        mazeEntity.setMazeData(convertMazeToString(mazeArray));
+        
+        logger.debug("Maze generated successfully");
+        return mazeEntity;
     }
     
     public static boolean dfs(int[][] maze, int x, int y, int rows, int cols, boolean[][] visited, 

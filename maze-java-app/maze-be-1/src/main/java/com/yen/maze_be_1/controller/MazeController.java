@@ -30,19 +30,11 @@ public class MazeController {
         int width = request.get("width");
         int height = request.get("height");
         
-        logger.info("Generating maze with dimensions: {}x{}", width, height);
+        logger.info("Requesting maze generation with dimensions: {}x{}", width, height);
         
-        // Generate maze using existing logic
-        int[][] maze = generateMazeArray(width, height);
+        // Generate maze using MazeUtils
+        Maze mazeEntity = MazeUtils.generateMaze(width, height);
         
-        // Create and save maze entity
-        Maze mazeEntity = new Maze();
-        mazeEntity.setName("Maze " + System.currentTimeMillis());
-        mazeEntity.setWidth(width);
-        mazeEntity.setHeight(height);
-        mazeEntity.setMazeData(MazeUtils.convertMazeToString(maze));
-        
-        logger.debug("Maze generated successfully");
         //return ResponseEntity.ok(mazeService.saveMaze(mazeEntity));
         return ResponseEntity.ok(mazeEntity);
     }
@@ -147,24 +139,5 @@ public class MazeController {
         mazeService.deleteMaze(id);
         logger.debug("Maze deleted successfully");
         return ResponseEntity.ok().build();
-    }
-
-    // Existing maze generation methods
-    private int[][] generateMazeArray(int width, int height) {
-        logger.debug("Generating maze array with dimensions: {}x{}", width, height);
-        int[][] maze = new int[height][width];
-        Random random = new Random();
-
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                maze[i][j] = random.nextDouble() < 0.7 ? 0 : 1; // 70% chance for space (0), 30% for blocker (1)
-            }
-        }
-
-        // Ensure start and end points are paths
-        maze[0][0] = 0;
-        maze[height - 1][width - 1] = 0;
-
-        return maze;
     }
 }
