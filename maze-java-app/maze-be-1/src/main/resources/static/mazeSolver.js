@@ -25,6 +25,6 @@ async function generateMaze() {
     });
 }
 
-function solveMaze() {
-    alert('Maze solving logic will be implemented here.');
-}
+// function solveMaze() {
+//     alert('Maze solving logic will be implemented here.');
+// }
