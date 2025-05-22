@@ -26,4 +26,46 @@ public class MazeController {
 
         return maze;
     }
+
+    @GetMapping("/solve-maze")
+    public String solveMaze(@RequestParam int[][] maze) {
+        int rows = maze.length;
+        int cols = maze[0].length;
+
+        boolean[][] visited = new boolean[rows][cols];
+        StringBuilder path = new StringBuilder();
+
+        if (dfs(maze, 0, 0, rows, cols, visited, path)) {
+            return "Solved Path: " + path.toString();
+        } else {
+            return "Maze cannot be solved.";
+        }
+    }
+
+    private boolean dfs(int[][] maze, int x, int y, int rows, int cols, boolean[][] visited, StringBuilder path) {
+        if (x < 0 || y < 0 || x >= rows || y >= cols || maze[x][y] == 1 || visited[x][y]) {
+            return false;
+        }
+
+        if (x == rows - 1 && y == cols - 1) {
+            path.append("(").append(x).append(",").append(y).append(")");
+            return true;
+        }
+
+        visited[x][y] = true;
+        path.append("(").append(x).append(",").append(y).append(") -> ");
+
+        // Explore all directions: right, down, left, up
+        if (dfs(maze, x, y + 1, rows, cols, visited, path) ||
+            dfs(maze, x + 1, y, rows, cols, visited, path) ||
+            dfs(maze, x, y - 1, rows, cols, visited, path) ||
+            dfs(maze, x - 1, y, rows, cols, visited, path)) {
+            return true;
+        }
+
+        // Backtrack
+        path.setLength(path.length() - 7); // Remove last " -> "
+        visited[x][y] = false;
+        return false;
+    }
 }
