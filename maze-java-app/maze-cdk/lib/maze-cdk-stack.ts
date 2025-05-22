@@ -36,7 +36,7 @@ export class MazeCdkStack extends Stack {
       maxAllocatedStorage: 100,
       databaseName: 'maze_db',
       removalPolicy: RemovalPolicy.SNAPSHOT,
-      backupRetention: Duration.days(7),
+      backupRetention: Duration.days(3),
       credentials: rds.Credentials.fromGeneratedSecret('maze_admin'),
       securityGroups: [
         new ec2.SecurityGroup(this, 'MazeDbSecurityGroup', {
