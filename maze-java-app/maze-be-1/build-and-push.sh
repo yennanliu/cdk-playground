@@ -11,10 +11,13 @@ java -version
 # Build the Spring Boot application
 ./mvnw clean package -DskipTests
 
-# Build the Docker image for AMD64 platform (standard EC2 instances)
-docker buildx build --platform=linux/amd64 -t yennanliu/maze-app:latest .
+# Build and push the Docker image with no cache to ensure fresh content
+echo "Building and pushing Docker image..."
+docker buildx build --no-cache --platform=linux/amd64 -t yennanliu/maze-app:dev-1 --push .
 
-# Push the image to Docker Hub
-docker push yennanliu/maze-app:latest
+echo "Image built and pushed successfully!"
 
-echo "Image built and pushed successfully!" 
+# Command to force ECS to update (run this manually)
+echo ""
+echo "After pushing, force ECS to update with:"
+echo "aws ecs update-service --cluster YOUR_CLUSTER_NAME --service YOUR_SERVICE_NAME --force-new-deployment" 
