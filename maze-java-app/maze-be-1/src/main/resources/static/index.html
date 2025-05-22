@@ -4,173 +4,361 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maze Solver</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono&display=swap" rel="stylesheet">
     <script src="mazeSolver.js" defer></script>
     <style>
+        :root {
+            --primary: #6366F1;
+            --primary-hover: #4F46E5;
+            --secondary: #10B981;
+            --secondary-hover: #059669;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --dark: #1F2937;
+            --light: #F9FAFB;
+            --gray: #9CA3AF;
+            --gray-light: #F3F4F6;
+            --gray-dark: #4B5563;
+            --success-bg: #ECFDF5;
+            --error-bg: #FEF2F2;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Poppins', sans-serif;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 24px;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
         }
+        
+        h1 {
+            font-weight: 600;
+            font-size: 2.4rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            text-align: center;
+            letter-spacing: -0.5px;
+        }
+        
         .maze-container {
-            margin: 20px 0;
+            margin: 24px auto;
             display: inline-block;
-            background-color: #f8f8f8;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
         }
+        
         .maze-row {
             display: flex;
         }
+        
         .maze-cell {
-            width: 24px;
-            height: 24px;
-            border: 1px solid #aaa;
-            transition: background-color 0.3s ease;
+            width: 28px;
+            height: 28px;
+            border: 1px solid #eaeaea;
+            transition: all 0.3s ease;
         }
+        
         .maze-cell.wall {
-            background-color: #333;
+            background-color: var(--dark);
         }
+        
         .maze-cell.path {
             background-color: white;
         }
+        
         .maze-cell.solution {
-            background-color: #4CAF50;
-            animation: pulse 1.5s infinite;
+            background-color: var(--secondary);
+            animation: pulse 1.8s infinite;
         }
+        
         @keyframes pulse {
-            0% { background-color: #4CAF50; }
-            50% { background-color: #81C784; }
-            100% { background-color: #4CAF50; }
+            0% { background-color: var(--secondary); }
+            50% { background-color: #34D399; }
+            100% { background-color: var(--secondary); }
         }
+        
         .start-point {
-            background-color: #2196F3 !important;
+            background-color: var(--primary) !important;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+            z-index: 2;
+            position: relative;
         }
+        
         .end-point {
-            background-color: #F44336 !important;
+            background-color: var(--danger) !important;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.4);
+            z-index: 2;
+            position: relative;
         }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        @media (min-width: 768px) {
+            .app-container {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+        
         .controls {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f0f0f0;
-            border-radius: 5px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
         }
-        .controls > div {
-            margin: 10px 0;
+        
+        .control-section {
+            margin-bottom: 20px;
         }
-        select, input, button {
-            margin: 0 5px;
-            padding: 8px 12px;
+        
+        .control-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+            font-weight: 500;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            color: var(--gray-dark);
+        }
+        
+        input, select, button {
+            padding: 10px 12px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
             font-size: 14px;
+            transition: all 0.2s;
         }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+        
         button {
-            background-color: #4CAF50;
+            background-color: var(--primary);
             color: white;
             border: none;
             cursor: pointer;
-            transition: background-color 0.3s;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
+        
         button:hover {
-            background-color: #45a049;
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+        
+        .btn-success {
+            background-color: var(--secondary);
+        }
+        
+        .btn-success:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        .btn-block {
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .maze-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .maze-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
         .saved-mazes {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
         }
+        
         .saved-mazes h3 {
-            margin-top: 0;
-            color: #333;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+        
         .maze-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 15px;
             margin-top: 15px;
         }
+        
         .maze-item {
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 15px;
+            border-radius: 8px;
             cursor: pointer;
-            background-color: white;
-            transition: transform 0.2s, box-shadow 0.2s;
+            background-color: var(--gray-light);
+            transition: all 0.3s;
+            border: 1px solid transparent;
         }
+        
         .maze-item:hover {
-            background-color: #f0f0f0;
+            background-color: white;
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            border-color: var(--primary);
         }
+        
+        .maze-item strong {
+            display: block;
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
         #result {
             margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .result-success {
+            background-color: var(--success-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .result-error {
+            background-color: var(--error-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--danger);
+        }
+        
+        details {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 6px;
+        }
+        
+        details summary {
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--gray-dark);
+        }
+        
+        details p {
+            margin-top: 10px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            padding: 10px;
+            background-color: white;
+            border-radius: 6px;
         }
     </style>
 </head>
 <body>
     <h1>Maze Solver</h1>
     
-    <div class="controls">
-        <div>
-            <label for="rows">Rows:</label>
-            <input type="number" id="rows" value="5" min="2" max="20">
-            <label for="cols">Columns:</label>
-            <input type="number" id="cols" value="5" min="2" max="20">
-            <button onclick="generateMaze()">Generate Maze</button>
+    <div class="app-container">
+        <div class="controls">
+            <div class="control-section">
+                <h2>Create Maze</h2>
+                <div class="input-group">
+                    <label for="rows">Number of Rows</label>
+                    <input type="number" id="rows" value="10" min="2" max="20">
+                </div>
+                <div class="input-group">
+                    <label for="cols">Number of Columns</label>
+                    <input type="number" id="cols" value="10" min="2" max="20">
+                </div>
+                <button onclick="generateMaze()" class="btn-block">Generate Maze</button>
+            </div>
+            
+            <div class="control-section">
+                <h2>Save Maze</h2>
+                <div class="input-group">
+                    <label for="mazeName">Maze Name</label>
+                    <input type="text" id="mazeName" placeholder="Enter a name for your maze">
+                </div>
+                <button onclick="saveMaze()" class="btn-block">Save Maze</button>
+            </div>
         </div>
         
-        <div>
-            <button onclick="saveMaze()">Save Maze</button>
-            <input type="text" id="mazeName" placeholder="Enter maze name">
-        </div>
-    </div>
-
-    <div id="maze-container" class="maze-container"></div>
-    <button onclick="solveMaze2()">Solve Maze</button>
-    <div id="result"></div>
-
-    <div class="saved-mazes">
-        <h3>Saved Mazes</h3>
-        <button onclick="loadSavedMazesList()">Refresh List</button>
-        <div id="saved-mazes-list" class="maze-list">
-            <!-- Saved mazes will be displayed here -->
+        <div class="maze-content">
+            <div id="maze-container" class="maze-container"></div>
+            
+            <div class="maze-actions">
+                <button onclick="solveMaze2()" class="btn-success">Solve Maze</button>
+            </div>
+            
+            <div id="result"></div>
+            
+            <div class="saved-mazes">
+                <h3>
+                    Saved Mazes
+                    <button onclick="loadSavedMazesList()" style="padding: 5px 10px; font-size: 12px;">
+                        Refresh
+                    </button>
+                </h3>
+                <div id="saved-mazes-list" class="maze-list">
+                    <!-- Saved mazes will be displayed here -->
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         // Load saved mazes when page loads
         document.addEventListener('DOMContentLoaded', loadSavedMazesList);
-
-        async function solveMaze2() {
-            const mazeContainer = document.getElementById('maze-container');
-            const rows = mazeContainer.children.length;
-            const cols = mazeContainer.children[0].children.length;
-
-            const maze = [];
-            for (let i = 0; i < rows; i++) {
-                const row = [];
-                for (let j = 0; j < cols; j++) {
-                    const cell = mazeContainer.children[i].children[j];
-                    row.push(cell.style.backgroundColor === 'black' ? 1 : 0);
-                }
-                maze.push(row);
-            }
-
-            const response = await fetch('/api/maze/solve', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ maze }),
-            });
-
-            const result = await response.text();
-            document.getElementById('result').innerText = result;
-        }
     </script>
 </body>
 </html>
