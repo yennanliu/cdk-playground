@@ -27,7 +27,7 @@ export class MazeCdkStack extends Stack {
     });
 
     // Create an ECR repository
-    const repository = new ecr.Repository(this, 'MazeEcrRepo');
+    // const repository = new ecr.Repository(this, 'MazeEcrRepo');
 
     // Create an ECS cluster
     const cluster = new ecs.Cluster(this, 'MazeEcsCluster', {
@@ -39,7 +39,7 @@ export class MazeCdkStack extends Stack {
 
     // Add a container to the task definition
     const container = taskDefinition.addContainer('MazeContainer', {
-      image: ecs.ContainerImage.fromEcrRepository(repository),
+      image: ecs.ContainerImage.fromRegistry('yennanliu/maze-app:latest'),
       memoryLimitMiB: 512,
       cpu: 256,
     });
