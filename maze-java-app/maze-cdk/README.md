@@ -18,13 +18,6 @@ docker push yennanliu/maze-app:latest
 docker run --rm -it -p 8080:8080 yennanliu/maze-app:latest
 
 
-docker run --rm -it -p 8080:8080 \
-  -e DB_HOST=host.docker.internal \
-  -e DB_PORT=3306 \
-  -e DB_USER=root \
-  -e DB_PASSWORD= \
-  yennanliu/maze-app:latest
-
 # clean
 docker rmi -f $(sudo docker images -q)
 
