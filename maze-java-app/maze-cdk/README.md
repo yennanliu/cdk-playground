@@ -1,5 +1,31 @@
 # Welcome to your CDK TypeScript project
 
+## CMD
+
+```bash
+
+# build docker img
+cd maze-be-1
+
+sudo docker build -t maze-be-1:latest .
+
+# push
+sudo docker tag maze-be-1:latest yennanliu/maze-app:latest
+
+sudo docker push yennanliu/maze-app:latest
+
+
+
+
+
+# cdk
+npm install
+
+cdk bootstrap
+
+cdk deploy
+```
+
 You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`MazeCdkStack`)
 which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
 
