@@ -7,6 +7,7 @@
 # build docker img
 cd maze-be-1
 
+# docker buildx build --platform linux/amd64,linux/arm64 -t maze-be-1:latest .
 docker build -t maze-be-1:latest .
 
 # push

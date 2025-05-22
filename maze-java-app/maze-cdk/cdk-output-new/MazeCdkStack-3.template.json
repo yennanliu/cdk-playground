@@ -1,0 +1,1474 @@
+{
+ "Resources": {
+  "MazeVpcAC2E4A3B": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/Resource"
+   }
+  },
+  "MazeVpcPublicSubnet1Subnet9ACBA050": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.0.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet1/Subnet"
+   }
+  },
+  "MazeVpcPublicSubnet1RouteTableFC1246BF": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PublicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet1/RouteTable"
+   }
+  },
+  "MazeVpcPublicSubnet1RouteTableAssociation4E758BE0": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "MazeVpcPublicSubnet1RouteTableFC1246BF"
+    },
+    "SubnetId": {
+     "Ref": "MazeVpcPublicSubnet1Subnet9ACBA050"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet1/RouteTableAssociation"
+   }
+  },
+  "MazeVpcPublicSubnet1DefaultRouteE955BAC3": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "MazeVpcIGW9535A224"
+    },
+    "RouteTableId": {
+     "Ref": "MazeVpcPublicSubnet1RouteTableFC1246BF"
+    }
+   },
+   "DependsOn": [
+    "MazeVpcVPCGW64A86570"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet1/DefaultRoute"
+   }
+  },
+  "MazeVpcPublicSubnet1EIPBE38552C": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PublicSubnet1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet1/EIP"
+   }
+  },
+  "MazeVpcPublicSubnet1NATGatewayD7238F51": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "MazeVpcPublicSubnet1EIPBE38552C",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "MazeVpcPublicSubnet1Subnet9ACBA050"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PublicSubnet1"
+     }
+    ]
+   },
+   "DependsOn": [
+    "MazeVpcPublicSubnet1DefaultRouteE955BAC3",
+    "MazeVpcPublicSubnet1RouteTableAssociation4E758BE0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet1/NATGateway"
+   }
+  },
+  "MazeVpcPublicSubnet2Subnet69D189F2": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.64.0/18",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet2/Subnet"
+   }
+  },
+  "MazeVpcPublicSubnet2RouteTableFB3EA336": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PublicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet2/RouteTable"
+   }
+  },
+  "MazeVpcPublicSubnet2RouteTableAssociation09D62AAD": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "MazeVpcPublicSubnet2RouteTableFB3EA336"
+    },
+    "SubnetId": {
+     "Ref": "MazeVpcPublicSubnet2Subnet69D189F2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet2/RouteTableAssociation"
+   }
+  },
+  "MazeVpcPublicSubnet2DefaultRoute7BC50F1B": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "MazeVpcIGW9535A224"
+    },
+    "RouteTableId": {
+     "Ref": "MazeVpcPublicSubnet2RouteTableFB3EA336"
+    }
+   },
+   "DependsOn": [
+    "MazeVpcVPCGW64A86570"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PublicSubnet2/DefaultRoute"
+   }
+  },
+  "MazeVpcPrivateSubnet1SubnetD0794F91": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.128.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PrivateSubnet1/Subnet"
+   }
+  },
+  "MazeVpcPrivateSubnet1RouteTable3C070E73": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PrivateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PrivateSubnet1/RouteTable"
+   }
+  },
+  "MazeVpcPrivateSubnet1RouteTableAssociationEE71BC9F": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "MazeVpcPrivateSubnet1RouteTable3C070E73"
+    },
+    "SubnetId": {
+     "Ref": "MazeVpcPrivateSubnet1SubnetD0794F91"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PrivateSubnet1/RouteTableAssociation"
+   }
+  },
+  "MazeVpcPrivateSubnet1DefaultRoute1BCE263E": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "MazeVpcPublicSubnet1NATGatewayD7238F51"
+    },
+    "RouteTableId": {
+     "Ref": "MazeVpcPrivateSubnet1RouteTable3C070E73"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PrivateSubnet1/DefaultRoute"
+   }
+  },
+  "MazeVpcPrivateSubnet2SubnetBF331A0C": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.192.0/18",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "Private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PrivateSubnet2/Subnet"
+   }
+  },
+  "MazeVpcPrivateSubnet2RouteTable4A7A4C5D": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc/PrivateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PrivateSubnet2/RouteTable"
+   }
+  },
+  "MazeVpcPrivateSubnet2RouteTableAssociationF7028FAA": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "MazeVpcPrivateSubnet2RouteTable4A7A4C5D"
+    },
+    "SubnetId": {
+     "Ref": "MazeVpcPrivateSubnet2SubnetBF331A0C"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PrivateSubnet2/RouteTableAssociation"
+   }
+  },
+  "MazeVpcPrivateSubnet2DefaultRoute5B62BAEC": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "MazeVpcPublicSubnet1NATGatewayD7238F51"
+    },
+    "RouteTableId": {
+     "Ref": "MazeVpcPrivateSubnet2RouteTable4A7A4C5D"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/PrivateSubnet2/DefaultRoute"
+   }
+  },
+  "MazeVpcIGW9535A224": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "MazeCdkStack-3/MazeVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/IGW"
+   }
+  },
+  "MazeVpcVPCGW64A86570": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "MazeVpcIGW9535A224"
+    },
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/VPCGW"
+   }
+  },
+  "MazeVpcRestrictDefaultSecurityGroupCustomResource12993334": {
+   "Type": "Custom::VpcRestrictDefaultSG",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E",
+      "Arn"
+     ]
+    },
+    "DefaultSecurityGroupId": {
+     "Fn::GetAtt": [
+      "MazeVpcAC2E4A3B",
+      "DefaultSecurityGroup"
+     ]
+    },
+    "Account": {
+     "Ref": "AWS::AccountId"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeVpc/RestrictDefaultSecurityGroupCustomResource/Default"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ],
+    "Policies": [
+     {
+      "PolicyName": "Inline",
+      "PolicyDocument": {
+       "Version": "2012-10-17",
+       "Statement": [
+        {
+         "Effect": "Allow",
+         "Action": [
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress"
+         ],
+         "Resource": [
+          {
+           "Fn::Join": [
+            "",
+            [
+             "arn:",
+             {
+              "Ref": "AWS::Partition"
+             },
+             ":ec2:",
+             {
+              "Ref": "AWS::Region"
+             },
+             ":",
+             {
+              "Ref": "AWS::AccountId"
+             },
+             ":security-group/",
+             {
+              "Fn::GetAtt": [
+               "MazeVpcAC2E4A3B",
+               "DefaultSecurityGroup"
+              ]
+             }
+            ]
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "__entrypoint__.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs20.x",
+    "Description": "Lambda function for removing all inbound/outbound rules from the VPC default security group"
+   },
+   "DependsOn": [
+    "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200",
+    "aws:asset:property": "Code"
+   }
+  },
+  "MazeEcsClusterF88CB655": {
+   "Type": "AWS::ECS::Cluster",
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeEcsCluster/Resource"
+   }
+  },
+  "MazeDbSecurityGroup7E3E9114": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for Maze RDS instance",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": {
+       "Fn::GetAtt": [
+        "MazeVpcAC2E4A3B",
+        "CidrBlock"
+       ]
+      },
+      "Description": "Allow ECS tasks to access RDS",
+      "FromPort": 3306,
+      "IpProtocol": "tcp",
+      "ToPort": 3306
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeDbSecurityGroup/Resource"
+   }
+  },
+  "MazeDatabaseSubnetGroup24D16C74": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for MazeDatabase database",
+    "SubnetIds": [
+     {
+      "Ref": "MazeVpcPrivateSubnet1SubnetD0794F91"
+     },
+     {
+      "Ref": "MazeVpcPrivateSubnet2SubnetBF331A0C"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeDatabase/SubnetGroup/Default"
+   }
+  },
+  "MazeCdkStack3MazeDatabaseSecret42B6C26E3fdaad7efa858a3daf9490cf0a702aeb": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Generated by the CDK for stack: ",
+       {
+        "Ref": "AWS::StackName"
+       }
+      ]
+     ]
+    },
+    "GenerateSecretString": {
+     "ExcludeCharacters": " %+~`#$&*()|[]{}:;<>?!'/@\"\\",
+     "GenerateStringKey": "password",
+     "PasswordLength": 30,
+     "SecretStringTemplate": "{\"username\":\"maze_admin\"}"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeDatabase/Secret/Resource"
+   }
+  },
+  "MazeDatabaseSecretAttachmentCF8A2EE5": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "MazeCdkStack3MazeDatabaseSecret42B6C26E3fdaad7efa858a3daf9490cf0a702aeb"
+    },
+    "TargetId": {
+     "Ref": "MazeDatabaseF02F1276"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeDatabase/Secret/Attachment/Resource"
+   }
+  },
+  "MazeDatabaseF02F1276": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "20",
+    "BackupRetentionPeriod": 7,
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t3.micro",
+    "DBName": "maze_db",
+    "DBSubnetGroupName": {
+     "Ref": "MazeDatabaseSubnetGroup24D16C74"
+    },
+    "Engine": "mysql",
+    "EngineVersion": "8.0",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "MazeCdkStack3MazeDatabaseSecret42B6C26E3fdaad7efa858a3daf9490cf0a702aeb"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": "maze_admin",
+    "MaxAllocatedStorage": 100,
+    "PubliclyAccessible": false,
+    "StorageType": "gp2",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "MazeDbSecurityGroup7E3E9114",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Snapshot",
+   "DeletionPolicy": "Snapshot",
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeDatabase/Resource"
+   }
+  },
+  "MazeTaskDefTaskRoleBA47DE06": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeTaskDef/TaskRole/Resource"
+   }
+  },
+  "MazeTaskDef5C51DBFF": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Cpu": 256,
+      "Environment": [
+       {
+        "Name": "SPRING_DATASOURCE_URL",
+        "Value": {
+         "Fn::Join": [
+          "",
+          [
+           "jdbc:mysql://",
+           {
+            "Fn::GetAtt": [
+             "MazeDatabaseF02F1276",
+             "Endpoint.Address"
+            ]
+           },
+           ":3306/maze_db"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "SPRING_DATASOURCE_USERNAME",
+        "Value": "maze_admin"
+       },
+       {
+        "Name": "SPRING_JPA_HIBERNATE_DDL_AUTO",
+        "Value": "update"
+       },
+       {
+        "Name": "SPRING_JPA_SHOW_SQL",
+        "Value": "true"
+       },
+       {
+        "Name": "SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT",
+        "Value": "org.hibernate.dialect.MySQL8Dialect"
+       },
+       {
+        "Name": "JAVA_TOOL_OPTIONS",
+        "Value": "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+       }
+      ],
+      "Essential": true,
+      "Image": "yennanliu/maze-app:latest",
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "MazeTaskDefMazeContainerLogGroup4C11E95F"
+        },
+        "awslogs-stream-prefix": "MazeApp",
+        "awslogs-region": {
+         "Ref": "AWS::Region"
+        }
+       }
+      },
+      "Memory": 512,
+      "Name": "MazeContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 8080,
+        "Protocol": "tcp"
+       }
+      ],
+      "Secrets": [
+       {
+        "Name": "SPRING_DATASOURCE_PASSWORD",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "MazeDatabaseSecretAttachmentCF8A2EE5"
+           },
+           ":password::"
+          ]
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "Cpu": "512",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "MazeTaskDefExecutionRole9294BB9E",
+      "Arn"
+     ]
+    },
+    "Family": "MazeCdkStack3MazeTaskDefEC61648F",
+    "Memory": "1024",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "RuntimePlatform": {
+     "CpuArchitecture": "X86_64",
+     "OperatingSystemFamily": "LINUX"
+    },
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "MazeTaskDefTaskRoleBA47DE06",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeTaskDef/Resource"
+   }
+  },
+  "MazeTaskDefMazeContainerLogGroup4C11E95F": {
+   "Type": "AWS::Logs::LogGroup",
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeTaskDef/MazeContainer/LogGroup/Resource"
+   }
+  },
+  "MazeTaskDefExecutionRole9294BB9E": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeTaskDef/ExecutionRole/Resource"
+   }
+  },
+  "MazeTaskDefExecutionRoleDefaultPolicy30037A97": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "MazeTaskDefMazeContainerLogGroup4C11E95F",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "MazeDatabaseSecretAttachmentCF8A2EE5"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "MazeTaskDefExecutionRoleDefaultPolicy30037A97",
+    "Roles": [
+     {
+      "Ref": "MazeTaskDefExecutionRole9294BB9E"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeTaskDef/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "MazeService6FC1F94C": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "MazeEcsClusterF88CB655"
+    },
+    "DeploymentConfiguration": {
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "MazeContainer",
+      "ContainerPort": 8080,
+      "TargetGroupArn": {
+       "Ref": "MazeALBMazeListenerMazeEcsTargetsGroupCE3C4808"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "MazeServiceSecurityGroup266646EE",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "MazeVpcPrivateSubnet1SubnetD0794F91"
+       },
+       {
+        "Ref": "MazeVpcPrivateSubnet2SubnetBF331A0C"
+       }
+      ]
+     }
+    },
+    "TaskDefinition": {
+     "Ref": "MazeTaskDef5C51DBFF"
+    }
+   },
+   "DependsOn": [
+    "MazeALBMazeListenerMazeEcsTargetsGroupCE3C4808",
+    "MazeALBMazeListenerA68FF3C3",
+    "MazeTaskDefTaskRoleBA47DE06"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeService/Service"
+   }
+  },
+  "MazeServiceSecurityGroup266646EE": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "MazeCdkStack-3/MazeService/SecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "DependsOn": [
+    "MazeTaskDefTaskRoleBA47DE06"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeService/SecurityGroup/Resource"
+   }
+  },
+  "MazeServiceSecurityGroupfromMazeCdkStack3MazeALBSecurityGroupA628F41F8080295749E4": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 8080,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "MazeServiceSecurityGroup266646EE",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "MazeALBSecurityGroup8DA20196",
+      "GroupId"
+     ]
+    },
+    "ToPort": 8080
+   },
+   "DependsOn": [
+    "MazeTaskDefTaskRoleBA47DE06"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeService/SecurityGroup/from MazeCdkStack3MazeALBSecurityGroupA628F41F:8080"
+   }
+  },
+  "MazeALBD0E6A4EB": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "MazeALBSecurityGroup8DA20196",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "MazeVpcPublicSubnet1Subnet9ACBA050"
+     },
+     {
+      "Ref": "MazeVpcPublicSubnet2Subnet69D189F2"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "MazeVpcPublicSubnet1DefaultRouteE955BAC3",
+    "MazeVpcPublicSubnet1RouteTableAssociation4E758BE0",
+    "MazeVpcPublicSubnet2DefaultRoute7BC50F1B",
+    "MazeVpcPublicSubnet2RouteTableAssociation09D62AAD"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeALB/Resource"
+   }
+  },
+  "MazeALBSecurityGroup8DA20196": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB MazeCdkStack3MazeALB6BE8EBA6",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeALB/SecurityGroup/Resource"
+   }
+  },
+  "MazeALBSecurityGrouptoMazeCdkStack3MazeServiceSecurityGroup8250EE3380809E9A0F52": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "MazeServiceSecurityGroup266646EE",
+      "GroupId"
+     ]
+    },
+    "FromPort": 8080,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "MazeALBSecurityGroup8DA20196",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 8080
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeALB/SecurityGroup/to MazeCdkStack3MazeServiceSecurityGroup8250EE33:8080"
+   }
+  },
+  "MazeALBMazeListenerA68FF3C3": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "MazeALBMazeListenerMazeEcsTargetsGroupCE3C4808"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "MazeALBD0E6A4EB"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeALB/MazeListener/Resource"
+   }
+  },
+  "MazeALBMazeListenerMazeEcsTargetsGroupCE3C4808": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckIntervalSeconds": 30,
+    "HealthCheckPath": "/",
+    "HealthCheckPort": "8080",
+    "HealthCheckTimeoutSeconds": 5,
+    "HealthyThresholdCount": 2,
+    "Port": 8080,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "UnhealthyThresholdCount": 2,
+    "VpcId": {
+     "Ref": "MazeVpcAC2E4A3B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/MazeALB/MazeListener/MazeEcsTargetsGroup/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/81X227jNhD9ltVjoahNsCjavNnO7sJosDHkNA8NjIImJwoTilR5ceIa/vcOb7IcO0WvgB8CSzOc4ZnhmUPlojr/8WP13QfyYs4oez4TfFlt5pbQ5xJNv26AXlSbu47eb4qWvI5+N8Vl8U1RFpLYL8TCC1lHy3ZRTh7k3WxSztxScDp3SwkWo8iKcEGWXHC7/kVJSPGrjk5Zeqac6bFQ9Dm9t6SLSabdjbwmTtLH4tJqB2XBu9X3kzfLiTG8kVP0jBjTYMyNnGgglisZoZUngiIAYexr37ri8h49i5MBeBooIpUigfxTrZyFW7IUsLPvbCNjFOUhQb/YP3yazvzPrtnlTPMVPv7nzHwgwpxAz/8djNNBciIwIgun0oJGumQORY1LbyOLOvnYgrTlHKjTiPeLVq5DbiHYtBUDQzXv+tS4uRDqZSTEjbNL5SSL45LEYSobj6d2AuvGRJQgBsElREscLKqkBOpTZjl2kv/mIPUnHKc3hw4Eecl4ju7il74b8dcqCHH/bwmY+dM7qH3KRZKN4UEcGBK0A3tMvC2BmmozEc7gqQ9OMaZO9vIz0Q3x6mOer+CBS+6rCHCO/IXI/aXlRElLsB96YEtJ56BXnMJ9jkzv21IzRHZFLFkSA1NpLJG4bFOAbLgfkfx0u+7ywBguGwE/G9C1soHbo67DGSGDk4xBd6BNsG2KBydE/5pm60npoQl73hFNWsBmhO59Ji0X672Meybjuk5pa2ogrIYAYYwfGK4zmfoDtuFTVGjj4ZjwmIpKAu4B8NSBQbmelFgbsLlVmjTQw38dHfew1M2vWEoyaWjVioiZQowevZGkM4/KomsZENdYtBz0j2pg3oAszcUOeWXyDb8oY1FZHw5n6u924C3UzNKr8WCnMjMG2a7DpQeS6nXY9ydY7yCjc68N4ZBqaPr59BPokEpyt+og7FhueKXCMZg8ImMoEsYMtiAUbuQMtfhFaTbBpoHmBFfKBkzWiWNQUp15CrZlRGJaIvF0NU5wGG80lfHnFocL7E6usQ8xJIGxwT9IfjxsW3LSVptaCT95iNu1wMZrf0qd5pLyjogRpaiIOXFc4wNGdHe5BDX7x9HYE7T0bU/SeKtmOUmmxD3eYcEbCogS3Pv6784/db6fdxE/tvCbLJqjHKd0t8p7DnY5NDMcSeSzb64ZAD5iDvvFrbalUA2q4bVq8jjpvbGMi7MbVV0QYzkVirAlEUgZFMYV/lszkMNr9I2DD4V/KN1DRzkM4HgXyN3iPb3PzmFAJFN/LQ1ekQ81GOV01P2UBe8a1Q7tsePJ8MY/02rFGegxjnqJX8RgsYGow42PwVu6c0heqRhUT+bb1fkP1fnH6uLDk+H8TCPfeAtVHX//AEM/LvQQDgAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "MazeCdkStack-3/CDKMetadata/Default"
+   },
+   "Condition": "CDKMetadataAvailable"
+  }
+ },
+ "Outputs": {
+  "MazeAppUrl": {
+   "Description": "URL of the Maze App",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "http://",
+      {
+       "Fn::GetAtt": [
+        "MazeALBD0E6A4EB",
+        "DNSName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "DatabaseEndpoint": {
+   "Description": "RDS MySQL endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "MazeDatabaseF02F1276",
+     "Endpoint.Address"
+    ]
+   }
+  },
+  "DatabaseSecretArn": {
+   "Description": "RDS MySQL credentials secret ARN",
+   "Value": {
+    "Ref": "MazeDatabaseSecretAttachmentCF8A2EE5"
+   }
+  }
+ },
+ "Conditions": {
+  "CDKMetadataAvailable": {
+   "Fn::Or": [
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "af-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-3"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-4"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-northwest-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-2"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "il-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "sa-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-west-1"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "AWS::Region"
+      },
+      "us-west-2"
+     ]
+    }
+   ]
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

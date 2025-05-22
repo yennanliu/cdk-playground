@@ -1,5 +1,5 @@
 # Use Amazon Corretto JDK 17 as base image
-FROM amazoncorretto:17-alpine
+FROM --platform=linux/amd64 amazoncorretto:17-alpine
 
 # Set the working directory in the container
 WORKDIR /app
