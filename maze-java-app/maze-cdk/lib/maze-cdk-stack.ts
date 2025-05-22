@@ -59,13 +59,9 @@ export class MazeCdkStack extends Stack {
       runtimePlatform: {
         cpuArchitecture: ecs.CpuArchitecture.X86_64,
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX
-<<<<<<< HEAD
       },
       memoryLimitMiB: 1024,
       cpu: 512
-=======
-      }
->>>>>>> 63ea396 (update)
     });
 
     // 5. Add container exposing port 8080
