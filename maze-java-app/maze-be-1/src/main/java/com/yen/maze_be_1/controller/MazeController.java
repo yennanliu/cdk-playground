@@ -22,7 +22,7 @@ public class MazeController {
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                maze[i][j] = random.nextInt(2); // 0 for path, 1 for wall
+                maze[i][j] = random.nextDouble() < 0.7 ? 0 : 1; // 70% chance for space (0), 30% for blocker (1)
             }
         }
 
