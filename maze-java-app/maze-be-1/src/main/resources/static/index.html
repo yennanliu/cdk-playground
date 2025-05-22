@@ -23,21 +23,50 @@
         .maze-cell.path {
             background-color: white;
         }
+        .controls {
+            margin: 20px 0;
+        }
+        .controls > div {
+            margin: 10px 0;
+        }
+        select, input, button {
+            margin: 0 5px;
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
     <h1>Maze Solver</h1>
-    <div>
-        <label for="rows">Rows:</label>
-        <input type="number" id="rows" value="5">
-        <label for="cols">Columns:</label>
-        <input type="number" id="cols" value="5">
-        <button onclick="generateMaze()">Generate Maze</button>
+    
+    <div class="controls">
+        <div>
+            <label for="rows">Rows:</label>
+            <input type="number" id="rows" value="5">
+            <label for="cols">Columns:</label>
+            <input type="number" id="cols" value="5">
+            <button onclick="generateMaze()">Generate Maze</button>
+        </div>
+        
+        <div>
+            <button onclick="saveMaze()">Save Maze</button>
+            <input type="text" id="mazeName" placeholder="Enter maze name">
+        </div>
+        
+        <div>
+            <label for="savedMazes">Load Saved Maze:</label>
+            <select id="savedMazes" onchange="loadSavedMaze()">
+                <option value="">Select a maze...</option>
+            </select>
+        </div>
     </div>
+
     <div id="maze-container" class="maze-container"></div>
     <button onclick="solveMaze2()">Solve Maze</button>
     <div id="result"></div>
     <script>
+        // Load saved mazes when page loads
+        window.onload = loadSavedMazesList;
+
         async function solveMaze2() {
             const mazeContainer = document.getElementById('maze-container');
             const rows = mazeContainer.children.length;

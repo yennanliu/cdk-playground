@@ -33,6 +33,23 @@ public class MazeController {
         mazeEntity.setHeight(height);
         mazeEntity.setMazeData(convertMazeToString(maze));
         
+        //return ResponseEntity.ok(mazeService.saveMaze(mazeEntity));
+        return ResponseEntity.ok(mazeEntity);
+    }
+
+    @PostMapping("/save")
+    public ResponseEntity<Maze> saveMaze(@RequestBody Map<String, Object> request) {
+        String name = (String) request.get("name");
+        int width = (int) request.get("width");
+        int height = (int) request.get("height");
+        String mazeData = (String) request.get("mazeData");
+        
+        Maze mazeEntity = new Maze();
+        mazeEntity.setName(name);
+        mazeEntity.setWidth(width);
+        mazeEntity.setHeight(height);
+        mazeEntity.setMazeData(mazeData);
+        
         return ResponseEntity.ok(mazeService.saveMaze(mazeEntity));
     }
 
