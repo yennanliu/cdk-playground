@@ -65,9 +65,9 @@ export class MazeCdkStack extends Stack {
       port: 80
     });
 
-    // Attach the ECS service to the ALB
+    // Update ALB listener to forward traffic to port 8080
     listener.addTargets('MazeEcsTargets', {
-      port: 80,
+      port: 8080, // Forward traffic to port 8080
       targets: [service]
     });
 

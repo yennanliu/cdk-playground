@@ -14,8 +14,11 @@ sudo docker tag maze-be-1:latest yennanliu/maze-app:latest
 
 sudo docker push yennanliu/maze-app:latest
 
+# (for debug) (pull remote docker img and run)
+sudo docker run --rm -it -p 8080:8080 yennanliu/maze-app:latest
 
-
+# clean
+sudo docker rmi -f $(sudo docker images -q)
 
 
 # cdk
