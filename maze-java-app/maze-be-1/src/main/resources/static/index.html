@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Solver</title>
+    <script src="mazeSolver.js" defer></script>
+</head>
+<body>
+    <h1>Maze Solver</h1>
+    <div>
+        <label for="rows">Rows:</label>
+        <input type="number" id="rows" value="10">
+        <label for="cols">Columns:</label>
+        <input type="number" id="cols" value="10">
+        <button onclick="generateMaze()">Generate Maze</button>
+    </div>
+    <div id="maze-container"></div>
+    <button onclick="solveMaze()">Solve Maze</button>
+</body>
+</html>
