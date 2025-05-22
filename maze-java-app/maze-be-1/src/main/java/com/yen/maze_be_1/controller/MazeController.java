@@ -14,6 +14,9 @@ public class MazeController {
 
     @GetMapping("/generate-maze")
     public int[][] generateMaze(@RequestParam int rows, @RequestParam int cols) {
+
+        System.out.println(">>> generateMaze start");
+
         int[][] maze = new int[rows][cols];
         Random random = new Random();
 

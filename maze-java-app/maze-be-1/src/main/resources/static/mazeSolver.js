@@ -4,6 +4,7 @@ async function generateMaze() {
 
     const response = await fetch(`/generate-maze?rows=${rows}&cols=${cols}`);
     const maze = await response.json();
+    console.log(">>> maze = " + JSON.stringify(maze));
 
     const mazeContainer = document.getElementById('maze-container');
     mazeContainer.innerHTML = '';
