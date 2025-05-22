@@ -11,12 +11,9 @@ java -version
 # Build the Spring Boot application
 ./mvnw clean package -DskipTests
 
-# Build the Docker image with no cache to ensure fresh content
-echo "Building Docker image with no cache..."
-docker buildx build --no-cache --platform=linux/amd64 -t yennanliu/maze-app:latest .
-
-# Push the image to Docker Hub
-docker push yennanliu/maze-app:latest
+# Build and push the Docker image with no cache to ensure fresh content
+echo "Building and pushing Docker image..."
+docker buildx build --no-cache --platform=linux/amd64 -t yennanliu/maze-app:dev-1 --push .
 
 echo "Image built and pushed successfully!"
 

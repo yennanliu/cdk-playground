@@ -66,7 +66,7 @@ export class MazeCdkStack extends Stack {
 
     // 5. Add container exposing port 8080
     const container = taskDefinition.addContainer('MazeContainer', {
-      image: ecs.ContainerImage.fromRegistry('yennanliu/maze-app:latest'),
+      image: ecs.ContainerImage.fromRegistry('yennanliu/maze-app:dev-1'),
       memoryLimitMiB: 512,
       cpu: 256,
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'MazeApp' }),
