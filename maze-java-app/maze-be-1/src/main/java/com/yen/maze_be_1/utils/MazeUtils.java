@@ -23,12 +23,13 @@ public class MazeUtils {
     
     public static int[][] generateMazeArray(int width, int height) {
         logger.debug("Generating maze array with dimensions: {}x{}", width, height);
+        Double SPACE_PCT = 0.7;
         int[][] maze = new int[height][width];
         Random random = new Random();
 
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                maze[i][j] = random.nextDouble() < 0.7 ? 0 : 1; // 70% chance for space (0), 30% for blocker (1)
+                maze[i][j] = random.nextDouble() < SPACE_PCT ? 0 : 1; // 70% chance for space (0), 30% for blocker (1)
             }
         }
 
@@ -83,7 +84,12 @@ public class MazeUtils {
         }
 
         // Backtrack
-        path.setLength(path.length() - 7); // Remove last " -> "
+        // When ALL 4 directions fail, we need to undo our changes
+        // because this cell is part of a dead-end path.
+        int lastArrowIndex = path.lastIndexOf(" -> ");
+        if (lastArrowIndex != -1) {
+            path.setLength(lastArrowIndex);
+        }
         pathCoordinates.remove(pathCoordinates.size() - 1); // Remove the last coordinate
         logger.trace("Backtracking from ({},{})", x, y);
         visited[x][y] = false;

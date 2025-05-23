@@ -369,5 +369,46 @@ class MazeUtilsTest {
             // Then
             assertFalse(result, "Should return false for already visited position");
         }
+
+        @Test
+        @DisplayName("Should handle backtracking with double-digit coordinates correctly")
+        void shouldHandleBacktrackingWithDoubleDigitCoordinates() {
+            // Given - create a 12x12 maze to test double-digit coordinates
+            int size = 12;
+            int[][] maze = new int[size][size];
+            // Initialize maze with all paths (0s)
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < size; j++) {
+                    maze[i][j] = 0;
+                }
+            }
+            
+            // Create a specific pattern that forces backtracking with double-digit coordinates
+            // Block some paths to force the algorithm to backtrack
+            maze[10][11] = 1; // Block the direct path to destination
+            maze[11][10] = 1; // Force alternative routing
+            
+            boolean[][] visited = new boolean[size][size];
+            StringBuilder path = new StringBuilder();
+            List<int[]> pathCoordinates = new ArrayList<>();
+            
+            // When
+            boolean result = MazeUtils.dfs(maze, 0, 0, size, size, visited, path, pathCoordinates);
+            
+            // Then
+            assertTrue(result, "Should find a path even with double-digit coordinates");
+            assertFalse(pathCoordinates.isEmpty(), "Should have path coordinates");
+            
+            // Verify the final coordinate is the destination
+            int[] lastCoord = pathCoordinates.get(pathCoordinates.size() - 1);
+            assertEquals(size - 1, lastCoord[0], "Last coordinate should be destination row");
+            assertEquals(size - 1, lastCoord[1], "Last coordinate should be destination column");
+            
+            // Verify path string format - should not have trailing " -> "
+            String pathStr = path.toString();
+            assertFalse(pathStr.endsWith(" -> "), "Path should not end with arrow");
+            assertTrue(pathStr.contains("(10,"), "Path should contain double-digit coordinates");
+            assertTrue(pathStr.contains("(11,11)"), "Path should end with destination (11,11)");
+        }
     }
 } 
