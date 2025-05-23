@@ -6,7 +6,7 @@ A full-stack cloud-native application for generating, solving, and managing maze
 
   
 
-## 🏗️ Project Overview
+## Project Overview
 
   
 
@@ -32,7 +32,7 @@ This project demonstrates a modern cloud-native approach to building and deployi
 
   
 
-## 🏛️ Project Architecture
+## Architecture
 
   
 
@@ -180,7 +180,7 @@ class CDK,DOCKER,GIT dev
 
   
 
-## 🚀 Backend Application
+## Backend Application
 
   
 
@@ -208,7 +208,7 @@ class CDK,DOCKER,GIT dev
 
   
 
-#### 🎯 Maze Operations
+#### Maze Operations
 
 -  **Generate Maze**: Algorithmic generation with configurable dimensions
 
@@ -220,7 +220,7 @@ class CDK,DOCKER,GIT dev
 
   
 
-#### 🔧 API Endpoints
+#### API Endpoints
 
   
 
@@ -242,7 +242,7 @@ DELETE /api/maze/{id} # Delete maze
 
   
 
-#### 📊 Application Layers
+#### Application Layers
 
   
 
@@ -438,7 +438,7 @@ JAVA_TOOL_OPTIONS=-XX:+UseContainerSupport  -XX:MaxRAMPercentage=75.0
 
   
 
-## 🔧 Deployment & Operations
+## Deployment & Operations
 
   
 
@@ -480,7 +480,7 @@ docker  push  yennanliu/maze-app:dev-1
 
   
 
-## 🤔 Considerations & TODOs
+## Considerations & TODOs
 
   
 
