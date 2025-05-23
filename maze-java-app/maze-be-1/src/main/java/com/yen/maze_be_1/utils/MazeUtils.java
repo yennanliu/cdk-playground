@@ -84,6 +84,8 @@ public class MazeUtils {
         }
 
         // Backtrack
+        // When ALL 4 directions fail, we need to undo our changes
+        // because this cell is part of a dead-end path.
         int lastArrowIndex = path.lastIndexOf(" -> ");
         if (lastArrowIndex != -1) {
             path.setLength(lastArrowIndex);
