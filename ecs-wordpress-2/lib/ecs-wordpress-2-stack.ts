@@ -129,7 +129,7 @@ export class EcsWordpress2Stack extends Stack {
     // Create ECS Cluster
     const cluster = new ecs.Cluster(this, 'WordPressCluster', {
       vpc,
-      containerInsights: true,
+      containerInsightsV2: ecs.ContainerInsights.ENABLED,
     });
 
     // Create CloudWatch Log Group
