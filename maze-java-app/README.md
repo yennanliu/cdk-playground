@@ -240,47 +240,6 @@ DELETE /api/maze/{id} # Delete maze
 
 ```
 
-  
-
-#### Application Layers
-
-  
-
-```
-
-├── Controller Layer (REST API)
-
-│ ├── MazeController # REST endpoints
-
-│ └── Error Handling # Global exception handling
-
-├── Service Layer (Business Logic)
-
-│ ├── MazeService # Business operations
-
-│ └── Transaction Management
-
-├── Repository Layer (Data Access)
-
-│ ├── MazeRepository # JPA repository
-
-│ └── Database Operations
-
-├── Utils Layer (Algorithms)
-
-│ ├── MazeUtils # Generation & solving algorithms
-
-│ └── DFS Implementation
-
-└── Model Layer (Entities)
-
-├── Maze Entity # JPA entity mapping
-
-└── Database Schema
-
-```
-
-  
 
 ### Running the Backend Locally
 
