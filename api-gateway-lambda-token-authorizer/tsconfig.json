@@ -4,7 +4,8 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": [
-      "es2022"
+      "es2022",
+      "DOM"
     ],
     "declaration": true,
     "strict": true,
@@ -20,6 +21,8 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
+    "isolatedModules": true,
+    "types": ["node", "jest"],
     "typeRoots": [
       "./node_modules/@types"
     ]
