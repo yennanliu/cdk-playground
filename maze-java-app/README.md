@@ -441,6 +441,8 @@ docker  push  yennanliu/maze-app:dev-1
 
 ## Considerations & TODOs
 
+- Optimize `maze_data` storage structure (blob, json...)
+
   
 
 ### Current Limitations

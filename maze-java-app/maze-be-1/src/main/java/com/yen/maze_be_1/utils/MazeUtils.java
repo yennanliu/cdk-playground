@@ -84,7 +84,10 @@ public class MazeUtils {
         }
 
         // Backtrack
-        path.setLength(path.length() - 7); // Remove last " -> "
+        int lastArrowIndex = path.lastIndexOf(" -> ");
+        if (lastArrowIndex != -1) {
+            path.setLength(lastArrowIndex);
+        }
         pathCoordinates.remove(pathCoordinates.size() - 1); // Remove the last coordinate
         logger.trace("Backtracking from ({},{})", x, y);
         visited[x][y] = false;
