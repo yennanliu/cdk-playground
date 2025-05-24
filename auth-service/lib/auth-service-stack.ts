@@ -36,6 +36,7 @@ export class AuthServiceStack extends Stack {
       authFlows: {
         userPassword: true,
         userSrp: true,
+        adminUserPassword: true, // Required for ADMIN_NO_SRP_AUTH flow
       },
       oAuth: {
         flows: {
