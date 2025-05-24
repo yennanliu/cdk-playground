@@ -92,9 +92,9 @@ export class AirflowEcs2Stack extends Stack {
       ],
     });
 
-    // Create log group
+    // Create log group with unique name
     const logGroup = new logs.LogGroup(this, 'AirflowLogGroup', {
-      logGroupName: '/ecs/airflow',
+      logGroupName: `/ecs/airflow-${this.stackName.toLowerCase()}`,
       retention: logs.RetentionDays.ONE_WEEK,
     });
 
