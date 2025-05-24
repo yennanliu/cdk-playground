@@ -131,11 +131,65 @@ export class AirflowEcs2Stack extends Stack {
       command: [
         'bash', '-c',
         `
-        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@\${POSTGRES_HOST}:\${POSTGRES_PORT}/\${POSTGRES_DB}" &&
-        airflow db init &&
-        airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin123 &&
+        set -e
+        echo "Starting Airflow initialization..."
+        
+        # Set the database connection string
+        export AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="postgresql+psycopg2://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@\${POSTGRES_HOST}:\${POSTGRES_PORT}/\${POSTGRES_DB}"
+        echo "Database connection configured"
+        
+        # Function to retry database operations
+        retry_db_operation() {
+          local max_attempts=10
+          local attempt=0
+          local operation="\$1"
+          
+          until [ \$attempt -ge \$max_attempts ]; do
+            attempt=\$((attempt + 1))
+            echo "Attempting \$operation (attempt \$attempt/\$max_attempts)..."
+            
+            if eval "\$operation"; then
+              echo "\$operation completed successfully"
+              return 0
+            else
+              echo "\$operation failed, waiting 15 seconds before retry..."
+              sleep 15
+            fi
+          done
+          
+          echo "\$operation failed after \$max_attempts attempts"
+          return 1
+        }
+        
+        # Wait a bit for database to be fully ready
+        echo "Waiting for database to be ready..."
+        sleep 30
+        
+        # Initialize/migrate the database with retries
+        retry_db_operation "airflow db migrate"
+        
+        # Create default connections (optional, continue if fails)
+        echo "Creating default connections..."
+        airflow connections create-default-connections || echo "Default connections creation skipped"
+        
+        # Create admin user with retries
+        echo "Creating admin user..."
+        retry_db_operation "airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin123"
+        
+        echo "Database initialization completed successfully!"
+        echo "Starting Airflow services..."
+        
+        # Start webserver in background
         airflow webserver --port 8080 &
-        airflow scheduler
+        webserver_pid=\$!
+        echo "Webserver started with PID \$webserver_pid"
+        
+        # Give webserver time to start
+        sleep 15
+        
+        # Start scheduler in foreground (this keeps container running)
+        echo "Starting scheduler..."
+        exec airflow scheduler
         `
       ],
     });

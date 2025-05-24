@@ -97,8 +97,16 @@ For production use, consider:
 ## Troubleshooting
 
 1. **Service fails to start**: Check CloudWatch logs at `/ecs/airflow`
-2. **Database connection issues**: Verify security group rules
+2. **Database connection issues**: Verify security group rules and ensure RDS is in AVAILABLE state
 3. **ALB health checks failing**: Ensure container starts properly and port 8080 is accessible
+4. **Database initialization errors**: The container waits 30 seconds and retries database operations up to 10 times. Check logs for detailed error messages.
+5. **Container keeps restarting**: This usually indicates database connection issues. Verify RDS is ready and credentials are correct in Secrets Manager.
+
+### Common Issues
+
+- **"You need to initialize the database"**: This is handled automatically with retry logic. The container should eventually succeed.
+- **Database connection timeout**: RDS t3.micro instances can take 5-10 minutes to become available after deployment.
+- **Health check failures**: Airflow needs time to start. Health checks may fail for the first 5-10 minutes.
 
 ## Useful Commands
 
