@@ -13,25 +13,31 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
     super(scope, id, props);
 
     // Create a new S3 bucket
+    const buckets: s3.Bucket[] = [];
     for (let i = 1; i <= 3; i++) {
       console.log(`>>> Build S3 bucket :  ${i}`);
-      new s3.Bucket(this, `my-second-bucket-${i}`, {
-        bucketName: `my-second-cdk-bucket-${i}`, // Unique name for the bucket
-        versioned: true, // Enable versioning for the bucket
-        removalPolicy: cdk.RemovalPolicy.DESTROY, // Automatically delete the bucket when the stack is deleted
-        autoDeleteObjects: true, // Automatically delete objects when the bucket is deleted
+      const bucket = new s3.Bucket(this, `my-second-bucket-${i}`, {
+        bucketName: `my-second-cdk-bucket-${i}`,
+        versioned: true,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        autoDeleteObjects: true,
       });
+      buckets.push(bucket);
     }
 
     // Create a Lambda function
     const myLambdaFunction = new lambda.Function(this, 'MyLambdaFunction', {
-      runtime: lambda.Runtime.NODEJS_18_X, // Use the latest Node.js runtime
-      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')), // Path to the Lambda function code
-      handler: 'handler.handler', // The file and function name
+      runtime: lambda.Runtime.NODEJS_18_X,
+      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
+      handler: 'handler.handler',
       environment: {
-        BUCKET_NAME: `my-second-cdk-bucket-1`, // Environment variable for the bucket name
+        BUCKET_NAME: `my-second-cdk-bucket-1`,
       },
     });
+
+    // NOTE !!! grant the Lambda function permission to read from the S3 bucket
+    // Grant the Lambda function permission to write to the S3 bucket
+    buckets[0].grantPut(myLambdaFunction);
 
     const api = new apigateway.RestApi(this, 'simeple-api', {
       restApiName: 'simple-api',
