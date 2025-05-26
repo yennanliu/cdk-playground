@@ -21,18 +21,33 @@ export const handler = async (event: any = {}): Promise<any> => {
     const bucketName = process.env.BUCKET_NAME;
     const key = `timestamp-${timestamp}.txt`;
 
+    // Save the entire event as the file content (JSON string)
+    console.log(`>>> event: ${JSON.stringify(event)}`);
+    // const event2 = {
+    //     'a': addEventListener, 'b': event, 'c': timestamp, 'd': bucketName, 'e': key, 'f': process.env.BUCKET_NAME
+    //     , 'g': process.env.AWS_REGION, 'h': process.env.AWS_LAMBDA_FUNCTION_NAME, 'i': process.env.AWS_LAMBDA_FUNCTION_VERSION
+    // };
+    const event2 = {
+        a: 'addEventListener',
+        c: timestamp,
+        d: bucketName,
+        e: key,
+    }
+    console.log(`>>> event2: ${JSON.stringify(event2)}`);
+    const bodyContent = JSON.stringify(event2);
+
     const putParams = {
         Bucket: bucketName,
         Key: key,
-        Body: timestamp,
-        ContentType: 'text/plain',
+        Body: bodyContent,
+        ContentType: 'application/json',
     };
 
     try {
         await s3.send(new PutObjectCommand(putParams));
         return {
             statusCode: 200,
-            body: JSON.stringify({ message: 'Timestamp saved', key }),
+            body: JSON.stringify({ message: 'Content saved', key }),
         };
     } catch (err) {
         return {
