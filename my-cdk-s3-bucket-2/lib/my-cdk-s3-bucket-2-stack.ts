@@ -3,6 +3,11 @@ import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as path from 'path';
+
+
 export class MyCdkS3Bucket2Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -18,37 +23,25 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
       });
     }
 
-    // create vpc
-    // const vpc = new ec2.Vpc(this, "MyVpc", {
-    //   maxAzs: 2, // Default is all AZs in the region
-    //   natGateways: 1});
-    const vpc = new ec2.Vpc(this, "MyVpc", {
-      maxAzs: 2, // Default is all AZs in the region
+    // Create a Lambda function
+    const myLambdaFunction = new lambda.Function(this, 'MyLambdaFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X, // Use the latest Node.js runtime
+      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')), // Path to the Lambda function code
+      handler: 'handler.handler', // The file and function name
+      environment: {
+        BUCKET_NAME: `my-second-cdk-bucket-1`, // Environment variable for the bucket name
+      },
     });
 
-    // creare security group
-    const securityGroup = new ec2.SecurityGroup(this, "MySecurityGroup", {
-      vpc,
-      allowAllOutbound: true, // Allow all outbound traffic
+    const api = new apigateway.RestApi(this, 'simeple-api', {
+      restApiName: 'simple-api',
+      description: 'This is a simple API',
     });
-    securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(), // Allow all inbound traffic from any IPv4 address
-      ec2.Port.tcp(22), // Allow ssh access
-      "Allow HTTP traffic"
-    );
 
-    // add ec2
-    const instance = new ec2.Instance(this, "MyInstance", {
-      vpc,
-      instanceType: new ec2.InstanceType("t2.micro"),
-      machineImage: new ec2.AmazonLinuxImage(), // Use the latest Amazon Linux AMI
-      securityGroup: securityGroup,
-    });
-    // instance.userData.addCommands(
-    //   "yum update -y",
-    //   "yum install -y httpd",);
-
-
+    // Create a resource and method for the Lambda function
+    const lambdaIntegration = new apigateway.LambdaIntegration(myLambdaFunction);
+    const resource = api.root.addResource('timestamp');
+    resource.addMethod('GET', lambdaIntegration); // Add a POST method to call the Lambda
   }
 
 
