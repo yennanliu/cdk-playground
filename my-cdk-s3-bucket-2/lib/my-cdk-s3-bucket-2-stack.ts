@@ -47,7 +47,28 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
     // Create a resource and method for the Lambda function
     const lambdaIntegration = new apigateway.LambdaIntegration(myLambdaFunction);
     const resource = api.root.addResource('timestamp');
-    resource.addMethod('GET', lambdaIntegration); // Add a POST method to call the Lambda
+    resource.addMethod('GET', lambdaIntegration); // Add a GET method to call the Lambda
+
+    // Create a Lambda function for scraping books.toscrape.com
+    const scrapeBooksLambda = new lambda.Function(this, 'ScrapeBooksLambda', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
+      handler: 'handler.scrapeBooksToScrape',
+      environment: {
+        BUCKET_NAME: `my-second-cdk-bucket-1`,
+      },
+      timeout: cdk.Duration.seconds(10),
+    });
+
+
+    // NOTE !!! grant the Lambda function permission to read from the S3 bucket
+    // Grant the Lambda function permission to write to the S3 bucket
+    buckets[0].grantPut(scrapeBooksLambda);
+
+    // API Gateway resource for scraping
+    const scrapeBooksIntegration = new apigateway.LambdaIntegration(scrapeBooksLambda);
+    const scrapeResource = api.root.addResource('scrape-books');
+    scrapeResource.addMethod('GET', scrapeBooksIntegration);
   }
 
 

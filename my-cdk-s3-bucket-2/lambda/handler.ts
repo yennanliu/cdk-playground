@@ -1,19 +1,5 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-// AWS Lambda function to handle operations
-/** NOTE !!! 
-     *  
-     * AWS CDK expects `lambda code` written in javascript (instead of typescript)
-     * so we need to compile the typescript code to javascript first
-     * then we are able to refer to the compiled javascript code
-     * as below
-     * 
-     *  1) add `lambda-crudl/tsconfig.lambda.json` 
-     *  2) compile the typescript code to javascript : npx tsc -p tsconfig.lambda.json
-     *  3) cdk deploy
-     */
-
-
 const s3 = new S3Client({});
 
 export const handler = async (event: any = {}): Promise<any> => {
@@ -53,6 +39,46 @@ export const handler = async (event: any = {}): Promise<any> => {
         return {
             statusCode: 500,
             body: JSON.stringify({ error: (err as Error)?.message || String(err) }),
+        };
+    }
+};
+
+// Scrape http://books.toscrape.com/ and return the HTML content
+export const scrapeBooksToScrape = async (): Promise<any> => {
+    const url = 'http://books.toscrape.com/';
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+        }
+
+        const bodyContent = JSON.stringify(response.headers);
+        console.log(`>>> response headers: ${bodyContent}`);
+        console.log(`>>> response status: ${response.status}`);
+        const html = await response.text();
+        // save to S3 bucket
+        const bucketName = process.env.BUCKET_NAME;
+        const key = `scraped-books-${new Date().toISOString()}.html`;
+        const putParams = {
+            Bucket: bucketName,
+            Key: key,
+            Body: html,
+            ContentType: 'text/html',
+        };
+        await s3.send(new PutObjectCommand(putParams));
+        console.log(`>>> Scraped HTML saved to S3 bucket: ${bucketName}, key: ${key}`);
+        // Return the HTML content
+        console.log(`>>> Scraped HTML content length: ${html.length}`);
+        console.log(`>>> Scraped HTML content: ${html.substring(0, 100)}...`); // Log first 100 characters for brevity  
+        return {
+            statusCode: 200,
+            body: html
+        };
+    } catch (err) {
+        console.error('Scraping error:', err);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: (err as Error)?.message || String(err) })
         };
     }
 };
