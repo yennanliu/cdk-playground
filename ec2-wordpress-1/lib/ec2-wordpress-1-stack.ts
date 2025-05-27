@@ -61,7 +61,7 @@ export class Ec2Wordpress1Stack extends cdk.Stack {
 
     // RDS MySQL instance in private subnet
     const dbInstance = new rds.DatabaseInstance(this, 'WordpressRDS', {
-      engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0_28 }),
+      engine: rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0_39 }),
       vpc,
       credentials: rds.Credentials.fromSecret(dbCredentialsSecret),
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
@@ -128,9 +128,9 @@ export class Ec2Wordpress1Stack extends cdk.Stack {
       vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
-      machineImage: ec2.MachineImage.latestAmazonLinux(),
+      machineImage: ec2.MachineImage.latestAmazonLinux2(),
       securityGroup: ec2Sg,
-      keyName: 'yen-wipro-aws-dev-key-2', // <-- replace with your EC2 key pair name for SSH access
+      keyPair: ec2.KeyPair.fromKeyPairName(this, 'KeyPair', 'yen-wipro-aws-dev-key-2'), // <-- replace with your EC2 key pair name for SSH access
       role,
       userData,
       associatePublicIpAddress: true,
