@@ -15,9 +15,9 @@ export class Ec2Wordpress1Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // VPC with single AZ
+    // VPC with multiple AZs (required for RDS)
     const vpc = new ec2.Vpc(this, 'Vpc', {
-      maxAzs: 1,
+      maxAzs: 2,
       subnetConfiguration: [
         {
           name: 'PublicSubnet',
