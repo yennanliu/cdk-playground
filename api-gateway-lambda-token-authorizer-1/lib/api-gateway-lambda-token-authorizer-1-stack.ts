@@ -68,8 +68,9 @@ export class ApiGatewayLambdaTokenAuthorizer1Stack extends Stack {
         exports.handler = async function(event, context) {
           console.log('Received event:', JSON.stringify(event, null, 2));
           
-          // Extract user context from the authorizer
-          const authContext = event.requestContext.authorizer || {};
+          // Safely access authorizer context
+          const requestContext = event?.requestContext || {};
+          const authContext = requestContext?.authorizer || {};
           
           return {
             statusCode: 200,
@@ -146,7 +147,11 @@ export class ApiGatewayLambdaTokenAuthorizer1Stack extends Stack {
         handler: 'index.handler',
         code: lambda.Code.fromInline(`
           exports.handler = async function(event, context) {
-            const authContext = event.requestContext.authorizer || {};
+            console.log('Received event:', JSON.stringify(event, null, 2));
+            
+            // Safely access authorizer context
+            const requestContext = event?.requestContext || {};
+            const authContext = requestContext?.authorizer || {};
             
             return {
               statusCode: 200,
