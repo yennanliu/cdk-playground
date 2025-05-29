@@ -60,7 +60,7 @@ export class EcsGitbucket1Stack extends cdk.Stack {
      * 
      * Username: root, Password: root
      */
-    new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'GitBucketService', {
+    const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'GitBucketService', {
       cluster,
       cpu: 512,
       memoryLimitMiB: 1024,
@@ -70,7 +70,8 @@ export class EcsGitbucket1Stack extends cdk.Stack {
         image: ecs.ContainerImage.fromRegistry('gitbucket/gitbucket'),
         containerPort: 8080,
         environment: {
-          // Optional env vars if needed
+          // Configure GitBucket for proper Git operations
+          GITBUCKET_HOME: '/gitbucket',
         },
         secrets: {
           // Example usage: expose secret to container if needed
@@ -83,9 +84,20 @@ export class EcsGitbucket1Stack extends cdk.Stack {
       },
     });
 
+    // Allow HTTP traffic for Git operations (GitBucket uses HTTP/HTTPS for Git push/pull)
+    fargateService.service.connections.allowFromAnyIpv4(
+      ec2.Port.tcp(8080),
+      'Allow HTTP access for GitBucket web interface and Git operations'
+    );
+
     new cdk.CfnOutput(this, 'GitBucketURL', {
-      value: `http://${this.stackName}.elb.${this.region}.amazonaws.com`,
+      value: `http://${fargateService.loadBalancer.loadBalancerDnsName}`,
       description: 'GitBucket Load Balancer URL',
+    });
+
+    new cdk.CfnOutput(this, 'GitCloneURLFormat', {
+      value: `http://${fargateService.loadBalancer.loadBalancerDnsName}/git/{username}/{repository}.git`,
+      description: 'Git clone URL format - replace {username} and {repository} with actual values',
     });
   }
 }
