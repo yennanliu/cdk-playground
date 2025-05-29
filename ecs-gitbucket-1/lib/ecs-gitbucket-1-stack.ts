@@ -54,6 +54,12 @@ export class EcsGitbucket1Stack extends cdk.Stack {
     });
 
     // Fargate service + ALB
+    /** 
+     * 
+     * default login credentials for GitBucket:
+     * 
+     * Username: root, Password: root
+     */
     new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'GitBucketService', {
       cluster,
       cpu: 512,
