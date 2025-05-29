@@ -9,8 +9,6 @@ import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as custom_resources from "aws-cdk-lib/custom-resources";
 
 export class EcsGitbucket2Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -109,7 +107,7 @@ export class EcsGitbucket2Stack extends cdk.Stack {
     // RDS PostgreSQL Database
     const database = new rds.DatabaseInstance(this, "GitBucketDatabase", {
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_15_4,
+        version: rds.PostgresEngineVersion.VER_14_17,
       }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       vpc,
@@ -172,13 +170,12 @@ export class EcsGitbucket2Stack extends cdk.Stack {
       image: ecs.ContainerImage.fromRegistry("gitbucket/gitbucket"),
       environment: {
         GITBUCKET_HOME: "/gitbucket",
+        // GitBucket database configuration via environment variables
         GITBUCKET_DB_URL: `jdbc:postgresql://${database.instanceEndpoint.hostname}:${database.instanceEndpoint.port}/gitbucket`,
-        GITBUCKET_DB_USER: dbSecret.secretValueFromJson("username").unsafeUnwrap(),
-        GITBUCKET_DB_PASSWORD: dbSecret.secretValueFromJson("password").unsafeUnwrap(),
       },
       secrets: {
-        DB_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret, "password"),
-        DB_USERNAME: ecs.Secret.fromSecretsManager(dbSecret, "username"),
+        GITBUCKET_DB_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret, "password"),
+        GITBUCKET_DB_USER: ecs.Secret.fromSecretsManager(dbSecret, "username"),
       },
       logging: ecs.LogDrivers.awsLogs({
         logGroup,
@@ -251,14 +248,6 @@ export class EcsGitbucket2Stack extends cdk.Stack {
     // Allow RDS access from ECS service
     database.connections.allowDefaultPortFrom(fargateService.service);
 
-    // Create database configuration file in EFS (using custom resource)
-    const dbConfigScript = new cdk.CustomResource(this, "DatabaseConfig", {
-      serviceToken: this.createDbConfigProvider(vpc, fileSystem, accessPoint, dbSecret, database).serviceToken,
-    });
-
-    dbConfigScript.node.addDependency(database);
-    dbConfigScript.node.addDependency(accessPoint);
-
     // Outputs
     new cdk.CfnOutput(this, "GitBucketURL", {
       value: `http://${fargateService.loadBalancer.loadBalancerDnsName}`,
@@ -279,90 +268,10 @@ export class EcsGitbucket2Stack extends cdk.Stack {
       value: fileSystem.fileSystemId,
       description: "EFS File System ID",
     });
-  }
 
-  private createDbConfigProvider(
-    vpc: ec2.Vpc,
-    fileSystem: efs.FileSystem,
-    accessPoint: efs.AccessPoint,
-    dbSecret: secretsmanager.Secret,
-    database: rds.DatabaseInstance
-  ) {
-    // Lambda function to create database configuration
-    const configLambda = new lambda.Function(this, "DbConfigLambda", {
-      runtime: lambda.Runtime.PYTHON_3_9,
-      handler: "index.handler",
-      vpc,
-      vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      },
-      filesystem: lambda.FileSystem.fromEfsAccessPoint(accessPoint, "/mnt/efs"),
-      timeout: cdk.Duration.minutes(5),
-      code: lambda.Code.fromInline(`
-import json
-import os
-import boto3
-
-def handler(event, context):
-    try:
-        request_type = event['RequestType']
-        
-        if request_type == 'Create' or request_type == 'Update':
-            # Get database credentials from Secrets Manager
-            secrets_client = boto3.client('secretsmanager')
-            secret_value = secrets_client.get_secret_value(
-                SecretId='${dbSecret.secretArn}'
-            )
-            secret_data = json.loads(secret_value['SecretString'])
-            
-            # Create database.conf file
-            db_config = f'''db {{
-  url = "jdbc:postgresql://${database.instanceEndpoint.hostname}:${database.instanceEndpoint.port}/gitbucket"
-  user = "{secret_data['username']}"
-  password = "{secret_data['password']}"
-}}'''
-            
-            # Write to EFS
-            config_path = "/mnt/efs/database.conf"
-            os.makedirs(os.path.dirname(config_path), exist_ok=True)
-            with open(config_path, 'w') as f:
-                f.write(db_config)
-            
-            print(f"Database configuration written to {config_path}")
-            
-        return {
-            'Status': 'SUCCESS',
-            'PhysicalResourceId': 'db-config-setup',
-            'Data': {'Message': 'Database configuration created successfully'}
-        }
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return {
-            'Status': 'FAILED',
-            'PhysicalResourceId': 'db-config-setup',
-            'Reason': str(e)
-        }
-      `),
-    });
-
-    // Grant permissions
-    dbSecret.grantRead(configLambda);
-    fileSystem.connections.allowDefaultPortFrom(configLambda);
-
-    configLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          "elasticfilesystem:ClientMount",
-          "elasticfilesystem:ClientWrite",
-        ],
-        resources: [fileSystem.fileSystemArn],
-      })
-    );
-
-    // Custom resource provider
-    return new custom_resources.Provider(this, "DbConfigProvider", {
-      onEventHandler: configLambda,
+    new cdk.CfnOutput(this, "DatabaseConfigInstructions", {
+      value: "GitBucket will auto-configure database on first startup using environment variables",
+      description: "Database Configuration",
     });
   }
 }
