@@ -144,8 +144,8 @@ export class EcsGitbucket2Stack extends cdk.Stack {
 
     // Task Definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, "GitBucketTaskDef", {
-      memoryLimitMiB: 2048,
-      cpu: 1024,
+      memoryLimitMiB: 4096,
+      cpu: 2048,
     });
 
     // Add EFS volume to task definition
@@ -200,6 +200,9 @@ export class EcsGitbucket2Stack extends cdk.Stack {
         GITBUCKET_HOME: "/gitbucket",
         // GitBucket database configuration via environment variables
         GITBUCKET_DB_URL: `jdbc:postgresql://${database.instanceEndpoint.hostname}:${database.instanceEndpoint.port}/gitbucket`,
+        // Git-specific optimizations for large pushes
+        GIT_HTTP_MAX_REQUEST_BUFFER: "100M",
+        GITBUCKET_MAX_FILE_SIZE: "100M",
       },
       secrets: {
         GITBUCKET_DB_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret, "password"),
@@ -211,10 +214,10 @@ export class EcsGitbucket2Stack extends cdk.Stack {
       }),
       healthCheck: {
         command: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"],
-        interval: cdk.Duration.seconds(30),
-        timeout: cdk.Duration.seconds(5),
-        retries: 3,
-        startPeriod: cdk.Duration.seconds(60),
+        interval: cdk.Duration.seconds(60),
+        timeout: cdk.Duration.seconds(30),
+        retries: 5,
+        startPeriod: cdk.Duration.seconds(120),
       },
     });
 
@@ -252,22 +255,22 @@ export class EcsGitbucket2Stack extends cdk.Stack {
     fargateService.targetGroup.configureHealthCheck({
       path: "/",
       healthyHttpCodes: "200,302",
-      interval: cdk.Duration.seconds(30),
-      timeout: cdk.Duration.seconds(5),
-      healthyThresholdCount: 2,
-      unhealthyThresholdCount: 5,
+      interval: cdk.Duration.seconds(60),
+      timeout: cdk.Duration.seconds(10),
+      healthyThresholdCount: 3,
+      unhealthyThresholdCount: 10,
     });
 
     // Increase deregistration delay for graceful shutdown during git operations
     fargateService.targetGroup.setAttribute(
       "deregistration_delay.timeout_seconds",
-      "300"
+      "600"
     );
 
     // Configure load balancer for large uploads (git push)
     fargateService.loadBalancer.setAttribute(
       "idle_timeout.timeout_seconds",
-      "300"
+      "900"
     );
 
     // Allow EFS access from ECS service
