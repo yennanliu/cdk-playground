@@ -67,6 +67,13 @@ export class EcsGitbucket2Stack extends cdk.Stack {
       "Allow ECS to access EFS"
     );
 
+    // Explicitly allow ECS outbound to EFS
+    ecsSecurityGroup.addEgressRule(
+      efsSecurityGroup,
+      ec2.Port.tcp(2049),
+      "Allow ECS outbound to EFS"
+    );
+
     // Allow ECS to access RDS
     rdsSecurityGroup.addIngressRule(
       ecsSecurityGroup,
@@ -90,6 +97,11 @@ export class EcsGitbucket2Stack extends cdk.Stack {
       posixUser: {
         uid: "1000",
         gid: "1000",
+      },
+      createAcl: {
+        ownerGid: "1000",
+        ownerUid: "1000",
+        permissions: "755",
       },
     });
 
@@ -146,6 +158,7 @@ export class EcsGitbucket2Stack extends cdk.Stack {
           iam: "ENABLED",
         },
         transitEncryption: "ENABLED",
+        rootDirectory: "/",
       },
     });
 
@@ -158,7 +171,22 @@ export class EcsGitbucket2Stack extends cdk.Stack {
           "elasticfilesystem:ClientWrite",
           "elasticfilesystem:ClientRootAccess",
         ],
-        resources: [fileSystem.fileSystemArn],
+        resources: [fileSystem.fileSystemArn, accessPoint.accessPointArn],
+      })
+    );
+
+    // Grant EFS permissions to execution role as well
+    taskDefinition.addToExecutionRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "elasticfilesystem:ClientMount",
+          "elasticfilesystem:ClientWrite",
+          "elasticfilesystem:ClientRootAccess",
+          "elasticfilesystem:DescribeFileSystems",
+          "elasticfilesystem:DescribeAccessPoints",
+        ],
+        resources: [fileSystem.fileSystemArn, accessPoint.accessPointArn],
       })
     );
 
