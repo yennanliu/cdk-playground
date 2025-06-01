@@ -1,4 +1,10 @@
-# Welcome to your CDK TypeScript project
+# Git Bucket with ECS - V1
+
+- a simplest stack run git bucket at AWS
+- no file system setting (save inside docker container)
+- no DB (save in default h2 DB)
+- small instance, resources
+- as init POC
 
 ## Build
 

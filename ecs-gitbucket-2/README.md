@@ -1,3 +1,11 @@
+# Git Bucket with ECS - V2
+
+- CDK stack run git bucket at AWS
+- use `EFS` as file system (save inside docker container)
+- use `Postgre` as DB
+- tuned instance, resources so can upload bigger / multiples files
+- Revised stack V2
+
 # GitBucket on AWS ECS with Persistent Storage and Database
 
 This CDK stack deploys GitBucket on AWS ECS Fargate with the following enhancements:
