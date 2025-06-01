@@ -126,6 +126,21 @@ export class EcsWordpress2Stack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    // Create EFS Access Point for WordPress with proper permissions
+    const accessPoint = new efs.AccessPoint(this, 'WordPressAccessPoint', {
+      fileSystem,
+      path: '/var/www/html',
+      createAcl: {
+        ownerUid: '33',
+        ownerGid: '33',
+        permissions: '755',
+      },
+      posixUser: {
+        uid: '33',
+        gid: '33',
+      },
+    });
+
     // Create ECS Cluster
     const cluster = new ecs.Cluster(this, 'WordPressCluster', {
       vpc,
@@ -151,11 +166,26 @@ export class EcsWordpress2Stack extends Stack {
       efsVolumeConfiguration: {
         fileSystemId: fileSystem.fileSystemId,
         transitEncryption: 'ENABLED',
+        authorizationConfig: {
+          accessPointId: accessPoint.accessPointId,
+          iam: 'ENABLED',
+        },
       },
     });
 
     // Grant task role access to RDS secret
     dbSecret.grantRead(taskDefinition.taskRole);
+
+    // Grant task role access to EFS
+    taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'elasticfilesystem:ClientMount',
+        'elasticfilesystem:ClientWrite',
+        'elasticfilesystem:ClientRootAccess',
+      ],
+      resources: [fileSystem.fileSystemArn],
+    }));
 
     // Add WordPress container
     const wordpressContainer = taskDefinition.addContainer('wordpress', {
