@@ -2,6 +2,11 @@
 
 A complete AWS CDK TypeScript stack that deploys WordPress on Amazon ECS with all necessary supporting infrastructure.
 
+## Ref
+
+- Cash flow integration
+   - https://www.holibear.com/hblog/wordpress-ecpay-integration/
+
 ## Architecture
 
 This stack creates a highly available, scalable WordPress deployment with the following components:
