@@ -1,0 +1,21 @@
+{
+  "name": "redis-test-lambda",
+  "version": "1.0.0",
+  "description": "Lambda function to test Redis Sentinel cluster",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p ../tsconfig.lambda.json",
+    "build:watch": "tsc -p ../tsconfig.lambda.json -w"
+  },
+  "dependencies": {
+    "redis": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.130",
+    "@types/node": "^18.19.3",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+} 
