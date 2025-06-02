@@ -3,7 +3,6 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
@@ -83,11 +82,11 @@ export class RedisSentinel1Stack extends cdk.Stack {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
 
-    // 7. TypeScript Lambda function to test Redis Sentinel
-    const testLambda = new nodejs.NodejsFunction(this, "RedisTestLambda", {
+    // 7. Lambda function to test Redis Sentinel (using pre-compiled JS)
+    const testLambda = new lambda.Function(this, "RedisTestLambda", {
       runtime: lambda.Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, "../lambda/index.ts"),
-      handler: "handler",
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/dist")),
       vpc: vpc,
       securityGroups: [lambdaSg],
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
@@ -95,13 +94,6 @@ export class RedisSentinel1Stack extends cdk.Stack {
       memorySize: 512,
       environment: {
         REDIS_MASTER_NAME: "mymaster",
-        NODE_OPTIONS: "--enable-source-maps",
-      },
-      bundling: {
-        externalModules: [],
-        minify: true,
-        sourceMap: true,
-        target: "es2022",
       },
     });
 
