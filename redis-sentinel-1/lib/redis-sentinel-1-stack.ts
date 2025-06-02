@@ -1,14 +1,7 @@
-import { Duration, Stack, StackProps } from "aws-cdk-lib";
-import * as sns from "aws-cdk-lib/aws-sns";
-import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
-import * as sqs from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
-
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
-import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
-import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
 /**
  * The provided CDK stack launches 3 Redis instances, each running both:
@@ -70,17 +63,3 @@ export class RedisSentinel1Stack extends cdk.Stack {
     });
   }
 }
-
-// export class RedisSentinel1Stack extends Stack {
-//   constructor(scope: Construct, id: string, props?: StackProps) {
-//     super(scope, id, props);
-
-//     const queue = new sqs.Queue(this, 'RedisSentinel1Queue', {
-//       visibilityTimeout: Duration.seconds(300)
-//     });
-
-//     const topic = new sns.Topic(this, 'RedisSentinel1Topic');
-
-//     topic.addSubscription(new subs.SqsSubscription(queue));
-//   }
-// }
