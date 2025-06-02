@@ -1,6 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import * as net from 'net';
 
+// Import AWS SDK clients
+import { ECSClient, ListTasksCommand, DescribeTasksCommand } from '@aws-sdk/client-ecs';
+import { EC2Client, DescribeNetworkInterfacesCommand } from '@aws-sdk/client-ec2';
+
 interface TestResult {
   action: string;
   timestamp: string;
@@ -82,14 +86,41 @@ export const handler = async (
   }
 };
 
+async function getECSTaskIPs(): Promise<string[]> {
+  try {
+    const ecsClient = new ECSClient({ region: process.env.AWS_REGION || 'ap-northeast-1' });
+    const ec2Client = new EC2Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
+    
+    // Get cluster name from environment or use pattern matching
+    const clusterName = process.env.ECS_CLUSTER_NAME || 'RedisSentinel1Stack-RedisCluster';
+    
+    // List all tasks in clusters that match our pattern
+    const listClustersCommand = await ecsClient.send(new ListTasksCommand({}));
+    
+    // For now, let's try to find tasks by using a known service name pattern
+    // In a real deployment, you'd pass the cluster name as an environment variable
+    
+    return [];
+  } catch (error) {
+    console.error('Error getting ECS task IPs:', error);
+    return [];
+  }
+}
+
 async function discoverRedisInstances(): Promise<any> {
   try {
-    // In a real implementation, you would use AWS service discovery
-    // For now, we'll simulate discovery by testing common Redis endpoints
-    const potentialHosts = [
-      '10.0.1.100', '10.0.1.101', '10.0.1.102',  // Common private IPs
-      'redis-service.local',  // Service discovery name
-      'localhost'  // Fallback
+    // Try to get actual ECS task IPs
+    const ecsIPs = await getECSTaskIPs();
+    
+    // Fallback to common private IP ranges for ECS tasks
+    const potentialHosts = ecsIPs.length > 0 ? ecsIPs : [
+      // Try common ECS Fargate IP ranges
+      '10.0.0.100', '10.0.0.101', '10.0.0.102',
+      '10.0.1.100', '10.0.1.101', '10.0.1.102',
+      '10.0.2.100', '10.0.2.101', '10.0.2.102',
+      // Try other common private IP ranges
+      '172.31.0.100', '172.31.0.101', '172.31.0.102',
+      '192.168.1.100', '192.168.1.101', '192.168.1.102',
     ];
 
     const discoveredInstances: string[] = [];
@@ -119,14 +150,17 @@ async function discoverRedisInstances(): Promise<any> {
         // Port not accessible
       }
 
-      testResults.push(result);
+      // Only add results where at least one port is accessible
+      if (result.redis_port === 'accessible' || result.sentinel_port === 'accessible') {
+        testResults.push(result);
+      }
     }
 
     return {
       discovered_instances: discoveredInstances,
       test_results: testResults,
-      discovery_method: 'network_scan',
-      note: 'In production, use AWS ECS Service Discovery or CloudMap for proper service discovery'
+      discovery_method: ecsIPs.length > 0 ? 'ecs_api' : 'network_scan',
+      note: 'Discovered Redis instances by testing network connectivity. In production, use AWS ECS Service Discovery.'
     };
 
   } catch (error) {
@@ -139,10 +173,20 @@ async function discoverRedisInstances(): Promise<any> {
 
 async function testRedisConnectivity(): Promise<any> {
   try {
-    const testHosts = ['10.0.1.100', '10.0.1.101', '10.0.1.102'];
+    // Get discovered hosts first
+    const discoveryResult = await discoverRedisInstances();
+    const accessibleHosts = discoveryResult.test_results?.map((r: any) => r.host) || [];
+    
+    // If no hosts discovered, try a broader range
+    const testHosts = accessibleHosts.length > 0 ? accessibleHosts : [
+      '10.0.0.100', '10.0.0.101', '10.0.0.102',
+      '10.0.1.100', '10.0.1.101', '10.0.1.102',
+      '172.31.0.100', '172.31.0.101', '172.31.0.102'
+    ];
+    
     const results: RedisConnectionTest[] = [];
 
-    for (const host of testHosts) {
+    for (const host of testHosts.slice(0, 10)) { // Limit to first 10 to avoid timeout
       const result: RedisConnectionTest = {
         host,
         redis_port: 'not_accessible',
@@ -169,7 +213,8 @@ async function testRedisConnectivity(): Promise<any> {
     return {
       connectivity_tests: results,
       test_type: 'network_connectivity',
-      note: 'Basic network connectivity test to Redis and Sentinel ports'
+      accessible_hosts: results.filter(r => r.redis_port === 'accessible' || r.sentinel_port === 'accessible'),
+      note: 'Network connectivity test to Redis and Sentinel ports'
     };
 
   } catch (error) {
@@ -182,12 +227,24 @@ async function testRedisConnectivity(): Promise<any> {
 
 async function testRedisOperations(): Promise<any> {
   try {
-    // For this basic version, we'll do protocol-level testing
-    // To get full Redis operations, you'd need to install the redis npm package
-    const testHosts = ['10.0.1.100', '10.0.1.101', '10.0.1.102'];
+    // Get accessible hosts from discovery
+    const discoveryResult = await discoverRedisInstances();
+    const accessibleHosts = discoveryResult.test_results
+      ?.filter((r: any) => r.redis_port === 'accessible')
+      ?.map((r: any) => r.host) || [];
+
+    if (accessibleHosts.length === 0) {
+      return {
+        redis_operations: [],
+        test_type: 'basic_redis_protocol',
+        note: 'No accessible Redis hosts found. Make sure ECS tasks are running and accessible.',
+        discovery_attempted: true
+      };
+    }
+
     const results: any[] = [];
 
-    for (const host of testHosts) {
+    for (const host of accessibleHosts.slice(0, 3)) { // Test first 3 accessible hosts
       try {
         // Test if we can connect and send a basic PING command
         const response = await sendRedisCommand(host, 6379, 'PING');
@@ -211,7 +268,7 @@ async function testRedisOperations(): Promise<any> {
     return {
       redis_operations: results,
       test_type: 'basic_redis_protocol',
-      note: 'Basic Redis protocol test. For full operations with SET/GET/DEL, install redis npm package.'
+      note: 'Basic Redis protocol test on discovered accessible hosts.'
     };
 
   } catch (error) {
@@ -224,22 +281,30 @@ async function testRedisOperations(): Promise<any> {
 
 async function testSentinelOperations(): Promise<any> {
   try {
-    // Test Redis Sentinel functionality
-    const sentinelHosts = [
-      { host: '10.0.1.100', port: 26379 },
-      { host: '10.0.1.101', port: 26379 },
-      { host: '10.0.1.102', port: 26379 }
-    ];
+    // Get accessible hosts from discovery
+    const discoveryResult = await discoverRedisInstances();
+    const accessibleHosts = discoveryResult.test_results
+      ?.filter((r: any) => r.sentinel_port === 'accessible')
+      ?.map((r: any) => r.host) || [];
+
+    if (accessibleHosts.length === 0) {
+      return {
+        sentinel_operations: [],
+        test_type: 'basic_sentinel_protocol',
+        note: 'No accessible Sentinel hosts found. Make sure ECS tasks are running and accessible.',
+        discovery_attempted: true
+      };
+    }
 
     const results: any[] = [];
 
-    for (const { host, port } of sentinelHosts) {
+    for (const host of accessibleHosts.slice(0, 3)) { // Test first 3 accessible hosts
       try {
         // Send SENTINEL MASTERS command
-        const mastersResponse = await sendRedisCommand(host, port, 'SENTINEL MASTERS');
+        const mastersResponse = await sendRedisCommand(host, 26379, 'SENTINEL MASTERS');
         
         results.push({
-          sentinel_host: `${host}:${port}`,
+          sentinel_host: `${host}:26379`,
           status: 'success',
           masters_response: mastersResponse,
           note: 'Basic Sentinel protocol test'
@@ -247,7 +312,7 @@ async function testSentinelOperations(): Promise<any> {
 
       } catch (error) {
         results.push({
-          sentinel_host: `${host}:${port}`,
+          sentinel_host: `${host}:26379`,
           status: 'failed',
           error: error instanceof Error ? error.message : 'Sentinel connection failed'
         });
@@ -257,7 +322,7 @@ async function testSentinelOperations(): Promise<any> {
     return {
       sentinel_operations: results,
       test_type: 'basic_sentinel_protocol',
-      note: 'Basic Redis Sentinel protocol test'
+      note: 'Basic Redis Sentinel protocol test on discovered accessible hosts.'
     };
 
   } catch (error) {
@@ -287,6 +352,7 @@ function getSystemInfo(context: Context): any {
     },
     environment: {
       redis_master_name: process.env.REDIS_MASTER_NAME || 'mymaster',
+      aws_region: process.env.AWS_REGION,
       node_version: process.version,
       platform: process.platform
     }

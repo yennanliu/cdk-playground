@@ -119,6 +119,18 @@ export class RedisSentinel1Stack extends cdk.Stack {
       resources: ['*']
     }));
 
+    // Add permissions for ECS and EC2 service discovery
+    testLambda.addToRolePolicy(new iam.PolicyStatement({
+      actions: [
+        'ecs:ListTasks',
+        'ecs:DescribeTasks',
+        'ecs:ListClusters',
+        'ecs:DescribeClusters',
+        'ec2:DescribeNetworkInterfaces'
+      ],
+      resources: ['*']
+    }));
+
     // 8. API Gateway
     const api = new apigateway.RestApi(this, "RedisTestApi", {
       restApiName: "Redis Sentinel Test API",

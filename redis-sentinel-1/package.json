@@ -24,6 +24,8 @@
   "dependencies": {
     "aws-cdk-lib": "2.189.0",
     "constructs": "^10.0.0",
-    "redis": "^4.5.1"
+    "redis": "^4.5.1",
+    "@aws-sdk/client-ecs": "^3.0.0",
+    "@aws-sdk/client-ec2": "^3.0.0"
   }
 }
