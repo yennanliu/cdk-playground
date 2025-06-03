@@ -196,6 +196,9 @@ async function handleDeleteMember(event: APIGatewayProxyEvent): Promise<APIGatew
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        // Debug logging
+        console.log('Received event:', JSON.stringify(event, null, 2));
+        
         // Add CORS headers to all responses
         const headers = {
             'Access-Control-Allow-Origin': '*',
@@ -208,8 +211,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return { statusCode: 204, headers, body: '' };
         }
 
-        const path = event.path.toLowerCase();
+        // Safely handle path - it might be in different places depending on API Gateway setup
+        const path = (event.path || event.requestContext?.path || event.resource || '').toLowerCase();
         const method = event.httpMethod;
+
+        console.log('Processing path:', path, 'method:', method);
 
         let response: APIGatewayProxyResult;
 
@@ -227,13 +233,19 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         } else {
             response = {
                 statusCode: 404,
-                body: JSON.stringify({ message: 'Not Found' })
+                body: JSON.stringify({ 
+                    message: 'Not Found',
+                    receivedPath: path,
+                    receivedMethod: method,
+                    availablePaths: ['/auth/login', '/auth/verify', '/members', '/members/{email}']
+                })
             };
         }
 
         return { ...response, headers };
     } catch (error: any) {
         console.error('Error:', error);
+        console.error('Event that caused error:', JSON.stringify(event, null, 2));
         return {
             statusCode: 500,
             headers: {
@@ -241,7 +253,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,DELETE',
                 'Access-Control-Allow-Headers': 'Content-Type,Authorization'
             },
-            body: JSON.stringify({ message: 'Internal Server Error' })
+            body: JSON.stringify({ message: 'Internal Server Error', error: error.message })
         };
     }
 };
