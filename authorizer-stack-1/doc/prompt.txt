@@ -1,0 +1,40 @@
+
+
+### Prompt: Secure User Authorization API with JWT and Member Management using AWS CDK
+
+You are a **Senior AWS Solutions Architect and Cloud Engineer**. Design and implement a **secure, scalable, and simple user authorization system** using **AWS CDK (TypeScript)**. The system must:
+
+1. Authorize API requests using JWT tokens.
+2. Support login via email/password and respond with a signed JWT.
+3. Provide APIs to list, add, and delete authorized members.
+4. Restrict member management APIs to users with the `"admin"` role.
+5. Store user credentials securely with password hashing (bcrypt).
+6. Store JWT signing secret securely in AWS Secrets Manager.
+7. Use DynamoDB as the data store for users.
+8. Implement all API logic in a single Lambda function fronted by API Gateway.
+9. Provide environment variables or parameters for DynamoDB table name and Secrets Manager ARN.
+10. Follow AWS Well-Architected best practices including least privilege and caching secrets in Lambda.
+
+The APIs should include:
+
+* `POST /auth/login` — validate credentials, return JWT token
+* `POST /auth/verify` — verify JWT token and return user info
+* `GET /members` — list all members (admin only)
+* `POST /members` — add new member (admin only)
+* `DELETE /members/{email}` — delete a member (admin only)
+
+The JWT token should expire in 1 hour and be signed with an HMAC SHA-256 secret stored in Secrets Manager.
+
+The password should be hashed using bcrypt with salt before storing in DynamoDB.
+
+Also design a simple HTML + JS UI to:
+
+* Login and receive/store JWT token
+* Display the list of members
+* Add and delete members (for admin users)
+
+Provide the full AWS CDK stack in TypeScript, the Lambda function code, and instructions on how to bootstrap the first admin user.
+
+---
+
+Would you like me to generate this full prompt as a ready-to-use input for a dev team or a detailed spec document?
