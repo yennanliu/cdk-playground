@@ -43,6 +43,8 @@
 | `POST`     | `/members`          | Adds a new member to the authorization list    |
 | `GET`      | `/members`          | Returns all current members                    |
 | `DELETE`   | `/members/{userId}` | Removes a member from the list                 |
+| `POST` | `/auth/login` | Authenticate user & return JWT token |
+
 
 ---
 
