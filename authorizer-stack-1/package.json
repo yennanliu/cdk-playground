@@ -6,6 +6,8 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:lambda": "tsc -p tsconfig.lambda.json && npm run package-lambda",
+    "package-lambda": "node scripts/package-lambda.js",
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk"

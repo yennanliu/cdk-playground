@@ -7,7 +7,7 @@ import * as bcrypt from 'bcryptjs';
 
 const dynamoDb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const secretsClient = new SecretsManagerClient({});
-const TABLE_NAME = process.env.USER_TABLE_NAME!;
+const TABLE_NAME = process.env.USERS_TABLE!;
 const JWT_SECRET_ARN = process.env.JWT_SECRET_ARN!;
 
 let cachedJwtSecret: string | null = null;
@@ -25,7 +25,7 @@ async function getJwtSecret(): Promise<string> {
         new GetSecretValueCommand({ SecretId: JWT_SECRET_ARN })
     );
     const secretString = response.SecretString!;
-    const secret = JSON.parse(secretString).jwtSecret;
+    const secret = JSON.parse(secretString).secret;
     cachedJwtSecret = secret;
     return secret;
 }
