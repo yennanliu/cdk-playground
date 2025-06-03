@@ -33,15 +33,26 @@ export class AuthorizerStack extends cdk.Stack {
         });
 
         // Lambda function for API logic
+        // const apiHandler = new lambda.Function(this, 'ApiHandler', {
+        //   runtime: lambda.Runtime.NODEJS_18_X,
+        //   handler: 'index.handler',
+        //   code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+        //   environment: {
+        //     USERS_TABLE: usersTable.tableName,
+        //     JWT_SECRET_ARN: jwtSecret.secretArn,
+        //   },
+        //   timeout: cdk.Duration.seconds(30),
+        // });
+
         const apiHandler = new lambda.Function(this, 'ApiHandler', {
             runtime: lambda.Runtime.NODEJS_18_X,
-            handler: 'index.handler',
-            code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+            handler: 'auth-handler.handler',
+            code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
             environment: {
                 USERS_TABLE: usersTable.tableName,
                 JWT_SECRET_ARN: jwtSecret.secretArn,
             },
-            timeout: cdk.Duration.seconds(30),
+            timeout: cdk.Duration.seconds(60),
         });
 
         // Grant Lambda permissions

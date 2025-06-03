@@ -1,5 +1,24 @@
 # Auth Stack 1
 
+## Run
+
+```bash
+
+ npm install --save-dev @types/aws-lambda
+ 
+npm install
+
+npm run build
+
+# compile TS to JS
+npx tsc -p tsconfig.lambda.json
+
+
+cdk bootstrap
+
+cdk deploy
+```
+
 ## ✅ **Updated System Design**
 
 ```
