@@ -89,12 +89,13 @@ export class AuthorizerStack extends cdk.Stack {
         const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
             websiteIndexDocument: 'index.html',
             publicReadAccess: true,
+            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         // Deploy website files
         new s3deploy.BucketDeployment(this, 'DeployWebsite', {
-            sources: [s3deploy.Source.asset(path.join(__dirname, '../website'))],
+            sources: [s3deploy.Source.asset(path.join(__dirname, '../frontend'))],
             destinationBucket: websiteBucket,
         });
 

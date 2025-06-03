@@ -4,8 +4,8 @@
 
 ```bash
 
- npm install --save-dev @types/aws-lambda
- 
+npm install --save-dev @types/aws-lambda
+
 npm install
 
 npm run build
