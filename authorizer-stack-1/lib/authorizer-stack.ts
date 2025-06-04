@@ -58,7 +58,7 @@ export class AuthorizerStack extends cdk.Stack {
                 minify: true,
                 sourceMap: true,
                 externalModules: [
-                    'aws-sdk', // Don't bundle aws-sdk as it's available in the Lambda runtime
+                    '@aws-sdk/*', // Don't bundle AWS SDK v3 modules as they're available in the Lambda runtime
                 ],
             },
         });

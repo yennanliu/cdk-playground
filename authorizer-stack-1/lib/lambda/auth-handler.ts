@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcryptjs';
@@ -116,7 +116,7 @@ async function handleListMembers(event: APIGatewayProxyEvent): Promise<APIGatewa
     }
 
     const result = await dynamoDb.send(
-        new QueryCommand({
+        new ScanCommand({
             TableName: TABLE_NAME,
             ProjectionExpression: 'email, role'
         })
@@ -129,15 +129,32 @@ async function handleListMembers(event: APIGatewayProxyEvent): Promise<APIGatewa
 }
 
 async function handleAddMember(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-    const authResult = await verifyAuth(event);
-    if (!authResult.isAuthorized || authResult.user?.role !== 'admin') {
+    const body = JSON.parse(event.body || '{}');
+    
+    // Check if any users exist in the table
+    const existingUsers = await dynamoDb.send(
+        new ScanCommand({
+            TableName: TABLE_NAME,
+            Limit: 1
+        })
+    );
+
+    // If users exist, verify admin authorization
+    if (existingUsers.Items && existingUsers.Items.length > 0) {
+        const authResult = await verifyAuth(event);
+        if (!authResult.isAuthorized || authResult.user?.role !== 'admin') {
+            return {
+                statusCode: 403,
+                body: JSON.stringify({ message: 'Unauthorized. Only admins can add new members.' })
+            };
+        }
+    } else if (body.role !== 'admin') {
+        // If no users exist, only allow admin role for first user
         return {
             statusCode: 403,
-            body: JSON.stringify({ message: 'Unauthorized' })
+            body: JSON.stringify({ message: 'First user must be an admin' })
         };
     }
-
-    const body = JSON.parse(event.body || '{}');
     if (!body.email || !body.password || !body.role) {
         return {
             statusCode: 400,
