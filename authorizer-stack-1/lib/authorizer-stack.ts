@@ -91,6 +91,7 @@ export class AuthorizerStack extends cdk.Stack {
             publicReadAccess: true,
             blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
+            autoDeleteObjects: true, // Enable automatic deletion of objects when bucket is destroyed
         });
 
         // Deploy website files
