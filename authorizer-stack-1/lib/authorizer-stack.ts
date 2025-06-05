@@ -3,6 +3,7 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
@@ -44,15 +45,22 @@ export class AuthorizerStack extends cdk.Stack {
         //   timeout: cdk.Duration.seconds(30),
         // });
 
-        const apiHandler = new lambda.Function(this, 'ApiHandler', {
+        const apiHandler = new nodejs.NodejsFunction(this, 'ApiHandler', {
             runtime: lambda.Runtime.NODEJS_18_X,
-            handler: 'auth-handler.handler',
-            code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
+            handler: 'handler',
+            entry: path.join(__dirname, 'lambda/auth-handler.ts'),
             environment: {
                 USERS_TABLE: usersTable.tableName,
                 JWT_SECRET_ARN: jwtSecret.secretArn,
             },
             timeout: cdk.Duration.seconds(60),
+            bundling: {
+                minify: true,
+                sourceMap: true,
+                externalModules: [
+                    '@aws-sdk/*', // Don't bundle AWS SDK v3 modules as they're available in the Lambda runtime
+                ],
+            },
         });
 
         // Grant Lambda permissions
