@@ -41,6 +41,9 @@ export class SupersetStack1Stack extends cdk.Stack {
     const container = taskDef.addContainer('SupersetContainer', {
       image: ecs.ContainerImage.fromRegistry('apache/superset'),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'Superset' }),
+      environment: {
+        'SUPERSET_SECRET_KEY': 'WRdrx3kRkwRBIG3VPtfhBr8ePmx1QFoAe9RceXBZ6IrAt27SFPlYvvBjM9aX',
+      },
     });
 
     container.addPortMappings({
