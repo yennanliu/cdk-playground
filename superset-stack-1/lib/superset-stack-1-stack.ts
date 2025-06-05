@@ -38,13 +38,43 @@ export class SupersetStack1Stack extends cdk.Stack {
     });
 
     // Container
+    // const container = taskDef.addContainer('SupersetContainer', {
+    //   image: ecs.ContainerImage.fromRegistry('apache/superset'),
+    //   logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'Superset' }),
+    //   environment: {
+    //     'SUPERSET_SECRET_KEY': 'WRdrx3kRkwRBIG3VPtfhBr8ePmx1QFoAe9RceXBZ6IrAt27SFPlYvvBjM9aX',
+    //     'ADMIN_USERNAME': 'admin',
+    //     'ADMIN_PASSWORD': 'admin',
+    //     'ADMIN_EMAIL': 'admin@superset.com',
+    //     'ADMIN_FIRSTNAME': 'admin',
+    //     'ADMIN_LASTNAME': 'admin',
+    //   },
+    // });
+
+    // TODO: fix setup default login user, pwd
     const container = taskDef.addContainer('SupersetContainer', {
       image: ecs.ContainerImage.fromRegistry('apache/superset'),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'Superset' }),
       environment: {
         'SUPERSET_SECRET_KEY': 'WRdrx3kRkwRBIG3VPtfhBr8ePmx1QFoAe9RceXBZ6IrAt27SFPlYvvBjM9aX',
+        'ADMIN_USERNAME': 'admin',
+        'ADMIN_PASSWORD': 'admin',
+        'ADMIN_EMAIL': 'admin@superset.com',
+        'ADMIN_FIRSTNAME': 'admin',
+        'ADMIN_LASTNAME': 'admin',
       },
+      command: [
+        'sh',
+        '-c',
+        [
+          'superset db upgrade',
+          'superset fab create-admin --username $ADMIN_USERNAME --firstname $ADMIN_FIRSTNAME --lastname $ADMIN_LASTNAME --email $ADMIN_EMAIL --password $ADMIN_PASSWORD || true',
+          'superset init',
+          // 'superset run -h 0.0.0.0 -p 8088 --with-threads --reload --debugger'
+        ].join(' && ')
+      ]
     });
+
 
     container.addPortMappings({
       containerPort: 8088,
@@ -78,18 +108,6 @@ export class SupersetStack1Stack extends cdk.Stack {
       port: 80,
       open: true,
     });
-
-    // Target Group
-    // listener.addTargets('SupersetTarget', {
-    //   port: 8088,
-    //   targets: [service],
-    //   healthCheck: {
-    //     path: '/health',
-    //     interval: cdk.Duration.seconds(30),
-    //     timeout: cdk.Duration.seconds(5),
-    //     healthyHttpCodes: '200',
-    //   },
-    // });
 
     listener.addTargets('SupersetTarget', {
       port: 8088,
