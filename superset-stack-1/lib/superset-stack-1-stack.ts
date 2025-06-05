@@ -77,16 +77,29 @@ export class SupersetStack1Stack extends cdk.Stack {
     });
 
     // Target Group
+    // listener.addTargets('SupersetTarget', {
+    //   port: 8088,
+    //   targets: [service],
+    //   healthCheck: {
+    //     path: '/health',
+    //     interval: cdk.Duration.seconds(30),
+    //     timeout: cdk.Duration.seconds(5),
+    //     healthyHttpCodes: '200',
+    //   },
+    // });
+
     listener.addTargets('SupersetTarget', {
       port: 8088,
+      protocol: elbv2.ApplicationProtocol.HTTP, // 👈 ADD THIS
       targets: [service],
       healthCheck: {
         path: '/health',
         interval: cdk.Duration.seconds(30),
-        timeout: cdk.Duration.seconds(5),
+        timeout: cdk.Duration.seconds(10),
         healthyHttpCodes: '200',
       },
     });
+
 
     // Output the ALB URL
     new cdk.CfnOutput(this, 'SupersetURL', {
