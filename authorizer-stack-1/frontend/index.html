@@ -319,6 +319,7 @@
             }
 
             if (!authToken) {
+                document.getElementById('usersError').innerHTML = 'Please login to view users list.';
                 document.getElementById('usersError').classList.remove('hidden');
                 document.getElementById('usersList').innerHTML = '';
                 return;
@@ -359,9 +360,10 @@
                         `;
                         usersList.appendChild(item);
                     });
-                } else if (response.status === 403) {
-                    document.getElementById('usersError').innerHTML = 'Access denied. Admin privileges required to view users list.';
+                } else if (response.status === 401) {
+                    document.getElementById('usersError').innerHTML = 'Authentication required. Please login to view users list.';
                     document.getElementById('usersError').classList.remove('hidden');
+                    logout(); // Auto-logout if token is invalid
                 } else {
                     showAlert('danger', 'Failed to load users');
                 }
