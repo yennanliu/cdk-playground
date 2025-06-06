@@ -1,0 +1,34 @@
+
+⸻
+
+✅ Prompt to Build the CDK Stack
+
+Goal:
+Build a CDK stack in TypeScript to deploy Apache Superset on AWS using a minimal production-ready architecture.
+
+Requirements:
+	1.	VPC
+	•	2 public subnets across AZs
+	2.	RDS PostgreSQL Instance
+	•	Engine: PostgreSQL
+	•	Instance type: db.t3.micro
+	•	Database name: superset
+	•	Store credentials using SecretValue or SecretsManager
+	3.	ECS Cluster (Fargate)
+	•	ECS Cluster in the above VPC
+	•	Fargate service to run a container from the official image: apache/superset:latest
+	•	Container must:
+	•	Expose port 8088
+	•	Connect to the RDS database using environment variable SQLALCHEMY_DATABASE_URI
+	•	Define SUPERSET_SECRET_KEY as a secure environment variable
+	•	Use health checks on /health
+	4.	Application Load Balancer (ALB)
+	•	Public ALB routing traffic to ECS service
+	•	Listener on port 443 (or 80 if HTTPS is not needed initially)
+	•	ALB target group to Fargate service on port 8088
+	5.	Security Groups
+	•	Allow inbound traffic to ALB from the internet
+	•	Allow ECS service to connect to RDS on port 5432
+	6.	Outputs
+	•	DNS name of the Load Balancer
+	•	Superset login URL
