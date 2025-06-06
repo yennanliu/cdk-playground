@@ -68,8 +68,17 @@
     </div>
 
     <script>
+        /** 
+         *  NOTE !!!
+         * 
+         *  replace below API_URL after stack deployed,
+         *  then deploy again.
+         * 
+         *  e.g. run `cdk deploy`
+         */
         // Replace this with your deployed API URL
-        const API_URL = 'YOUR_API_URL'; // Will be updated after deployment
+        //const API_URL = 'YOUR_API_URL'; // Will be updated after deployment
+        const API_URL = 'https://de47sqhnc8.execute-api.ap-northeast-1.amazonaws.com/prod/';
         let authToken = localStorage.getItem('authToken');
 
         // Check if user is already logged in

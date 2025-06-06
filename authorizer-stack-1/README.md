@@ -16,6 +16,12 @@ npx tsc -p tsconfig.lambda.json
 
 cdk bootstrap
 
+# 1st deploy
+cdk deploy
+
+# NOTE !!! 
+# after 1st deploy, manually update`API_URL` as the populated one in terminal at frontend/index.html, then deploy again
+# 2nd deploy
 cdk deploy
 ```
 
