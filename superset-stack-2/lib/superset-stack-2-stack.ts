@@ -104,7 +104,6 @@ export class SupersetStack2Stack extends Stack {
         }),
       }),
       environment: {
-        SUPERSET_CONFIG_PATH: '/app/pythonpath/superset_config.py',
         DB_HOST: database.instanceEndpoint.hostname,
         DB_PORT: database.instanceEndpoint.port.toString(),
         DB_NAME: 'superset',
@@ -118,10 +117,16 @@ export class SupersetStack2Stack extends Stack {
         '/bin/bash',
         '-c',
         `export SQLALCHEMY_DATABASE_URI="postgresql://\${DB_USER}:\${DB_PASSWORD}@\${DB_HOST}:\${DB_PORT}/\${DB_NAME}" && \
+         echo "Waiting for database connection..." && \
+         sleep 30 && \
+         echo "Initializing Superset database..." && \
          superset db upgrade && \
-         superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@superset.com --password admin && \
+         echo "Creating admin user..." && \
+         superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@superset.com --password admin || echo "Admin user may already exist" && \
+         echo "Initializing Superset..." && \
          superset init && \
-         superset run -h 0.0.0.0 -p 8088 --with-threads --reload --debugger`
+         echo "Starting Superset server..." && \
+         superset run -h 0.0.0.0 -p 8088`
       ],
       healthCheck: {
         command: ['CMD-SHELL', 'curl -f http://localhost:8088/health || exit 1'],

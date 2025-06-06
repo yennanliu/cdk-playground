@@ -1,0 +1,1023 @@
+{
+  "version": "41.0.0",
+  "artifacts": {
+    "SupersetStack2Stack-2.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "SupersetStack2Stack-2.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "SupersetStack2Stack-2": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "SupersetStack2Stack-2.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/7cf480bb6555d3289689bb15a64b3ee8fbb81c3e726cbfa606d015bd25fbafbd.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "SupersetStack2Stack-2.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "SupersetStack2Stack-2.assets"
+      ],
+      "metadata": {
+        "/SupersetStack2Stack-2/SupersetVpc": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "maxAzs": "*",
+              "subnetConfiguration": [
+                {
+                  "cidrMask": "*",
+                  "name": "*",
+                  "subnetType": "Public"
+                },
+                {
+                  "cidrMask": "*",
+                  "name": "*",
+                  "subnetType": "Private"
+                }
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpc1AA56667"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addNatGateway": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet1SubnetB7495379"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet1RouteTable085AD3F3"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet1RouteTableAssociation5498023F"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet1DefaultRoute59847DC0"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet1EIPF35825E4"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet1NATGateway74CB8F24"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": true,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addNatGateway": [
+                "*"
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet2Subnet691F83A3"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet2RouteTable2F9F7548"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet2RouteTableAssociation86195156"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet2DefaultRouteF6512552"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet2EIPD806C4E2"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPublicSubnetSubnet2NATGateway9B025193"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPrivateSubnetSubnet1Subnet599860DA"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPrivateSubnetSubnet1RouteTable02A27DB1"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPrivateSubnetSubnet1RouteTableAssociation9822B998"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPrivateSubnetSubnet1DefaultRoute6CD86A32"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "availabilityZone": "*",
+              "vpcId": "*",
+              "cidrBlock": "*",
+              "mapPublicIpOnLaunch": false,
+              "ipv6CidrBlock": "*",
+              "assignIpv6AddressOnCreation": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {}
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPrivateSubnetSubnet2Subnet600CAAE8"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPrivateSubnetSubnet2RouteTable919FE043"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPrivateSubnetSubnet2RouteTableAssociationC6067E2F"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcPrivateSubnetSubnet2DefaultRouteE2429229"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcIGW1E70D626"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcVPCGW157A9585"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/RestrictDefaultSecurityGroupCustomResource": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetVpc/RestrictDefaultSecurityGroupCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetVpcRestrictDefaultSecurityGroupCustomResource1D189D16"
+          }
+        ],
+        "/SupersetStack2Stack-2/Custom::VpcRestrictDefaultSGCustomResourceProvider": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
+            "data": true
+          }
+        ],
+        "/SupersetStack2Stack-2/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+          }
+        ],
+        "/SupersetStack2Stack-2/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetDbSecret": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "secretName": "*",
+              "generateSecretString": {
+                "secretStringTemplate": "*",
+                "generateStringKey": "*",
+                "excludeCharacters": "*"
+              }
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetDbSecret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetDbSecretDADAB713"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetDbSecret/Attachment": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "secret": "*",
+              "target": "*"
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetDbSecret/Attachment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetDbSecretAttachment343F97FB"
+          }
+        ],
+        "/SupersetStack2Stack-2/DatabaseSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*",
+              "allowAllOutbound": false
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*"
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/DatabaseSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecurityGroup7319C0F6"
+          }
+        ],
+        "/SupersetStack2Stack-2/DatabaseSecurityGroup/from SupersetStack2Stack2EcsSecurityGroup7082622C:5432": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecurityGroupfromSupersetStack2Stack2EcsSecurityGroup7082622C54326C09E337"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetDatabase": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "engine": {
+                "engineType": "*",
+                "singleUserRotationApplication": "*",
+                "engineVersion": {
+                  "fullVersion": "*",
+                  "majorVersion": "*"
+                },
+                "parameterGroupFamily": "*",
+                "engineFamily": "*",
+                "defaultUsername": "*"
+              },
+              "instanceType": "*",
+              "credentials": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "databaseName": "*",
+              "securityGroups": [
+                "*"
+              ],
+              "deletionProtection": false,
+              "backupRetention": "*"
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetDatabase/SubnetGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "description": "*",
+              "vpc": "*",
+              "vpcSubnets": {
+                "subnetType": "Private"
+              },
+              "removalPolicy": "*"
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetDatabase/SubnetGroup/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetDatabaseSubnetGroupF8CAB7C8"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetDatabase/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetDatabaseF4429958"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetSecretKey": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "secretName": "*",
+              "generateSecretString": {
+                "secretStringTemplate": "*",
+                "generateStringKey": "*",
+                "excludeCharacters": "*"
+              }
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetSecretKey/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetSecretKeyFC3C2E53"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetCluster": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "clusterName": "*"
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetCluster922D0BF0"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/TaskRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              }
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/TaskRole/ImportTaskRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetTaskDefinitionTaskRoleBB8372C1"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/TaskRole/DefaultPolicy": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/TaskRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetTaskDefinitionTaskRoleDefaultPolicy953234C9"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetTaskDefinition6545BDB8"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/ExecutionRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "assumedBy": {
+                "principalAccount": "*",
+                "assumeRoleAction": "*"
+              },
+              "roleName": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachInlinePolicy": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addToPrincipalPolicy": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/ExecutionRole/ImportExecutionRole": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetTaskDefinitionExecutionRole78BA3E1E"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/ExecutionRole/DefaultPolicy": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "attachToRole": [
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addStatements": [
+                {}
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTaskDefinition/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetTaskDefinitionExecutionRoleDefaultPolicyC2093F5E"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetLogGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "logGroupName": "*",
+              "retention": 7
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetLogGroup9A7BD204"
+          }
+        ],
+        "/SupersetStack2Stack-2/EcsSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                "*",
+                {},
+                "*",
+                false
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/EcsSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EcsSecurityGroup44008BF1"
+          }
+        ],
+        "/SupersetStack2Stack-2/EcsSecurityGroup/from SupersetStack2Stack2AlbSecurityGroupDE5BF98F:8088": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EcsSecurityGroupfromSupersetStack2Stack2AlbSecurityGroupDE5BF98F80880611C446"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetService": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
+            "trace": [
+              "Annotations.addMessage (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1608)",
+              "Annotations.addWarningV2 (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/aws-cdk-lib/core/lib/annotations.js:1:825)",
+              "new BaseService (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:8100)",
+              "new FargateService (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:3551)",
+              "new SupersetStack2Stack (/Users/yennanliu/cdk-playground/superset-stack-2/lib/superset-stack-2-stack.ts:159:21)",
+              "Object.<anonymous> (/Users/yennanliu/cdk-playground/superset-stack-2/bin/superset-stack-2.ts:6:1)",
+              "Module._compile (node:internal/modules/cjs/loader:1254:14)",
+              "Module.m._compile (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/ts-node/src/index.ts:1618:23)",
+              "Module._extensions..js (node:internal/modules/cjs/loader:1308:10)",
+              "Object.require.extensions.<computed> [as .ts] (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/ts-node/src/index.ts:1621:12)",
+              "Module.load (node:internal/modules/cjs/loader:1117:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:958:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)",
+              "phase4 (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/ts-node/src/bin.ts:649:14)",
+              "bootstrap (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/ts-node/src/bin.ts:95:10)",
+              "main (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/ts-node/src/bin.ts:55:10)",
+              "Object.<anonymous> (/Users/yennanliu/cdk-playground/superset-stack-2/node_modules/ts-node/src/bin.ts:800:3)",
+              "Module._compile (node:internal/modules/cjs/loader:1254:14)",
+              "Object.Module._extensions..js (node:internal/modules/cjs/loader:1308:10)",
+              "Module.load (node:internal/modules/cjs/loader:1117:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:958:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)",
+              "node:internal/main/run_main_module:23:47"
+            ]
+          },
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetService/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetService0E6031CC"
+          }
+        ],
+        "/SupersetStack2Stack-2/AlbSecurityGroup": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": {
+              "vpc": "*",
+              "description": "*"
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*"
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addEgressRule": [
+                "*",
+                {},
+                "*",
+                true
+              ]
+            }
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": {
+              "addIngressRule": [
+                {
+                  "canInlineRule": true,
+                  "connections": "*",
+                  "uniqueId": "*"
+                },
+                {},
+                "*",
+                false
+              ]
+            }
+          }
+        ],
+        "/SupersetStack2Stack-2/AlbSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AlbSecurityGroup86A59E99"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetALB": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetALB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetALBED8EEBD6"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetALB/SupersetListener": [
+          {
+            "type": "aws:cdk:analytics:construct",
+            "data": "*"
+          },
+          {
+            "type": "aws:cdk:analytics:method",
+            "data": "*"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetALB/SupersetListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetALBSupersetListener5ADD48B9"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetTargetGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetTargetGroup6336741A"
+          }
+        ],
+        "/SupersetStack2Stack-2/LoadBalancerDNS": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "LoadBalancerDNS"
+          }
+        ],
+        "/SupersetStack2Stack-2/SupersetLoginURL": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SupersetLoginURL"
+          }
+        ],
+        "/SupersetStack2Stack-2/DatabaseEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseEndpoint"
+          }
+        ],
+        "/SupersetStack2Stack-2/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/SupersetStack2Stack-2/CDKMetadata/Condition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadataAvailable"
+          }
+        ],
+        "/SupersetStack2Stack-2/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/SupersetStack2Stack-2/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "SupersetStack2Stack-2"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  },
+  "minimumCliVersion": "2.1005.0"
+}

@@ -1,0 +1,1593 @@
+{
+ "Resources": {
+  "SupersetVpc1AA56667": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/Resource"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet1SubnetB7495379": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "PublicSubnet"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/Subnet"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet1RouteTable085AD3F3": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/RouteTable"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet1RouteTableAssociation5498023F": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet1RouteTable085AD3F3"
+    },
+    "SubnetId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet1SubnetB7495379"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/RouteTableAssociation"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet1DefaultRoute59847DC0": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "SupersetVpcIGW1E70D626"
+    },
+    "RouteTableId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet1RouteTable085AD3F3"
+    }
+   },
+   "DependsOn": [
+    "SupersetVpcVPCGW157A9585"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/DefaultRoute"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet1EIPF35825E4": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/EIP"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet1NATGateway74CB8F24": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "SupersetVpcPublicSubnetSubnet1EIPF35825E4",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet1SubnetB7495379"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1"
+     }
+    ]
+   },
+   "DependsOn": [
+    "SupersetVpcPublicSubnetSubnet1DefaultRoute59847DC0",
+    "SupersetVpcPublicSubnetSubnet1RouteTableAssociation5498023F"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet1/NATGateway"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet2Subnet691F83A3": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "PublicSubnet"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/Subnet"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet2RouteTable2F9F7548": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/RouteTable"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet2RouteTableAssociation86195156": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet2RouteTable2F9F7548"
+    },
+    "SubnetId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet2Subnet691F83A3"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/RouteTableAssociation"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet2DefaultRouteF6512552": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "SupersetVpcIGW1E70D626"
+    },
+    "RouteTableId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet2RouteTable2F9F7548"
+    }
+   },
+   "DependsOn": [
+    "SupersetVpcVPCGW157A9585"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/DefaultRoute"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet2EIPD806C4E2": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/EIP"
+   }
+  },
+  "SupersetVpcPublicSubnetSubnet2NATGateway9B025193": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "SupersetVpcPublicSubnetSubnet2EIPD806C4E2",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet2Subnet691F83A3"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2"
+     }
+    ]
+   },
+   "DependsOn": [
+    "SupersetVpcPublicSubnetSubnet2DefaultRouteF6512552",
+    "SupersetVpcPublicSubnetSubnet2RouteTableAssociation86195156"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PublicSubnetSubnet2/NATGateway"
+   }
+  },
+  "SupersetVpcPrivateSubnetSubnet1Subnet599860DA": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "PrivateSubnet"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1/Subnet"
+   }
+  },
+  "SupersetVpcPrivateSubnetSubnet1RouteTable02A27DB1": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1/RouteTable"
+   }
+  },
+  "SupersetVpcPrivateSubnetSubnet1RouteTableAssociation9822B998": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "SupersetVpcPrivateSubnetSubnet1RouteTable02A27DB1"
+    },
+    "SubnetId": {
+     "Ref": "SupersetVpcPrivateSubnetSubnet1Subnet599860DA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1/RouteTableAssociation"
+   }
+  },
+  "SupersetVpcPrivateSubnetSubnet1DefaultRoute6CD86A32": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet1NATGateway74CB8F24"
+    },
+    "RouteTableId": {
+     "Ref": "SupersetVpcPrivateSubnetSubnet1RouteTable02A27DB1"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet1/DefaultRoute"
+   }
+  },
+  "SupersetVpcPrivateSubnetSubnet2Subnet600CAAE8": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.3.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "PrivateSubnet"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2/Subnet"
+   }
+  },
+  "SupersetVpcPrivateSubnetSubnet2RouteTable919FE043": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2/RouteTable"
+   }
+  },
+  "SupersetVpcPrivateSubnetSubnet2RouteTableAssociationC6067E2F": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "SupersetVpcPrivateSubnetSubnet2RouteTable919FE043"
+    },
+    "SubnetId": {
+     "Ref": "SupersetVpcPrivateSubnetSubnet2Subnet600CAAE8"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2/RouteTableAssociation"
+   }
+  },
+  "SupersetVpcPrivateSubnetSubnet2DefaultRouteE2429229": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "SupersetVpcPublicSubnetSubnet2NATGateway9B025193"
+    },
+    "RouteTableId": {
+     "Ref": "SupersetVpcPrivateSubnetSubnet2RouteTable919FE043"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/PrivateSubnetSubnet2/DefaultRoute"
+   }
+  },
+  "SupersetVpcIGW1E70D626": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SupersetStack2Stack-2/SupersetVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/IGW"
+   }
+  },
+  "SupersetVpcVPCGW157A9585": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "SupersetVpcIGW1E70D626"
+    },
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/VPCGW"
+   }
+  },
+  "SupersetVpcRestrictDefaultSecurityGroupCustomResource1D189D16": {
+   "Type": "Custom::VpcRestrictDefaultSG",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E",
+      "Arn"
+     ]
+    },
+    "DefaultSecurityGroupId": {
+     "Fn::GetAtt": [
+      "SupersetVpc1AA56667",
+      "DefaultSecurityGroup"
+     ]
+    },
+    "Account": {
+     "Ref": "AWS::AccountId"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetVpc/RestrictDefaultSecurityGroupCustomResource/Default"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ],
+    "Policies": [
+     {
+      "PolicyName": "Inline",
+      "PolicyDocument": {
+       "Version": "2012-10-17",
+       "Statement": [
+        {
+         "Effect": "Allow",
+         "Action": [
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress"
+         ],
+         "Resource": [
+          {
+           "Fn::Join": [
+            "",
+            [
+             "arn:",
+             {
+              "Ref": "AWS::Partition"
+             },
+             ":ec2:",
+             {
+              "Ref": "AWS::Region"
+             },
+             ":",
+             {
+              "Ref": "AWS::AccountId"
+             },
+             ":security-group/",
+             {
+              "Fn::GetAtt": [
+               "SupersetVpc1AA56667",
+               "DefaultSecurityGroup"
+              ]
+             }
+            ]
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/Custom::VpcRestrictDefaultSGCustomResourceProvider/Role"
+   }
+  },
+  "CustomVpcRestrictDefaultSGCustomResourceProviderHandlerDC833E5E": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "__entrypoint__.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs20.x",
+    "Description": "Lambda function for removing all inbound/outbound rules from the VPC default security group"
+   },
+   "DependsOn": [
+    "CustomVpcRestrictDefaultSGCustomResourceProviderRole26592FE0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/Custom::VpcRestrictDefaultSGCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.7fa1e366ee8a9ded01fc355f704cff92bfd179574e6f9cfee800a3541df1b200",
+    "aws:asset:property": "Code"
+   }
+  },
+  "SupersetDbSecretDADAB713": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludeCharacters": "\"@/\\'",
+     "GenerateStringKey": "password",
+     "SecretStringTemplate": "{\"username\":\"postgres\"}"
+    },
+    "Name": "superset-db-credentials"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetDbSecret/Resource"
+   }
+  },
+  "SupersetDbSecretAttachment343F97FB": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "SupersetDbSecretDADAB713"
+    },
+    "TargetId": {
+     "Ref": "SupersetDatabaseF4429958"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetDbSecret/Attachment/Resource"
+   }
+  },
+  "DatabaseSecurityGroup7319C0F6": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for RDS PostgreSQL database",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/DatabaseSecurityGroup/Resource"
+   }
+  },
+  "DatabaseSecurityGroupfromSupersetStack2Stack2EcsSecurityGroup7082622C54326C09E337": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow ECS to connect to PostgreSQL",
+    "FromPort": 5432,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "DatabaseSecurityGroup7319C0F6",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "EcsSecurityGroup44008BF1",
+      "GroupId"
+     ]
+    },
+    "ToPort": 5432
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/DatabaseSecurityGroup/from SupersetStack2Stack2EcsSecurityGroup7082622C:5432"
+   }
+  },
+  "SupersetDatabaseSubnetGroupF8CAB7C8": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for SupersetDatabase database",
+    "SubnetIds": [
+     {
+      "Ref": "SupersetVpcPrivateSubnetSubnet1Subnet599860DA"
+     },
+     {
+      "Ref": "SupersetVpcPrivateSubnetSubnet2Subnet600CAAE8"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetDatabase/SubnetGroup/Default"
+   }
+  },
+  "SupersetDatabaseF4429958": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "100",
+    "BackupRetentionPeriod": 1,
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t3.micro",
+    "DBName": "superset",
+    "DBSubnetGroupName": {
+     "Ref": "SupersetDatabaseSubnetGroupF8CAB7C8"
+    },
+    "DeletionProtection": false,
+    "Engine": "postgres",
+    "EngineVersion": "16.3",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "SupersetDbSecretDADAB713"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "SupersetDbSecretDADAB713"
+       },
+       ":SecretString:username::}}"
+      ]
+     ]
+    },
+    "PubliclyAccessible": false,
+    "StorageType": "gp2",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "DatabaseSecurityGroup7319C0F6",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Snapshot",
+   "DeletionPolicy": "Snapshot",
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetDatabase/Resource"
+   }
+  },
+  "SupersetSecretKeyFC3C2E53": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "GenerateSecretString": {
+     "ExcludeCharacters": "\"@/\\'",
+     "GenerateStringKey": "secret_key",
+     "SecretStringTemplate": "{}"
+    },
+    "Name": "superset-secret-key"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetSecretKey/Resource"
+   }
+  },
+  "SupersetCluster922D0BF0": {
+   "Type": "AWS::ECS::Cluster",
+   "Properties": {
+    "ClusterName": "superset-cluster"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetCluster/Resource"
+   }
+  },
+  "SupersetTaskDefinitionTaskRoleBB8372C1": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetTaskDefinition/TaskRole/Resource"
+   }
+  },
+  "SupersetTaskDefinitionTaskRoleDefaultPolicy953234C9": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Ref": "SupersetDbSecretDADAB713"
+        },
+        {
+         "Ref": "SupersetSecretKeyFC3C2E53"
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SupersetTaskDefinitionTaskRoleDefaultPolicy953234C9",
+    "Roles": [
+     {
+      "Ref": "SupersetTaskDefinitionTaskRoleBB8372C1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetTaskDefinition/TaskRole/DefaultPolicy/Resource"
+   }
+  },
+  "SupersetTaskDefinition6545BDB8": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Command": [
+       "/bin/bash",
+       "-c",
+       "export SQLALCHEMY_DATABASE_URI=\"postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}\" &&          echo \"Waiting for database connection...\" &&          sleep 30 &&          echo \"Initializing Superset database...\" &&          superset db upgrade &&          echo \"Creating admin user...\" &&          superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@superset.com --password admin || echo \"Admin user may already exist\" &&          echo \"Initializing Superset...\" &&          superset init &&          echo \"Starting Superset server...\" &&          superset run -h 0.0.0.0 -p 8088"
+      ],
+      "Environment": [
+       {
+        "Name": "DB_HOST",
+        "Value": {
+         "Fn::GetAtt": [
+          "SupersetDatabaseF4429958",
+          "Endpoint.Address"
+         ]
+        }
+       },
+       {
+        "Name": "DB_PORT",
+        "Value": {
+         "Fn::GetAtt": [
+          "SupersetDatabaseF4429958",
+          "Endpoint.Port"
+         ]
+        }
+       },
+       {
+        "Name": "DB_NAME",
+        "Value": "superset"
+       }
+      ],
+      "Essential": true,
+      "HealthCheck": {
+       "Command": [
+        "CMD-SHELL",
+        "curl -f http://localhost:8088/health || exit 1"
+       ],
+       "Interval": 30,
+       "Retries": 3,
+       "StartPeriod": 180,
+       "Timeout": 5
+      },
+      "Image": "apache/superset:latest",
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "SupersetLogGroup9A7BD204"
+        },
+        "awslogs-stream-prefix": "superset",
+        "awslogs-region": {
+         "Ref": "AWS::Region"
+        }
+       }
+      },
+      "Name": "SupersetContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 8088,
+        "Protocol": "tcp"
+       }
+      ],
+      "Secrets": [
+       {
+        "Name": "DB_USER",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "SupersetDbSecretDADAB713"
+           },
+           ":username::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DB_PASSWORD",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "SupersetDbSecretDADAB713"
+           },
+           ":password::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "SUPERSET_SECRET_KEY",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "SupersetSecretKeyFC3C2E53"
+           },
+           ":secret_key::"
+          ]
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "Cpu": "1024",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "SupersetTaskDefinitionExecutionRole78BA3E1E",
+      "Arn"
+     ]
+    },
+    "Family": "SupersetStack2Stack2SupersetTaskDefinitionAB9FBD23",
+    "Memory": "2048",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "SupersetTaskDefinitionTaskRoleBB8372C1",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetTaskDefinition/Resource"
+   }
+  },
+  "SupersetTaskDefinitionExecutionRole78BA3E1E": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetTaskDefinition/ExecutionRole/Resource"
+   }
+  },
+  "SupersetTaskDefinitionExecutionRoleDefaultPolicyC2093F5E": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "SupersetLogGroup9A7BD204",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Ref": "SupersetDbSecretDADAB713"
+        },
+        {
+         "Ref": "SupersetSecretKeyFC3C2E53"
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SupersetTaskDefinitionExecutionRoleDefaultPolicyC2093F5E",
+    "Roles": [
+     {
+      "Ref": "SupersetTaskDefinitionExecutionRole78BA3E1E"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetTaskDefinition/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "SupersetLogGroup9A7BD204": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/ecs/superset",
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetLogGroup/Resource"
+   }
+  },
+  "EcsSecurityGroup44008BF1": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for ECS Superset service",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/EcsSecurityGroup/Resource"
+   }
+  },
+  "EcsSecurityGroupfromSupersetStack2Stack2AlbSecurityGroupDE5BF98F80880611C446": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow ALB to connect to ECS service",
+    "FromPort": 8088,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "EcsSecurityGroup44008BF1",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "AlbSecurityGroup86A59E99",
+      "GroupId"
+     ]
+    },
+    "ToPort": 8088
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/EcsSecurityGroup/from SupersetStack2Stack2AlbSecurityGroupDE5BF98F:8088"
+   }
+  },
+  "SupersetService0E6031CC": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "SupersetCluster922D0BF0"
+    },
+    "DeploymentConfiguration": {
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "SupersetContainer",
+      "ContainerPort": 8088,
+      "TargetGroupArn": {
+       "Ref": "SupersetTargetGroup6336741A"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "EcsSecurityGroup44008BF1",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "SupersetVpcPrivateSubnetSubnet1Subnet599860DA"
+       },
+       {
+        "Ref": "SupersetVpcPrivateSubnetSubnet2Subnet600CAAE8"
+       }
+      ]
+     }
+    },
+    "TaskDefinition": {
+     "Ref": "SupersetTaskDefinition6545BDB8"
+    }
+   },
+   "DependsOn": [
+    "SupersetALBSupersetListener5ADD48B9",
+    "SupersetTaskDefinitionTaskRoleDefaultPolicy953234C9",
+    "SupersetTaskDefinitionTaskRoleBB8372C1"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetService/Service"
+   }
+  },
+  "AlbSecurityGroup86A59E99": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for Application Load Balancer",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTP traffic from internet",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/AlbSecurityGroup/Resource"
+   }
+  },
+  "SupersetALBED8EEBD6": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "AlbSecurityGroup86A59E99",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "SupersetVpcPublicSubnetSubnet1SubnetB7495379"
+     },
+     {
+      "Ref": "SupersetVpcPublicSubnetSubnet2Subnet691F83A3"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "SupersetVpcPublicSubnetSubnet1DefaultRoute59847DC0",
+    "SupersetVpcPublicSubnetSubnet1RouteTableAssociation5498023F",
+    "SupersetVpcPublicSubnetSubnet2DefaultRouteF6512552",
+    "SupersetVpcPublicSubnetSubnet2RouteTableAssociation86195156"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetALB/Resource"
+   }
+  },
+  "SupersetALBSupersetListener5ADD48B9": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "SupersetTargetGroup6336741A"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "SupersetALBED8EEBD6"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetALB/SupersetListener/Resource"
+   }
+  },
+  "SupersetTargetGroup6336741A": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckEnabled": true,
+    "HealthCheckIntervalSeconds": 30,
+    "HealthCheckPath": "/health",
+    "HealthCheckProtocol": "HTTP",
+    "HealthCheckTimeoutSeconds": 5,
+    "HealthyThresholdCount": 2,
+    "Port": 8088,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "UnhealthyThresholdCount": 3,
+    "VpcId": {
+     "Ref": "SupersetVpc1AA56667"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/SupersetTargetGroup/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/81XWW8bNxD+LdnHglZro2hTv0lyEgh1Y0FS/dBAKCjuaE2bS255yFGE/e8dHntIio3EaRE9CCJnOBdn5hvuxeD89W+Dn17RR3PG8oczwVeD3dxS9kCQ9PcO2MVgd1uxD7uspB+Hn0x2mf2Qkcy4lQQ7VnLNC6ep5Upml3iI8Vz/Qc1DOiZpCXsSi23lCVO3EpxlNflyCc031EJWL+slGa/l7XRMopZ5OIa26YZyQVdccLv9S8lGzaZikzytvbGRUKyxVtIqKplUN/KaOsnuskurHZCMV5tfxgfHqTG8kBPkDPNcgzE3cqwhRY8nfDwn4UVwJM/fU/sOL+2RbjE5yFmejIOn4cWT1xRKLBaWX82Us7CgKwEdvaMNjVGMB8XtYb94M5n6v047SUX8n1fsmgpzArn4NjdOx5MTcSNW4URa0FguTQ1F7Eu7oUWovitBWjIH5jT6+04rV2FtobPJVA6GaV61qtG4EOpxKMSNsyvlZJ48Te0wkYV3aOYExH7wuWnQ42m1XyL9DJ8EF15iA2cIxWsSXEKkRExgSkpgXrQZWk7yfxykFNYHfr15wi2v7PO+f5vdJt4INf3kHRGS2ZoYYBqsKamkBWgc1GGPjkTG+252FiBBe6gJjLnVXBbZZXMw7hdQVsLP1AORwPwdtokOH5lwOYzvqKYMazFGVfsr+R5mm/tCfST+LaguwHat0N5H0mQDP4r3pA/FaqJzM9hdUUtX1MBEGkslA9QGsuAeBJpVepKENwr6LOBPA3qmbOjeYVUhCtBet0WhWwwh0HbZ2gnRbhN63CvdJ2GJVBh4CRh5qIG3tORiu6dxj5TDmjphvSftEwqV8BRFz2WMPcdwOZZfh2vdKg4nE7L22QcY2kpX1Eu86derSWPUeyXA38RUKxt7ogXFFb4xXTXDAGXX3ksSzTcgdgxdX+urhlJtqJgqTMq2VwNXo56lSGgyXhNgWAhj4Qze/h6UskhrA4+60knyFiuK+keBebiCNZfc+x2w5Jlf0LAvQvBdbSlmWPdoSfkc9IZjVTaSaV8TTsvBbqaEL1gcLq6EfLT1N1NhXzFeUTFkDMG+6Yp4xgsMWZeABHQLNW2kmpv7gPMocEPDRNhreS2OPst8Xu+LfcYkI6XLyfcL4aXcZXw34vMykuP8Sa4slOcceXhMznP8cLPgsczsmT0m/9/6v4ocoo+B10SoAnvvWhUNBIi07IGN7kDj1yjdnMfWFdRYzoSi+YoKbGcE6A1+w/Zg+Rp5o8DD7u53YZ9B+gIc21seHk7E/sE4UlpI6W2xsWZglNOxdZMWhA1V9umxEBLhgI8YuuE56BEiL8FvDj9PKc6BwsvgS65yOMKkymFwb37cnL8enP88uHh1bzg/09hCvITBLP7/C5CUMGf1DwAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "SupersetStack2Stack-2/CDKMetadata/Default"
+   },
+   "Condition": "CDKMetadataAvailable"
+  }
+ },
+ "Outputs": {
+  "LoadBalancerDNS": {
+   "Description": "DNS name of the Load Balancer",
+   "Value": {
+    "Fn::GetAtt": [
+     "SupersetALBED8EEBD6",
+     "DNSName"
+    ]
+   }
+  },
+  "SupersetLoginURL": {
+   "Description": "Superset login URL",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "http://",
+      {
+       "Fn::GetAtt": [
+        "SupersetALBED8EEBD6",
+        "DNSName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "DatabaseEndpoint": {
+   "Description": "RDS PostgreSQL endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "SupersetDatabaseF4429958",
+     "Endpoint.Address"
+    ]
+   }
+  }
+ },
+ "Conditions": {
+  "CDKMetadataAvailable": {
+   "Fn::Or": [
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "af-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-3"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-4"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-northwest-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-2"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "il-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "sa-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-west-1"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "AWS::Region"
+      },
+      "us-west-2"
+     ]
+    }
+   ]
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
