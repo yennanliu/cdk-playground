@@ -131,36 +131,15 @@ async function handleListMembers(event: APIGatewayProxyEvent): Promise<APIGatewa
 async function handleAddMember(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     const body = JSON.parse(event.body || '{}');
     
-    // Check if any users exist in the table
-    const existingUsers = await dynamoDb.send(
-        new ScanCommand({
-            TableName: TABLE_NAME,
-            Limit: 1
-        })
-    );
-
-    // If users exist, verify admin authorization
-    if (existingUsers.Items && existingUsers.Items.length > 0) {
-        const authResult = await verifyAuth(event);
-        if (!authResult.isAuthorized || authResult.user?.role !== 'admin') {
-            return {
-                statusCode: 403,
-                body: JSON.stringify({ message: 'Unauthorized. Only admins can add new members.' })
-            };
-        }
-    } else if (body.role !== 'admin') {
-        // If no users exist, only allow admin role for first user
-        return {
-            statusCode: 403,
-            body: JSON.stringify({ message: 'First user must be an admin' })
-        };
-    }
-    if (!body.email || !body.password || !body.role) {
+    if (!body.email || !body.password) {
         return {
             statusCode: 400,
-            body: JSON.stringify({ message: 'Missing required fields' })
+            body: JSON.stringify({ message: 'Email and password are required' })
         };
     }
+
+    // Set default role to 'user' if not provided
+    const role = body.role || 'user';
 
     const hashedPassword = await bcrypt.hash(body.password, 10);
     await dynamoDb.send(
@@ -169,7 +148,7 @@ async function handleAddMember(event: APIGatewayProxyEvent): Promise<APIGatewayP
             Item: {
                 email: body.email,
                 password: hashedPassword,
-                role: body.role
+                role: role
             },
             ConditionExpression: 'attribute_not_exists(email)'
         })
