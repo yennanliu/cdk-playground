@@ -36,7 +36,6 @@ export class SupersetStack2Stack extends Stack {
 
     // Database credentials secret
     const dbSecret = new secretsmanager.Secret(this, 'SupersetDbSecret', {
-      secretName: 'superset-db-credentials',
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: 'postgres' }),
         generateStringKey: 'password',
@@ -69,7 +68,6 @@ export class SupersetStack2Stack extends Stack {
 
     // Superset secret key
     const supersetSecret = new secretsmanager.Secret(this, 'SupersetSecretKey', {
-      secretName: 'superset-secret-key',
       generateSecretString: {
         secretStringTemplate: '{}',
         generateStringKey: 'secret_key',
@@ -80,7 +78,6 @@ export class SupersetStack2Stack extends Stack {
     // 3. ECS Cluster (Fargate)
     const cluster = new ecs.Cluster(this, 'SupersetCluster', {
       vpc,
-      clusterName: 'superset-cluster',
     });
 
     // Task Definition
@@ -99,7 +96,6 @@ export class SupersetStack2Stack extends Stack {
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'superset',
         logGroup: new logs.LogGroup(this, 'SupersetLogGroup', {
-          logGroupName: '/ecs/superset',
           retention: logs.RetentionDays.ONE_WEEK,
         }),
       }),
