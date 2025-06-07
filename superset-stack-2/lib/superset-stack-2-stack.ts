@@ -43,6 +43,15 @@ export class SupersetStack2Stack extends Stack {
       },
     });
 
+    // MySQL credentials secret for reporting database
+    const mysqlSecret = new secretsmanager.Secret(this, 'MySQLSecret', {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({ username: 'admin' }),
+        generateStringKey: 'password',
+        excludeCharacters: '"@/\\\'',
+      },
+    });
+
     // 2. RDS PostgreSQL Instance
     const dbSecurityGroup = new ec2.SecurityGroup(this, 'DatabaseSecurityGroup', {
       vpc,
@@ -64,6 +73,39 @@ export class SupersetStack2Stack extends Stack {
       securityGroups: [dbSecurityGroup],
       deletionProtection: false,
       backupRetention: Duration.days(1),
+    });
+
+    // MySQL Security Group for reporting database
+    const mysqlSecurityGroup = new ec2.SecurityGroup(this, 'MySQLSecurityGroup', {
+      vpc,
+      description: 'Security group for MySQL reporting database',
+      allowAllOutbound: false,
+    });
+
+    // Allow MySQL access from anywhere (public access as requested)
+    mysqlSecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(3306),
+      'Allow MySQL access from anywhere'
+    );
+
+    // MySQL RDS Instance for reporting
+    const mysqlDatabase = new rds.DatabaseInstance(this, 'MySQLReportingDatabase', {
+      engine: rds.DatabaseInstanceEngine.mysql({
+        version: rds.MysqlEngineVersion.VER_8_0_35,
+      }),
+      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
+      credentials: rds.Credentials.fromSecret(mysqlSecret),
+      vpc,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PUBLIC, // Public subnets for public access
+      },
+      databaseName: 'reporting',
+      securityGroups: [mysqlSecurityGroup],
+      deletionProtection: false,
+      backupRetention: Duration.days(7),
+      publiclyAccessible: true, // Enable public access
+      multiAz: false,
     });
 
     // Superset secret key
@@ -89,6 +131,7 @@ export class SupersetStack2Stack extends Stack {
     // Grant permissions to read secrets
     dbSecret.grantRead(taskDefinition.taskRole);
     supersetSecret.grantRead(taskDefinition.taskRole);
+    mysqlSecret.grantRead(taskDefinition.taskRole);
 
     // Container Definition
     const container = taskDefinition.addContainer('SupersetContainer', {
@@ -151,6 +194,13 @@ export class SupersetStack2Stack extends Stack {
       'Allow ECS to connect to PostgreSQL'
     );
 
+    // Allow ECS to connect to MySQL
+    mysqlSecurityGroup.addIngressRule(
+      ecsSecurityGroup,
+      ec2.Port.tcp(3306),
+      'Allow ECS to connect to MySQL'
+    );
+
     // Fargate Service
     const service = new ecs.FargateService(this, 'SupersetService', {
       cluster,
@@ -161,6 +211,8 @@ export class SupersetStack2Stack extends Stack {
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
+      minHealthyPercent: 100,
+      maxHealthyPercent: 200,
     });
 
     // 4. Application Load Balancer (ALB)
@@ -233,6 +285,21 @@ export class SupersetStack2Stack extends Stack {
     new CfnOutput(this, 'DatabaseEndpoint', {
       value: database.instanceEndpoint.hostname,
       description: 'RDS PostgreSQL endpoint',
+    });
+
+    new CfnOutput(this, 'MySQLEndpoint', {
+      value: mysqlDatabase.instanceEndpoint.hostname,
+      description: 'MySQL reporting database endpoint',
+    });
+
+    new CfnOutput(this, 'MySQLPort', {
+      value: mysqlDatabase.instanceEndpoint.port.toString(),
+      description: 'MySQL reporting database port',
+    });
+
+    new CfnOutput(this, 'MySQLSecretArn', {
+      value: mysqlSecret.secretArn,
+      description: 'MySQL credentials secret ARN',
     });
   }
 }
