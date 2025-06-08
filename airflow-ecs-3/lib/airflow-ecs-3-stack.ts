@@ -21,6 +21,8 @@ export class AirflowEcs3Stack extends Stack {
     const vpc = new ec2.Vpc(this, 'AirflowVpc', {
       maxAzs: 2,
       natGateways: 1, // Minimal setup - single NAT gateway
+      enableDnsHostnames: true,
+      enableDnsSupport: true,
       subnetConfiguration: [
         {
           cidrMask: 24,
@@ -43,6 +45,13 @@ export class AirflowEcs3Stack extends Stack {
       autoDeleteObjects: !isProd,
     });
 
+    // Create security group for EFS
+    const efsSecurityGroup = new ec2.SecurityGroup(this, 'EfsSecurityGroup', {
+      vpc,
+      description: 'Security group for Airflow EFS',
+      allowAllOutbound: false,
+    });
+
     // Create EFS file system for shared DAG storage
     const fileSystem = new efs.FileSystem(this, 'AirflowEfs', {
       vpc,
@@ -50,13 +59,10 @@ export class AirflowEcs3Stack extends Stack {
       performanceMode: efs.PerformanceMode.GENERAL_PURPOSE,
       throughputMode: efs.ThroughputMode.BURSTING,
       removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
-    });
-
-    // Create security group for EFS
-    const efsSecurityGroup = new ec2.SecurityGroup(this, 'EfsSecurityGroup', {
-      vpc,
-      description: 'Security group for Airflow EFS',
-      allowAllOutbound: false,
+      securityGroup: efsSecurityGroup,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
     });
 
     // Create security group for RDS
@@ -85,6 +91,13 @@ export class AirflowEcs3Stack extends Stack {
       ecsSecurityGroup,
       ec2.Port.tcp(2049),
       'Allow ECS tasks to access EFS'
+    );
+
+    // Allow ECS to connect to EFS (bidirectional)
+    ecsSecurityGroup.addEgressRule(
+      efsSecurityGroup,
+      ec2.Port.tcp(2049),
+      'Allow ECS tasks to connect to EFS'
     );
 
     // Create EFS access point
@@ -154,6 +167,32 @@ export class AirflowEcs3Stack extends Stack {
       ],
     }));
 
+    // Add EFS permissions to task role
+    taskRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'elasticfilesystem:ClientMount',
+        'elasticfilesystem:ClientWrite',
+        'elasticfilesystem:ClientRootAccess',
+        'elasticfilesystem:DescribeMountTargets',
+        'elasticfilesystem:DescribeFileSystems',
+        'elasticfilesystem:DescribeAccessPoints',
+        'elasticfilesystem:ClientAttach',
+      ],
+      resources: [
+        fileSystem.fileSystemArn,
+        accessPoint.accessPointArn,
+      ],
+    }));
+
+    // Create ECS Task Execution Role with additional permissions
+    const taskExecutionRole = new iam.Role(this, 'AirflowTaskExecutionRole', {
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy'),
+      ],
+    });
+
     // Create log group with unique name
     const logGroup = new logs.LogGroup(this, 'AirflowLogGroup', {
       logGroupName: `/ecs/airflow-${this.stackName.toLowerCase()}`,
@@ -182,6 +221,16 @@ export class AirflowEcs3Stack extends Stack {
 
     // Common DAG sync script
     const dagSyncScript = `
+      echo "Checking EFS mount..."
+      if ! mountpoint -q /opt/airflow/dags; then
+        echo "EFS not mounted at /opt/airflow/dags, waiting..."
+        sleep 10
+      fi
+      
+      echo "Creating DAGs directory if not exists..."
+      mkdir -p /opt/airflow/dags
+      chown -R 50000:0 /opt/airflow/dags
+      
       echo "Syncing DAGs from S3..."
       aws s3 sync s3://$AIRFLOW_DAGS_BUCKET/dags /opt/airflow/dags --delete
       echo "DAG sync completed"
@@ -242,6 +291,7 @@ export class AirflowEcs3Stack extends Stack {
       memoryLimitMiB: 1024,
       cpu: 512,
       taskRole: taskRole,
+      executionRole: taskExecutionRole,
     });
 
     // Add EFS volume to webserver task
@@ -250,6 +300,10 @@ export class AirflowEcs3Stack extends Stack {
       efsVolumeConfiguration: {
         fileSystemId: fileSystem.fileSystemId,
         transitEncryption: 'ENABLED',
+        authorizationConfig: {
+          accessPointId: accessPoint.accessPointId,
+          iam: 'ENABLED',
+        },
       },
     });
 
@@ -293,6 +347,7 @@ export class AirflowEcs3Stack extends Stack {
       memoryLimitMiB: 1024,
       cpu: 512,
       taskRole: taskRole,
+      executionRole: taskExecutionRole,
     });
 
     // Add EFS volume to scheduler task
@@ -301,6 +356,10 @@ export class AirflowEcs3Stack extends Stack {
       efsVolumeConfiguration: {
         fileSystemId: fileSystem.fileSystemId,
         transitEncryption: 'ENABLED',
+        authorizationConfig: {
+          accessPointId: accessPoint.accessPointId,
+          iam: 'ENABLED',
+        },
       },
     });
 
