@@ -17,6 +17,9 @@ export class AirflowEcs3Stack extends Stack {
     const isProd = this.node.tryGetContext('prod') === true || 
                    this.stackName.toLowerCase().includes('prod');
 
+    // Create a unique suffix for this deployment to avoid conflicts
+    const uniqueSuffix = this.node.addr.substring(0, 8);
+
     // Create VPC with public and private subnets
     const vpc = new ec2.Vpc(this, 'AirflowVpc', {
       maxAzs: 2,
@@ -39,7 +42,9 @@ export class AirflowEcs3Stack extends Stack {
 
     // Create S3 bucket for DAG storage
     const dagsBucket = new s3.Bucket(this, 'AirflowDagsBucket', {
-      bucketName: `airflow-dags-${this.account}-${this.region}-${this.stackName.toLowerCase()}`,
+      //bucketName: `airflow-dags-${this.account}-${this.region}-${this.stackName.toLowerCase()}-${uniqueSuffix}`,
+      bucketName: `airflow-dags-${this.stackName.toLowerCase()}-${uniqueSuffix}`,
+    
       versioned: true,
       removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
       autoDeleteObjects: !isProd,
@@ -123,7 +128,7 @@ export class AirflowEcs3Stack extends Stack {
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       vpc,
       credentials: rds.Credentials.fromGeneratedSecret('airflow', {
-        secretName: 'airflow-db-credentials',
+        secretName: `airflow-db-credentials-${this.stackName.toLowerCase()}-${uniqueSuffix}`,
         excludeCharacters: '/"@\\\'',
       }),
       databaseName: 'airflow',
@@ -195,7 +200,7 @@ export class AirflowEcs3Stack extends Stack {
 
     // Create log group with unique name
     const logGroup = new logs.LogGroup(this, 'AirflowLogGroup', {
-      logGroupName: `/ecs/airflow-${this.stackName.toLowerCase()}`,
+      logGroupName: `/ecs/airflow-${this.stackName.toLowerCase()}-${uniqueSuffix}`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
