@@ -1,4 +1,10 @@
-import { Stack, StackProps, Duration } from "aws-cdk-lib";
+import {
+  Stack,
+  StackProps,
+  Duration,
+  CfnOutput,
+  RemovalPolicy,
+} from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -51,7 +57,7 @@ export class AirflowEcs3Stack extends Stack {
       allocatedStorage: 20,
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       publiclyAccessible: true,
-      removalPolicy: rds.RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY,
       deletionProtection: false,
     });
 
@@ -59,7 +65,8 @@ export class AirflowEcs3Stack extends Stack {
     const taskDef = new ecs.FargateTaskDefinition(this, "AirflowTaskDef");
 
     const airflowContainer = taskDef.addContainer("AirflowWebserver", {
-      image: ecs.ContainerImage.fromAsset(path.join(__dirname, "../airflow")), // assumes Dockerfile in ../airflow
+      //image: ecs.ContainerImage.fromAsset(path.join(__dirname, "../airflow")), // assumes Dockerfile in ../airflow
+      image: ecs.ContainerImage.fromRegistry("apache/airflow:2.8.1"),
       memoryLimitMiB: 1024,
       environment: {
         AIRFLOW__CORE__EXECUTOR: "LocalExecutor",
