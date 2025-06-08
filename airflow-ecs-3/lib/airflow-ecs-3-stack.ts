@@ -8,7 +8,7 @@ import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as path from "path";
 
-export class AirflowCdkStack extends Stack {
+export class AirflowEcs3Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
