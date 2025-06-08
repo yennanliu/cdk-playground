@@ -236,9 +236,66 @@ export class AirflowEcs3Stack extends Stack {
       mkdir -p /opt/airflow/dags
       chown -R 50000:0 /opt/airflow/dags
       
-      echo "Syncing DAGs from S3..."
-      aws s3 sync s3://$AIRFLOW_DAGS_BUCKET/dags /opt/airflow/dags --delete
-      echo "DAG sync completed"
+      echo "Syncing DAGs from S3 using Python..."
+      python3 << 'EOF'
+import boto3
+import os
+import logging
+from pathlib import Path
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def sync_s3_folder(bucket_name, s3_folder, local_folder):
+    """Sync S3 folder to local directory"""
+    try:
+        s3_client = boto3.client('s3')
+        local_path = Path(local_folder)
+        local_path.mkdir(parents=True, exist_ok=True)
+        
+        # List objects in S3 folder
+        response = s3_client.list_objects_v2(
+            Bucket=bucket_name,
+            Prefix=s3_folder + '/' if not s3_folder.endswith('/') else s3_folder
+        )
+        
+        if 'Contents' not in response:
+            logger.info(f"No objects found in s3://{bucket_name}/{s3_folder}")
+            return
+            
+        # Download each file
+        for obj in response['Contents']:
+            s3_key = obj['Key']
+            if s3_key.endswith('/'):  # Skip directories
+                continue
+                
+            # Create local file path
+            relative_path = s3_key.replace(s3_folder + '/', '').replace(s3_folder, '')
+            if relative_path.startswith('/'):
+                relative_path = relative_path[1:]
+            local_file_path = local_path / relative_path
+            
+            # Create directory if needed
+            local_file_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Download file
+            logger.info(f"Downloading {s3_key} to {local_file_path}")
+            s3_client.download_file(bucket_name, s3_key, str(local_file_path))
+            
+        logger.info("DAG sync completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Error syncing DAGs from S3: {e}")
+        # Don't fail the container start if DAG sync fails
+        
+# Sync DAGs
+bucket_name = os.environ.get('AIRFLOW_DAGS_BUCKET', '')
+if bucket_name:
+    sync_s3_folder(bucket_name, 'dags', '/opt/airflow/dags')
+else:
+    logger.warning("AIRFLOW_DAGS_BUCKET environment variable not set")
+EOF
+      echo "DAG sync script completed"
     `;
 
     // Database initialization script
