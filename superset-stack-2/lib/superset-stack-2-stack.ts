@@ -173,7 +173,6 @@ export class SupersetStack2Stack extends Stack {
          echo "Initializing Superset..." && \
          superset init && \
          echo "Configuring reporting database..." && \
-         superset set_database_uri -d "Reporting DB" "\${REPORTING_DATABASE_URI}" && \
          echo "Starting Superset server..." && \
          superset run -h 0.0.0.0 -p 8088`
       ],
