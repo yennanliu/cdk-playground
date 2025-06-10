@@ -1,9 +1,9 @@
-import { 
-  Duration, 
-  Stack, 
-  StackProps, 
+import {
+  Duration,
+  Stack,
+  StackProps,
   CfnOutput,
-  SecretValue 
+  SecretValue
 } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
@@ -43,10 +43,10 @@ export class SupersetStack2Stack extends Stack {
       },
     });
 
-    // MySQL credentials secret for reporting database
-    const mysqlSecret = new secretsmanager.Secret(this, 'MySQLSecret', {
+    // PostgreSQL credentials secret for reporting database
+    const reportDbSecret = new secretsmanager.Secret(this, 'ReportDbSecret', {
       generateSecretString: {
-        secretStringTemplate: JSON.stringify({ username: 'admin' }),
+        secretStringTemplate: JSON.stringify({ username: 'postgres' }),
         generateStringKey: 'password',
         excludeCharacters: '"@/\\\'',
       },
@@ -75,33 +75,33 @@ export class SupersetStack2Stack extends Stack {
       backupRetention: Duration.days(1),
     });
 
-    // MySQL Security Group for reporting database
-    const mysqlSecurityGroup = new ec2.SecurityGroup(this, 'MySQLSecurityGroup', {
+    // PostgreSQL Security Group for reporting database
+    const reportDbSecurityGroup = new ec2.SecurityGroup(this, 'ReportDbSecurityGroup', {
       vpc,
-      description: 'Security group for MySQL reporting database',
+      description: 'Security group for PostgreSQL reporting database',
       allowAllOutbound: false,
     });
 
-    // Allow MySQL access from anywhere (public access as requested)
-    mysqlSecurityGroup.addIngressRule(
+    // Allow PostgreSQL access from anywhere (public access as requested)
+    reportDbSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(3306),
-      'Allow MySQL access from anywhere'
+      ec2.Port.tcp(5432),
+      'Allow PostgreSQL access from anywhere'
     );
 
-    // MySQL RDS Instance for reporting
-    const mysqlDatabase = new rds.DatabaseInstance(this, 'MySQLReportingDatabase', {
-      engine: rds.DatabaseInstanceEngine.mysql({
-        version: rds.MysqlEngineVersion.VER_8_0_35,
+    // PostgreSQL RDS Instance for reporting
+    const reportDatabase = new rds.DatabaseInstance(this, 'ReportingDatabase', {
+      engine: rds.DatabaseInstanceEngine.postgres({
+        version: rds.PostgresEngineVersion.VER_16_3,
       }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
-      credentials: rds.Credentials.fromSecret(mysqlSecret),
+      credentials: rds.Credentials.fromSecret(reportDbSecret),
       vpc,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PUBLIC, // Public subnets for public access
       },
       databaseName: 'reporting',
-      securityGroups: [mysqlSecurityGroup],
+      securityGroups: [reportDbSecurityGroup],
       deletionProtection: false,
       backupRetention: Duration.days(7),
       publiclyAccessible: true, // Enable public access
@@ -131,7 +131,7 @@ export class SupersetStack2Stack extends Stack {
     // Grant permissions to read secrets
     dbSecret.grantRead(taskDefinition.taskRole);
     supersetSecret.grantRead(taskDefinition.taskRole);
-    mysqlSecret.grantRead(taskDefinition.taskRole);
+    reportDbSecret.grantRead(taskDefinition.taskRole);
 
     // Container Definition
     const container = taskDefinition.addContainer('SupersetContainer', {
@@ -146,16 +146,24 @@ export class SupersetStack2Stack extends Stack {
         DB_HOST: database.instanceEndpoint.hostname,
         DB_PORT: database.instanceEndpoint.port.toString(),
         DB_NAME: 'superset',
+        REPORTING_DB_HOST: reportDatabase.instanceEndpoint.hostname,
+        REPORTING_DB_PORT: reportDatabase.instanceEndpoint.port.toString(),
+        REPORTING_DB_NAME: 'reporting',
       },
       secrets: {
         DB_USER: ecs.Secret.fromSecretsManager(dbSecret, 'username'),
         DB_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret, 'password'),
         SUPERSET_SECRET_KEY: ecs.Secret.fromSecretsManager(supersetSecret, 'secret_key'),
+        REPORTING_DB_USER: ecs.Secret.fromSecretsManager(reportDbSecret, 'username'),
+        REPORTING_DB_PASSWORD: ecs.Secret.fromSecretsManager(reportDbSecret, 'password'),
       },
       command: [
         '/bin/bash',
         '-c',
-        `export SQLALCHEMY_DATABASE_URI="postgresql://\${DB_USER}:\${DB_PASSWORD}@\${DB_HOST}:\${DB_PORT}/\${DB_NAME}" && \
+        `echo "Installing required packages..." && \
+         pip install psycopg2-binary && \
+         export SQLALCHEMY_DATABASE_URI="postgresql://\${DB_USER}:\${DB_PASSWORD}@\${DB_HOST}:\${DB_PORT}/\${DB_NAME}" && \
+         export REPORTING_DATABASE_URI="postgresql://\${REPORTING_DB_USER}:\${REPORTING_DB_PASSWORD}@\${REPORTING_DB_HOST}:\${REPORTING_DB_PORT}/\${REPORTING_DB_NAME}" && \
          echo "Waiting for database connection..." && \
          sleep 30 && \
          echo "Initializing Superset database..." && \
@@ -164,6 +172,8 @@ export class SupersetStack2Stack extends Stack {
          superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@superset.com --password admin || echo "Admin user may already exist" && \
          echo "Initializing Superset..." && \
          superset init && \
+         echo "Configuring reporting database..." && \
+         superset set_database_uri -d "Reporting DB" "\${REPORTING_DATABASE_URI}" && \
          echo "Starting Superset server..." && \
          superset run -h 0.0.0.0 -p 8088`
       ],
@@ -194,11 +204,11 @@ export class SupersetStack2Stack extends Stack {
       'Allow ECS to connect to PostgreSQL'
     );
 
-    // Allow ECS to connect to MySQL
-    mysqlSecurityGroup.addIngressRule(
+    // Allow ECS to connect to PostgreSQL reporting database
+    reportDbSecurityGroup.addIngressRule(
       ecsSecurityGroup,
-      ec2.Port.tcp(3306),
-      'Allow ECS to connect to MySQL'
+      ec2.Port.tcp(5432),
+      'Allow ECS to connect to PostgreSQL reporting database'
     );
 
     // Fargate Service
@@ -287,19 +297,19 @@ export class SupersetStack2Stack extends Stack {
       description: 'RDS PostgreSQL endpoint',
     });
 
-    new CfnOutput(this, 'MySQLEndpoint', {
-      value: mysqlDatabase.instanceEndpoint.hostname,
-      description: 'MySQL reporting database endpoint',
+    new CfnOutput(this, 'ReportingDbEndpoint', {
+      value: reportDatabase.instanceEndpoint.hostname,
+      description: 'PostgreSQL reporting database endpoint',
     });
 
-    new CfnOutput(this, 'MySQLPort', {
-      value: mysqlDatabase.instanceEndpoint.port.toString(),
-      description: 'MySQL reporting database port',
+    new CfnOutput(this, 'ReportingDbPort', {
+      value: reportDatabase.instanceEndpoint.port.toString(),
+      description: 'PostgreSQL reporting database port',
     });
 
-    new CfnOutput(this, 'MySQLSecretArn', {
-      value: mysqlSecret.secretArn,
-      description: 'MySQL credentials secret ARN',
+    new CfnOutput(this, 'ReportingDbSecretArn', {
+      value: reportDbSecret.secretArn,
+      description: 'PostgreSQL reporting database credentials secret ARN',
     });
   }
 }
