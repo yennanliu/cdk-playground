@@ -8,6 +8,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as servicediscovery from "aws-cdk-lib/aws-servicediscovery";
 import * as path from "path";
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 
 /**
  * The provided CDK stack launches 3 Redis instances, each running both:
@@ -134,7 +135,21 @@ export class RedisSentinel1Stack extends cdk.Stack {
     });
 
     // 7. Lambda function to test Redis Sentinel (using pre-compiled JS)
-    const testLambda = new lambda.Function(this, "RedisTestLambda", {
+    // const testLambda = new lambda.Function(this, "RedisTestLambda", {
+    //   runtime: lambda.Runtime.NODEJS_18_X,
+    //   handler: "index.handler",
+    //   //code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/dist")),
+    //   code: lambda.Code.fromAsset(path.join(__dirname, "../lambda")),
+    //   vpc: vpc,
+    //   securityGroups: [lambdaSg],
+    //   vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+    //   timeout: cdk.Duration.seconds(30),
+    //   memorySize: 512,
+    //   environment: {
+    //     REDIS_MASTER_NAME: "mymaster",
+    //   },
+    // });
+    const testLambda = new nodejs.NodejsFunction(this, "RedisTestLambda", {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: "index.handler",
       //code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/dist")),
@@ -148,6 +163,7 @@ export class RedisSentinel1Stack extends cdk.Stack {
         REDIS_MASTER_NAME: "mymaster",
       },
     });
+
 
     // Add permissions for CloudWatch Logs
     testLambda.addToRolePolicy(new iam.PolicyStatement({
