@@ -6,12 +6,13 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
+import * as servicediscovery from "aws-cdk-lib/aws-servicediscovery";
 import * as path from "path";
 
 /**
  * The provided CDK stack launches 3 Redis instances, each running both:
-	•	A Redis Server, and
-	•	A Redis Sentinel process
+  •	A Redis Server, and
+  •	A Redis Sentinel process
   - All 3 tasks are deployed as replicas in a Fargate Service, effectively forming a minimal Redis Sentinel cluster.
   - Includes a TypeScript Lambda function with API Gateway to test the Redis Sentinel setup.
  */
@@ -24,9 +25,12 @@ export class RedisSentinel1Stack extends cdk.Stack {
       maxAzs: 2,
     });
 
-    // 2. ECS Cluster
+    // 2. ECS Cluster with Service Discovery Namespace
     const cluster = new ecs.Cluster(this, "RedisCluster", {
       vpc,
+      defaultCloudMapNamespace: {
+        name: "redis.local",
+      },
     });
 
     // 3. Security Group for Redis
@@ -50,43 +54,91 @@ export class RedisSentinel1Stack extends cdk.Stack {
     redisSg.addIngressRule(lambdaSg, ec2.Port.tcp(6379));
     redisSg.addIngressRule(lambdaSg, ec2.Port.tcp(26379));
 
-    // 5. Redis & Sentinel Task Definition
-    const taskDef = new ecs.FargateTaskDefinition(this, "RedisTaskDef", {
+    // 5. Redis Master Task Definition
+    const masterTaskDef = new ecs.FargateTaskDefinition(this, "RedisMasterTaskDef", {
       memoryLimitMiB: 512,
       cpu: 256,
     });
 
-    taskDef.addContainer("redis", {
+    const masterContainer = masterTaskDef.addContainer("redis", {
       image: ecs.ContainerImage.fromRegistry("bitnami/redis-sentinel:latest"),
       environment: {
-        REDIS_MASTER_NAME: "mymaster",
-        REDIS_MASTER_HOST: "redis-master",
+        REDIS_REPLICATION_MODE: "master",
+        REDIS_PORT_NUMBER: "6379",
+        REDIS_MASTER_HOST: "localhost",
         REDIS_MASTER_PORT_NUMBER: "6379",
+        REDIS_MASTER_NAME: "mymaster",
         REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS: "5000",
         REDIS_SENTINEL_FAILOVER_TIMEOUT: "60000",
         REDIS_SENTINEL_QUORUM: "2",
       },
       portMappings: [{ containerPort: 6379 }, { containerPort: 26379 }],
       logging: ecs.LogDrivers.awsLogs({
-        streamPrefix: "redis-sentinel",
+        streamPrefix: "redis-master",
       }),
     });
 
-    // 6. Fargate Service
-    const fargateService = new ecs.FargateService(this, "RedisFargateService", {
+    // 6. Master Fargate Service with Service Discovery
+    const masterService = new ecs.FargateService(this, "RedisMasterService", {
       cluster,
-      taskDefinition: taskDef,
-      desiredCount: 3,
-      assignPublicIp: true,
+      taskDefinition: masterTaskDef,
+      desiredCount: 1,
+      assignPublicIp: false,
       securityGroups: [redisSg],
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      cloudMapOptions: {
+        name: "master",
+        dnsTtl: cdk.Duration.seconds(60),
+        container: masterContainer,
+        containerPort: 6379,
+      },
+    });
+
+    // 7. Redis Replica Task Definition
+    const replicaTaskDef = new ecs.FargateTaskDefinition(this, "RedisReplicaTaskDef", {
+      memoryLimitMiB: 512,
+      cpu: 256,
+    });
+
+    const replicaContainer = replicaTaskDef.addContainer("redis", {
+      image: ecs.ContainerImage.fromRegistry("bitnami/redis-sentinel:latest"),
+      environment: {
+        REDIS_REPLICATION_MODE: "slave",
+        REDIS_MASTER_HOST: "master.redis.local",
+        REDIS_MASTER_PORT_NUMBER: "6379",
+        REDIS_MASTER_NAME: "mymaster",
+        REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS: "5000",
+        REDIS_SENTINEL_FAILOVER_TIMEOUT: "60000",
+        REDIS_SENTINEL_QUORUM: "2",
+      },
+      portMappings: [{ containerPort: 6379 }, { containerPort: 26379 }],
+      logging: ecs.LogDrivers.awsLogs({
+        streamPrefix: "redis-replica",
+      }),
+    });
+
+    // 8. Replica Fargate Service
+    const replicaService = new ecs.FargateService(this, "RedisReplicaService", {
+      cluster,
+      taskDefinition: replicaTaskDef,
+      desiredCount: 2,
+      assignPublicIp: false,
+      securityGroups: [redisSg],
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      cloudMapOptions: {
+        name: "replica",
+        dnsTtl: cdk.Duration.seconds(60),
+        container: replicaContainer,
+        containerPort: 6379,
+      },
     });
 
     // 7. Lambda function to test Redis Sentinel (using pre-compiled JS)
     const testLambda = new lambda.Function(this, "RedisTestLambda", {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/dist")),
+      //code: lambda.Code.fromAsset(path.join(__dirname, "../lambda/dist")),
+      code: lambda.Code.fromAsset(path.join(__dirname, "../lambda")),
       vpc: vpc,
       securityGroups: [lambdaSg],
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
@@ -142,7 +194,7 @@ export class RedisSentinel1Stack extends cdk.Stack {
     });
 
     const testIntegration = new apigateway.LambdaIntegration(testLambda);
-    
+
     const testResource = api.root.addResource("test");
     testResource.addMethod("GET", testIntegration);
     testResource.addMethod("POST", testIntegration);
