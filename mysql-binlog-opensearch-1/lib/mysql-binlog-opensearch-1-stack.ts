@@ -85,7 +85,6 @@ export class MysqlBinlogOpensearch1Stack extends Stack {
 
     // Secrets Manager for RDS credentials
     const dbCredentials = new secretsmanager.Secret(this, "DbCredentials", {
-      secretName: "mysql-binlog-db-credentials",
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ username: "admin" }),
         generateStringKey: "password",
@@ -132,7 +131,6 @@ export class MysqlBinlogOpensearch1Stack extends Stack {
 
     // Kinesis Data Stream
     const kinesisStream = new kinesis.Stream(this, "BinlogStream", {
-      streamName: "mysql-binlog-stream",
       shardCount: 1,
       retentionPeriod: Duration.hours(24),
     });
@@ -276,7 +274,6 @@ def handler(event, context):
       this,
       "FirehoseDeliveryStream",
       {
-        deliveryStreamName: "mysql-binlog-firehose",
         deliveryStreamType: "KinesisStreamAsSource",
         kinesisStreamSourceConfiguration: {
           kinesisStreamArn: kinesisStream.streamArn,
@@ -284,7 +281,7 @@ def handler(event, context):
         },
         amazonopensearchserviceDestinationConfiguration: {
           domainArn: openSearchDomain.domainArn,
-          indexName: "binlog-events",
+          indexName: "binlog-events", // Keep this as it's just an index pattern
           roleArn: firehoseRole.roleArn,
           s3Configuration: {
             bucketArn: firehoseBucket.bucketArn,
@@ -320,22 +317,15 @@ def handler(event, context):
     // ECS Cluster
     const cluster = new ecs.Cluster(this, "EcsCluster", {
       vpc,
-      clusterName: "mysql-binlog-cluster",
     });
 
     // CloudWatch Log Group for ECS
     const ecsLogGroup = new logs.LogGroup(this, "EcsLogGroup", {
-      logGroupName: "/ecs/debezium-connector",
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    // CloudWatch Log Group for Lambda
-    const lambdaLogGroup = new logs.LogGroup(this, "LambdaLogGroup", {
-      logGroupName: `/aws/lambda/${transformationLambda.functionName}`,
-      retention: logs.RetentionDays.ONE_WEEK,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
+    // CloudWatch Log Group for Lambda will be created automatically by Lambda service
 
     // Task Role for ECS
     const taskRole = new iam.Role(this, "EcsTaskRole", {
