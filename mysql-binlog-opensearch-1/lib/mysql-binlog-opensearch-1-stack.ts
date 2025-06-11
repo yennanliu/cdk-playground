@@ -188,12 +188,13 @@ def handler(event, context):
       }
     );
 
-    // OpenSearch Domain
+    // OpenSearch Domain - configured for single-AZ deployment with t3.small
     const openSearchDomain = new opensearch.Domain(this, "OpenSearchDomain", {
       version: opensearch.EngineVersion.OPENSEARCH_2_3,
       capacity: {
         dataNodes: 1,
         dataNodeInstanceType: "t3.small.search",
+        multiAzWithStandbyEnabled: false, // Explicitly disable Multi-AZ for t3.small
       },
       ebs: {
         volumeSize: 10,
@@ -203,6 +204,7 @@ def handler(event, context):
       vpcSubnets: [
         {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          availabilityZones: [vpc.availabilityZones[0]], // Use only first AZ
         },
       ],
       securityGroups: [
@@ -379,7 +381,8 @@ def handler(event, context):
         logGroup: ecsLogGroup,
       }),
       command: [
-        "sh", "-c", 
+        "sh",
+        "-c",
         `pip install pymysql boto3 mysql-replication && python -c "
 import time
 import json
@@ -460,12 +463,12 @@ except Exception as e:
         except Exception as inner_e:
             print(f'Error sending sample data: {inner_e}')
             time.sleep(10)
-"`
+"`,
       ],
       environment: {
         AWS_DEFAULT_REGION: this.region,
         KINESIS_STREAM_NAME: kinesisStream.streamName,
-        DB_HOST: database.instanceEndpoint.hostname
+        DB_HOST: database.instanceEndpoint.hostname,
       },
       secrets: {
         DB_PASSWORD: ecs.Secret.fromSecretsManager(dbCredentials, "password"),
