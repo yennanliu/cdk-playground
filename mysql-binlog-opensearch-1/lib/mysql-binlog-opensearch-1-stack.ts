@@ -121,10 +121,10 @@ export class MysqlBinlogOpensearch1Stack extends Stack {
         }),
         parameters: {
           // Binary logging is enabled by default in RDS MySQL
-          // Only set configurable parameters
+          // Only set configurable parameters that are valid for RDS
           binlog_format: "ROW",
           binlog_row_image: "FULL",
-          binlog_expire_logs_seconds: "86400", // 1 day in seconds (RDS MySQL 8.0 uses seconds instead of days)
+          // Note: binlog retention is managed by AWS RDS automatically
         },
       }),
     });
