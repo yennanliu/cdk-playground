@@ -121,10 +121,11 @@ export class MysqlBinlogOpensearch1Stack extends Stack {
           version: rds.MysqlEngineVersion.VER_8_0_35,
         }),
         parameters: {
-          "log-bin": "mysql-bin",
+          // Binary logging is enabled by default in RDS MySQL
+          // Only set configurable parameters
           binlog_format: "ROW",
           binlog_row_image: "FULL",
-          expire_logs_days: "1",
+          binlog_expire_logs_seconds: "86400", // 1 day in seconds (RDS MySQL 8.0 uses seconds instead of days)
         },
       }),
     });
