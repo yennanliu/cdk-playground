@@ -122,6 +122,11 @@ export class SupersetStack3Stack extends Stack {
       vpc,
     });
 
+    const cluster_2 = new ecs.Cluster(this, 'SupersetCluster-2', {
+      vpc,
+    });
+
+
     // Task Definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'SupersetTaskDefinition', {
       memoryLimitMiB: 2048,
@@ -212,7 +217,20 @@ export class SupersetStack3Stack extends Stack {
 
     // Fargate Service
     const service = new ecs.FargateService(this, 'SupersetService', {
-      cluster,
+      cluster: cluster,
+      taskDefinition,
+      desiredCount: 1,
+      assignPublicIp: false,
+      securityGroups: [ecsSecurityGroup],
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      minHealthyPercent: 100,
+      maxHealthyPercent: 200,
+    });
+
+    const service_2 = new ecs.FargateService(this, 'SupersetService-2', {
+      cluster: cluster_2,
       taskDefinition,
       desiredCount: 1,
       assignPublicIp: false,
@@ -272,6 +290,7 @@ export class SupersetStack3Stack extends Stack {
 
     // Add ECS service to target group
     service.attachToApplicationTargetGroup(targetGroup);
+    service_2.attachToApplicationTargetGroup(targetGroup);
 
     // Listener
     alb.addListener('SupersetListener', {
