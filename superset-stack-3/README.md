@@ -1,42 +1,15 @@
-# Superset Stack V3
+# Welcome to your CDK TypeScript project
 
-- Multiple Superset instances
-- split DB infra to the other stack
-- other optimization
+You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`SupersetStack3Stack`)
+which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
 
-## Arch
+The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
-```
-                       +-----------------------+
-                       |    Route53 (DNS)      |
-                       +----------+------------+
-                                  |
-                         +--------v--------+
-                         |    ALB (HTTPS)   |
-                         +--------+--------+
-                                  |
-                    +-------------+--------------+
-                    |                            |
-          +---------v--------+        +----------v--------+
-          | Superset Web App |        | Superset Web App  |
-          |   (Fargate)      |        |   (Fargate)       |
-          +------------------+        +-------------------+
-                    |
-         +----------v-----------+
-         | Amazon RDS (Postgres)|
-         +----------------------+
-```
+## Useful commands
 
-## Run
-
-```bash
-
-npm install --save-dev @types/aws-lambda
-
-npm install
-
-cdk bootstrap
-
-# 1st deploy
-cdk deploy
-```
+* `npm run build`   compile typescript to js
+* `npm run watch`   watch for changes and compile
+* `npm run test`    perform the jest unit tests
+* `cdk deploy`      deploy this stack to your default AWS account/region
+* `cdk diff`        compare deployed stack with current state
+* `cdk synth`       emits the synthesized CloudFormation template
