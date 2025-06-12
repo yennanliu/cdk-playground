@@ -1,0 +1,144 @@
+Great! You're aiming for a **simple but scalable "Video Upload and View" service on AWS** — let's get started with the **high-level architecture**, with a focus on simplicity and a smooth path to scaling.
+
+---
+
+## ✅ Functional Requirements Recap
+
+1. Users can **upload videos**.
+2. Users can **view and list their videos**.
+3. Simple **web UI** to interact with the system.
+4. Minimal initial complexity, but designed for growth.
+
+---
+
+## 🧱 Key AWS Services (Minimal & Serverless)
+
+| Function                   | AWS Service                                | Why?                                                            |
+| -------------------------- | ------------------------------------------ | --------------------------------------------------------------- |
+| Video storage              | **Amazon S3**                              | Scalable, durable, simple to integrate                          |
+| Upload frontend            | **Amazon S3 pre-signed URLs**              | Secure upload without backend load                              |
+| Metadata storage           | **Amazon DynamoDB**                        | Simple, fast, scalable for metadata (filename, user, URL, etc.) |
+| Web/API backend            | **AWS Lambda + API Gateway**               | Serverless, cost-effective, easy to scale                       |
+| Authentication (optional)  | **Amazon Cognito (optional)**              | For user auth if needed later                                   |
+| Frontend hosting           | **Amazon S3 + CloudFront (React/Vue app)** | Static website hosting                                          |
+| Video streaming (optional) | **S3 + Signed URLs or MediaConvert**       | Start with basic file viewing, later improve                    |
+
+---
+
+## 🖼️ Architecture Diagram (Phase 1)
+
+```
+[Frontend UI (React/HTML)]
+          |
+          |       (REST)
+          v
+   [API Gateway (REST)]
+          |
+          v
+    [Lambda functions]
+     |     |      |
+     |     |      +-- listVideos() --> [DynamoDB]
+     |     |
+     |     +-- getUploadUrl() --------+
+     |                                |
+     +-- getVideo() ------------------+--> [S3 Bucket: videos/]
+
+          ^
+          |
+  [S3 static website hosting: frontend UI]
+```
+
+---
+
+## 📦 Key Components
+
+### 1. **Frontend (React / HTML UI)**
+
+* Hosted in an S3 bucket, served via CloudFront.
+* Allows user to:
+
+  * Upload a video (calls API to get signed URL, then uploads to S3)
+  * View video list
+  * Click to play videos (served via S3 signed URL or public read if desired)
+
+### 2. **Backend APIs (Lambda + API Gateway)**
+
+* `GET /upload-url`: returns pre-signed S3 URL for uploading
+* `POST /video-metadata`: saves info (title, user, S3 path) to DynamoDB
+* `GET /videos`: returns list of user videos
+* `GET /video/{id}`: returns metadata and signed video URL
+
+### 3. **S3 Bucket**
+
+* Stores videos (`videos/{userId}/{filename}`)
+* Access via pre-signed URLs or S3 public read (simpler, but less secure)
+
+### 4. **DynamoDB Table**
+
+* Stores metadata:
+
+```json
+{
+  "videoId": "uuid",
+  "userId": "user123",
+  "title": "My Trip to Tokyo",
+  "s3Key": "videos/user123/tokyo.mp4",
+  "createdAt": "2024-06-12T12:00:00Z"
+}
+```
+
+### 5. **Authentication (optional for now)**
+
+* Could add **Cognito** later for user sign-in (OAuth2/Social login support).
+* For now, you can assume "anonymous" user or static `userId`.
+
+---
+
+## 📈 How it works (Phase 1 – Basic flow)
+
+1. User visits UI hosted on S3 (static site).
+2. User chooses a video to upload.
+3. Frontend:
+
+   * Calls `GET /upload-url` → gets a pre-signed S3 URL.
+   * Uploads the file directly to S3 via browser.
+   * Calls `POST /video-metadata` to save info in DynamoDB.
+4. User clicks "My Videos":
+
+   * Calls `GET /videos` → returns list from DynamoDB.
+   * Frontend renders clickable links.
+5. User clicks on a video:
+
+   * Calls `GET /video/{id}` → gets a signed S3 video URL → video plays.
+
+---
+
+## ✅ Benefits of this design
+
+* **Simple & fully serverless**: no servers or containers to manage.
+* **Scalable**: S3, Lambda, and DynamoDB all scale automatically.
+* **Low-cost** for low to medium traffic.
+* Easy to evolve into more advanced versions (e.g., media processing, user auth, search).
+
+---
+
+## ⚡ Optional Future Enhancements
+
+| Need                      | Add This                       |
+| ------------------------- | ------------------------------ |
+| Authenticated users       | Amazon Cognito                 |
+| Video thumbnails/previews | AWS Lambda + MediaConvert      |
+| Custom domain             | CloudFront + Route53           |
+| Full-text search          | OpenSearch or DynamoDB Streams |
+| Async video processing    | S3 Event → Lambda → FFmpeg     |
+
+---
+
+Would you like to move on to:
+
+1. **Designing the CDK stack** for this?
+2. **Building the frontend flow**?
+3. **API contract / interface design**?
+4. Or integrating user authentication (if needed)?
+
+Let me know how you want to proceed!
