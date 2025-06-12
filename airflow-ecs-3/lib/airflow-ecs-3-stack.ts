@@ -62,7 +62,10 @@ export class AirflowEcs3Stack extends Stack {
     });
 
     // ECS Task Definition with DAGs from CDK Asset
-    const taskDef = new ecs.FargateTaskDefinition(this, "AirflowTaskDef");
+    const taskDef = new ecs.FargateTaskDefinition(this, "AirflowTaskDef", {
+      memoryLimitMiB: 2048,  // Set task memory limit to 2GB
+      cpu: 1024,            // Set CPU units (1024 = 1 vCPU)
+    });
 
     const airflowContainer = taskDef.addContainer("AirflowWebserver", {
       //image: ecs.ContainerImage.fromAsset(path.join(__dirname, "../airflow")), // assumes Dockerfile in ../airflow
