@@ -6,6 +6,7 @@ import * as firehose from 'aws-cdk-lib/aws-kinesisfirehose';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
+import { RemovalPolicy } from 'aws-cdk-lib';
 
 export interface OpensearchStackProps extends cdk.StackProps {
     vpc: ec2.IVpc;
@@ -33,9 +34,7 @@ export class OpensearchStack extends cdk.Stack {
         // Create OpenSearch domain
         this.domain = new opensearch.Domain(this, 'LogsDomain', {
             version: opensearch.EngineVersion.OPENSEARCH_1_3,
-            vpc: props.vpc,
-            vpcSubnets: [{ subnetType: ec2.SubnetType.PUBLIC }],
-            securityGroups: [opensearchSG],
+            removalPolicy: RemovalPolicy.DESTROY,
             capacity: {
                 dataNodes: 1,
                 dataNodeInstanceType: 'm6g.large.search', // Using m6g.large for better compatibility
@@ -43,10 +42,11 @@ export class OpensearchStack extends cdk.Stack {
             ebs: {
                 volumeSize: 10,
             },
-            // Single AZ deployment
-            zoneAwareness: {
-                enabled: false
-            },
+            // zoneAwareness: {
+            //     enabled: false,
+            //     availabilityZoneCount: 2
+            // },
+            zoneAwareness: { enabled: false },
             enforceHttps: true,
             nodeToNodeEncryption: true,
             encryptionAtRest: {
