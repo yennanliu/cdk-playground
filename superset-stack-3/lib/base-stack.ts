@@ -10,13 +10,13 @@ export class BaseStack extends cdk.Stack {
   public readonly reportDbSecret: secretsmanager.Secret;
   public readonly supersetSecret: secretsmanager.Secret;
 
-  constructor(scope: Construct, id: string, props?: BaseStackProps) {
+  constructor(scope: Construct, id: string, props: BaseStackProps) {
     super(scope, id, props);
 
     this.vpc = this.createVpc();
-    this.dbSecret = this.createSecret('SupersetDbSecret');
-    this.reportDbSecret = this.createSecret('ReportDbSecret');
-    this.supersetSecret = this.createSupersetSecret();
+    this.dbSecret = props.dbSecret;
+    this.reportDbSecret = props.reportDbSecret;
+    this.supersetSecret = props.supersetSecret;
   }
 
   private createVpc(): ec2.Vpc {

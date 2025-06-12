@@ -1,31 +1,71 @@
 import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { BaseStack } from './base-stack';
 import { DatabaseStack } from './database-stack';
 import { EcsStack } from './ecs-stack';
 import { LoadBalancerStack } from './load-balancer-stack';
 
 export class SupersetStack3Stack extends Stack {
+  private createSecrets() {
+    const dbSecret = new secretsmanager.Secret(this, 'SupersetDbSecret', {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({ username: 'postgres' }),
+        generateStringKey: 'password',
+        excludeCharacters: '"@/\\\'',
+      },
+    });
+
+    const reportDbSecret = new secretsmanager.Secret(this, 'ReportDbSecret', {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({ username: 'postgres' }),
+        generateStringKey: 'password',
+        excludeCharacters: '"@/\\\'',
+      },
+    });
+
+    const supersetSecret = new secretsmanager.Secret(this, 'SupersetSecretKey', {
+      generateSecretString: {
+        secretStringTemplate: '{}',
+        generateStringKey: 'secret_key',
+        excludeCharacters: '"@/\\\'',
+      },
+    });
+
+    return { dbSecret, reportDbSecret, supersetSecret };
+  }
+
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // Create base stack with VPC and secrets
+    // First create all the secrets needed
+    const { dbSecret, reportDbSecret, supersetSecret } = this.createSecrets();
+
+    // Then create the base stack with VPC
     const baseStack = new BaseStack(this, 'SupersetBaseStack', {
-      stackName: 'superset-base'
+      stackName: 'superset-base',
+      dbSecret,
+      reportDbSecret,
+      supersetSecret
     });
 
-    // Create database stack
+    // Create database stack after base stack
     const dbStack = new DatabaseStack(this, 'SupersetDatabaseStack', {
       vpc: baseStack.vpc,
-      dbSecret: baseStack.dbSecret,
-      reportDbSecret: baseStack.reportDbSecret,
+      dbSecret,
+      reportDbSecret,
     });
 
     // Create ECS stack
     const ecsStack = new EcsStack(this, 'SupersetEcsStack', {
       vpc: baseStack.vpc,
-      dbStack: dbStack,
-      baseStack: baseStack,
+      dbSecurityGroup: dbStack.dbSecurityGroup,
+      reportDbSecurityGroup: dbStack.reportDbSecurityGroup,
+      dbEndpoint: dbStack.database.instanceEndpoint,
+      reportDbEndpoint: dbStack.reportDatabase.instanceEndpoint,
+      dbSecret: baseStack.dbSecret,
+      reportDbSecret: baseStack.reportDbSecret,
+      supersetSecret: baseStack.supersetSecret,
     });
 
     // Create load balancer stack
