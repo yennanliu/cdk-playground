@@ -1,6 +1,22 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { CloudwatchOpensearch1Stack } from '../lib/cloudwatch-opensearch-1-stack';
+import { LoggingStack } from '../lib/logging-stack';
+import { OpensearchStack } from '../lib/opensearch-stack';
 
 const app = new cdk.App();
-new CloudwatchOpensearch1Stack(app, 'CloudwatchOpensearch1Stack');
+
+// Create the stacks
+const loggingStack = new LoggingStack(app, 'LoggingStack', {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
+  },
+});
+
+const opensearchStack = new OpensearchStack(app, 'OpensearchStack', {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
+  },
+  vpc: loggingStack.vpc,
+});
