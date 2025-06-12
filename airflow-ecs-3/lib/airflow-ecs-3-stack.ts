@@ -13,27 +13,36 @@ import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as path from "path";
+import * as s3assets from "aws-cdk-lib/aws-s3-assets";
 
 export class AirflowEcs3Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
+    // Generate a unique suffix for resource names
+    const uniqueSuffix = this.node.addr.substring(0, 8);
+
+    // Create an asset for DAGs
+    const dagsAsset = new s3assets.Asset(this, "DagsAsset", {
+      path: path.join(__dirname, "dags"),
+    });
+
     // VPC
-    const vpc = new ec2.Vpc(this, "AirflowVpc", {
+    const vpc = new ec2.Vpc(this, `AirflowVpc-${uniqueSuffix}`, {
       maxAzs: 2,
     });
 
     // ECS Cluster
-    const cluster = new ecs.Cluster(this, "AirflowCluster", {
+    const cluster = new ecs.Cluster(this, `AirflowCluster-${uniqueSuffix}`, {
       vpc: vpc,
     });
 
     // RDS PostgreSQL
     const dbCredentialsSecret = new secretsmanager.Secret(
       this,
-      "DBCredentialsSecret",
+      `DBCredentialsSecret-${uniqueSuffix}`,
       {
-        secretName: "airflow-db-credentials",
+        secretName: `airflow-db-credentials-${uniqueSuffix}`,
         generateSecretString: {
           secretStringTemplate: JSON.stringify({ username: "airflow" }),
           excludePunctuation: true,
@@ -43,7 +52,7 @@ export class AirflowEcs3Stack extends Stack {
       }
     );
 
-    const database = new rds.DatabaseInstance(this, "AirflowRDS", {
+    const database = new rds.DatabaseInstance(this, `AirflowRDS-${uniqueSuffix}`, {
       engine: rds.DatabaseInstanceEngine.postgres({
         version: rds.PostgresEngineVersion.VER_13,
       }),
@@ -62,13 +71,12 @@ export class AirflowEcs3Stack extends Stack {
     });
 
     // ECS Task Definition with DAGs from CDK Asset
-    const taskDef = new ecs.FargateTaskDefinition(this, "AirflowTaskDef", {
+    const taskDef = new ecs.FargateTaskDefinition(this, `AirflowTaskDef-${uniqueSuffix}`, {
       memoryLimitMiB: 2048,  // Set task memory limit to 2GB
       cpu: 1024,            // Set CPU units (1024 = 1 vCPU)
     });
 
-    const airflowContainer = taskDef.addContainer("AirflowWebserver", {
-      //image: ecs.ContainerImage.fromAsset(path.join(__dirname, "../airflow")), // assumes Dockerfile in ../airflow
+    const airflowContainer = taskDef.addContainer(`AirflowWebserver-${uniqueSuffix}`, {
       image: ecs.ContainerImage.fromRegistry("apache/airflow:2.8.1"),
       memoryLimitMiB: 1024,
       environment: {
@@ -77,8 +85,22 @@ export class AirflowEcs3Stack extends Stack {
           .secretValueFromJson("password")
           .unsafeUnwrap()}@${database.dbInstanceEndpointAddress}:5432/airflow`,
         AIRFLOW__WEBSERVER__RBAC: "True",
+        AIRFLOW__CORE__LOAD_EXAMPLES: "False",
+        AIRFLOW_HOME: "/opt/airflow",
+        AIRFLOW__CORE__DAGS_FOLDER: "/opt/airflow/dags",
       },
-      logging: ecs.LogDriver.awsLogs({ streamPrefix: "Airflow" }),
+      logging: ecs.LogDriver.awsLogs({ streamPrefix: `Airflow-${uniqueSuffix}` }),
+    });
+
+    // Grant task execution role permissions to access the S3 asset
+    dagsAsset.grantRead(taskDef.executionRole!);
+
+    // Add the volume to task definition using bind mount
+    taskDef.addVolume({
+      name: "dags",
+      host: {
+        sourcePath: "/opt/airflow/dags"
+      }
     });
 
     airflowContainer.addPortMappings({
@@ -88,7 +110,7 @@ export class AirflowEcs3Stack extends Stack {
     // Load Balanced Fargate Service
     new ecs_patterns.ApplicationLoadBalancedFargateService(
       this,
-      "AirflowService",
+      `AirflowService-${uniqueSuffix}`,
       {
         cluster,
         taskDefinition: taskDef,
