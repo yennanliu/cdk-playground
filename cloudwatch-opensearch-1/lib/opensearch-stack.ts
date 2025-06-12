@@ -37,7 +37,7 @@ export class OpensearchStack extends cdk.Stack {
       securityGroups: [opensearchSG],
       capacity: {
         dataNodes: 1,
-        dataNodeInstanceType: 't3.small.search',
+        dataNodeInstanceType: 'r6g.large.search', // Using r6g instance type which better supports OpenSearch
       },
       ebs: {
         volumeSize: 10,

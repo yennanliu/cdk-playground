@@ -77,6 +77,10 @@ cdk diff
 # deploy
 cdk deploy
 
+# deploy multiple stacks at once
+cdk deploy --all
+
+
 # deploy
 # which will assess whether a hotswap deployment can be performed instead of a CloudFormation deployment. If possible, the CDK CLI will use AWS service APIs to directly make the changes; otherwise it will fall back to performing a full CloudFormation deployment.
 cdk deploy --hotswap
