@@ -4,6 +4,7 @@ import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as firehose from 'aws-cdk-lib/aws-kinesisfirehose';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 export interface OpensearchStackProps extends cdk.StackProps {
@@ -79,6 +80,27 @@ export class OpensearchStack extends cdk.Stack {
       })
     );
 
+    // Create S3 bucket for Firehose backup
+    const backupBucket = new s3.Bucket(this, 'FirehoseBackupBucket', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // For development/testing only
+      autoDeleteObjects: true, // For development/testing only
+    });
+
+    // Add S3 permissions to Firehose role
+    this.firehoseRole.addToPolicy(
+      new iam.PolicyStatement({
+        resources: [backupBucket.bucketArn, `${backupBucket.bucketArn}/*`],
+        actions: [
+          's3:AbortMultipartUpload',
+          's3:GetBucketLocation',
+          's3:GetObject',
+          's3:ListBucket',
+          's3:ListBucketMultipartUploads',
+          's3:PutObject',
+        ],
+      })
+    );
+
     // Create Firehose delivery stream
     const firehoseDeliveryStream = new firehose.CfnDeliveryStream(this, 'LogsDeliveryStream', {
       deliveryStreamType: 'DirectPut',
@@ -88,10 +110,7 @@ export class OpensearchStack extends cdk.Stack {
         roleArn: this.firehoseRole.roleArn,
         s3BackupMode: 'FailedDocumentsOnly',
         s3Configuration: {
-          bucketArn: new cdk.CfnParameter(this, 'BackupBucketArn', {
-            type: 'String',
-            description: 'ARN of the S3 bucket for failed document backup',
-          }).valueAsString,
+          bucketArn: backupBucket.bucketArn,
           roleArn: this.firehoseRole.roleArn,
           bufferingHints: {
             intervalInSeconds: 60,
