@@ -35,18 +35,27 @@ export class OpensearchStack extends cdk.Stack {
         this.domain = new opensearch.Domain(this, 'LogsDomain', {
             version: opensearch.EngineVersion.OPENSEARCH_1_3,
             removalPolicy: RemovalPolicy.DESTROY,
-            capacity: {
-                dataNodes: 1,
-                dataNodeInstanceType: 'm6g.large.search', // Using m6g.large for better compatibility
+            // capacity: {
+            //     dataNodes: 1,
+            //     dataNodeInstanceType: 'm6g.large.search', // Using m6g.large for better compatibility
+            // },
+            // // zoneAwareness: {
+            // //     enabled: false,
+            // //     availabilityZoneCount: 2
+            // // },
+            // zoneAwareness: { enabled: false },
+            zoneAwareness: {
+                enabled: true,
+                availabilityZoneCount: 3, // must be >=2
             },
+            capacity: {
+                dataNodes: 3,
+                dataNodeInstanceType: 'm6g.large.search',
+            },
+
             ebs: {
                 volumeSize: 10,
             },
-            // zoneAwareness: {
-            //     enabled: false,
-            //     availabilityZoneCount: 2
-            // },
-            zoneAwareness: { enabled: false },
             enforceHttps: true,
             nodeToNodeEncryption: true,
             encryptionAtRest: {
