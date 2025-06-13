@@ -10,9 +10,24 @@ const VIDEO_TABLE_NAME = process.env.VIDEO_TABLE_NAME!;
 const VIDEO_BUCKET_NAME = process.env.VIDEO_BUCKET_NAME!;
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  console.log('Event:', JSON.stringify(event, null, 2));
+  
   try {
     const path = event.path;
     const httpMethod = event.httpMethod;
+
+    // Handle CORS preflight requests
+    if (httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+          'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+        },
+        body: '',
+      };
+    }
 
     // Handle different API endpoints
     if (path === '/upload-url' && httpMethod === 'GET') {
@@ -41,7 +56,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Credentials': true,
       },
-      body: JSON.stringify({ message: 'Internal Server Error' }),
+      body: JSON.stringify({ message: 'Internal Server Error', error: error instanceof Error ? error.message : String(error) }),
     };
   }
 };
@@ -86,67 +101,106 @@ async function handleGetUploadUrl(event: APIGatewayProxyEvent): Promise<APIGatew
 }
 
 async function handleListVideos(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  const userId = event.queryStringParameters?.userId || 'anonymous';
+  try {
+    const userId = event.queryStringParameters?.userId || 'anonymous';
+    console.log('Listing videos for userId:', userId);
 
-  const params = {
-    TableName: VIDEO_TABLE_NAME,
-    KeyConditionExpression: 'userId = :userId',
-    ExpressionAttributeValues: {
-      ':userId': userId,
-    },
-  };
+    const params = {
+      TableName: VIDEO_TABLE_NAME,
+      KeyConditionExpression: 'userId = :userId',
+      ExpressionAttributeValues: {
+        ':userId': userId,
+      },
+    };
 
-  const result = await dynamoDB.query(params).promise();
+    const result = await dynamoDB.query(params).promise();
+    console.log('DynamoDB query result:', result);
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true,
-    },
-    body: JSON.stringify(result.Items),
-  };
+    // Generate playback URLs for each video
+    const videosWithUrls = await Promise.all(
+      (result.Items || []).map(async (video) => {
+        try {
+          const playbackUrl = await s3.getSignedUrlPromise('getObject', {
+            Bucket: VIDEO_BUCKET_NAME,
+            Key: video.s3Key,
+            Expires: 3600,
+          });
+          return {
+            ...video,
+            playbackUrl,
+          };
+        } catch (error) {
+          console.error('Error generating playback URL for video:', video.videoId, error);
+          return {
+            ...video,
+            playbackUrl: null,
+          };
+        }
+      })
+    );
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
+      body: JSON.stringify(videosWithUrls),
+    };
+  } catch (error) {
+    console.error('Error in handleListVideos:', error);
+    return {
+      statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
+      body: JSON.stringify({ message: 'Failed to list videos', error: error instanceof Error ? error.message : String(error) }),
+    };
+  }
 }
 
 async function handleSaveVideoMetadata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  if (!event.body) {
-    return {
-      statusCode: 400,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-      body: JSON.stringify({ message: 'Request body is required' }),
-    };
-  }
-
-  const videoData = JSON.parse(event.body);
-  const { videoId, userId, title, s3Key } = videoData;
-
-  if (!videoId || !userId || !title || !s3Key) {
-    return {
-      statusCode: 400,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-      body: JSON.stringify({ message: 'Missing required fields' }),
-    };
-  }
-
-  const params = {
-    TableName: VIDEO_TABLE_NAME,
-    Item: {
-      videoId,
-      userId,
-      title,
-      s3Key,
-      createdAt: new Date().toISOString(),
-    },
-  };
-
   try {
+    if (!event.body) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': true,
+        },
+        body: JSON.stringify({ message: 'Request body is required' }),
+      };
+    }
+
+    const videoData = JSON.parse(event.body);
+    const { videoId, userId, title, s3Key } = videoData;
+
+    if (!videoId || !userId || !title || !s3Key) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': true,
+        },
+        body: JSON.stringify({ message: 'Missing required fields' }),
+      };
+    }
+
+    const params = {
+      TableName: VIDEO_TABLE_NAME,
+      Item: {
+        userId,
+        videoId,
+        title,
+        s3Key,
+        createdAt: new Date().toISOString(),
+      },
+    };
+
     await dynamoDB.put(params).promise();
+    console.log('Video metadata saved:', params.Item);
+    
     return {
       statusCode: 200,
       headers: {
@@ -163,63 +217,75 @@ async function handleSaveVideoMetadata(event: APIGatewayProxyEvent): Promise<API
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Credentials': true,
       },
-      body: JSON.stringify({ message: 'Failed to save video metadata' }),
+      body: JSON.stringify({ message: 'Failed to save video metadata', error: error instanceof Error ? error.message : String(error) }),
     };
   }
 }
 
 async function handleGetVideo(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  const videoId = event.pathParameters?.videoId;
-  const userId = event.queryStringParameters?.userId || 'anonymous';
+  try {
+    const videoId = event.pathParameters?.videoId;
+    const userId = event.queryStringParameters?.userId || 'anonymous';
 
-  if (!videoId) {
+    if (!videoId) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': true,
+        },
+        body: JSON.stringify({ message: 'videoId is required' }),
+      };
+    }
+
+    const params = {
+      TableName: VIDEO_TABLE_NAME,
+      Key: {
+        userId,
+        videoId,
+      },
+    };
+
+    const result = await dynamoDB.get(params).promise();
+
+    if (!result.Item) {
+      return {
+        statusCode: 404,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': true,
+        },
+        body: JSON.stringify({ message: 'Video not found' }),
+      };
+    }
+
+    // Generate a signed URL for video playback
+    const signedUrl = await s3.getSignedUrlPromise('getObject', {
+      Bucket: VIDEO_BUCKET_NAME,
+      Key: result.Item.s3Key,
+      Expires: 3600, // URL expires in 1 hour
+    });
+
     return {
-      statusCode: 400,
+      statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Credentials': true,
       },
-      body: JSON.stringify({ message: 'videoId is required' }),
+      body: JSON.stringify({
+        ...result.Item,
+        playbackUrl: signedUrl,
+      }),
     };
-  }
-
-  const params = {
-    TableName: VIDEO_TABLE_NAME,
-    Key: {
-      videoId,
-      userId,
-    },
-  };
-
-  const result = await dynamoDB.get(params).promise();
-
-  if (!result.Item) {
+  } catch (error) {
+    console.error('Error getting video:', error);
     return {
-      statusCode: 404,
+      statusCode: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Credentials': true,
       },
-      body: JSON.stringify({ message: 'Video not found' }),
+      body: JSON.stringify({ message: 'Failed to get video', error: error instanceof Error ? error.message : String(error) }),
     };
   }
-
-  // Generate a signed URL for video playback
-  const signedUrl = await s3.getSignedUrlPromise('getObject', {
-    Bucket: VIDEO_BUCKET_NAME,
-    Key: result.Item.s3Key,
-    Expires: 3600, // URL expires in 1 hour
-  });
-
-  return {
-    statusCode: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true,
-    },
-    body: JSON.stringify({
-      ...result.Item,
-      playbackUrl: signedUrl,
-    }),
-  };
 } 

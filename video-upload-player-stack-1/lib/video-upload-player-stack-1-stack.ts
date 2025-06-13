@@ -31,8 +31,8 @@ export class VideoUploadPlayerStack1Stack extends cdk.Stack {
 
     // DynamoDB table for video metadata
     const videoTable = new dynamodb.Table(this, "VideoTable", {
-      partitionKey: { name: "videoId", type: dynamodb.AttributeType.STRING },
-      sortKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "videoId", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
