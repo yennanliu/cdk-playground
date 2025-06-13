@@ -1,7 +1,3 @@
-Great! You're aiming for a **simple but scalable "Video Upload and View" service on AWS** — let's get started with the **high-level architecture**, with a focus on simplicity and a smooth path to scaling.
-
----
-
 ## ✅ Functional Requirements Recap
 
 1. Users can **upload videos**.
@@ -18,8 +14,7 @@ Great! You're aiming for a **simple but scalable "Video Upload and View" service
 | Video storage              | **Amazon S3**                              | Scalable, durable, simple to integrate                          |
 | Upload frontend            | **Amazon S3 pre-signed URLs**              | Secure upload without backend load                              |
 | Metadata storage           | **Amazon DynamoDB**                        | Simple, fast, scalable for metadata (filename, user, URL, etc.) |
-| Web/API backend            | **AWS Lambda + API Gateway**               | Serverless, cost-effective, easy to scale                       |
-| Authentication (optional)  | **Amazon Cognito (optional)**              | For user auth if needed later                                   |
+| Web/API backend            | **AWS Lambda + API Gateway**               | Serverless, cost-effective, easy to scale                       |                                |
 | Frontend hosting           | **Amazon S3 + CloudFront (React/Vue app)** | Static website hosting                                          |
 | Video streaming (optional) | **S3 + Signed URLs or MediaConvert**       | Start with basic file viewing, later improve                    |
 
@@ -87,11 +82,6 @@ Great! You're aiming for a **simple but scalable "Video Upload and View" service
 }
 ```
 
-### 5. **Authentication (optional for now)**
-
-* Could add **Cognito** later for user sign-in (OAuth2/Social login support).
-* For now, you can assume "anonymous" user or static `userId`.
-
 ---
 
 ## 📈 How it works (Phase 1 – Basic flow)
@@ -118,7 +108,6 @@ Great! You're aiming for a **simple but scalable "Video Upload and View" service
 * **Simple & fully serverless**: no servers or containers to manage.
 * **Scalable**: S3, Lambda, and DynamoDB all scale automatically.
 * **Low-cost** for low to medium traffic.
-* Easy to evolve into more advanced versions (e.g., media processing, user auth, search).
 
 ---
 
@@ -126,7 +115,6 @@ Great! You're aiming for a **simple but scalable "Video Upload and View" service
 
 | Need                      | Add This                       |
 | ------------------------- | ------------------------------ |
-| Authenticated users       | Amazon Cognito                 |
 | Video thumbnails/previews | AWS Lambda + MediaConvert      |
 | Custom domain             | CloudFront + Route53           |
 | Full-text search          | OpenSearch or DynamoDB Streams |
@@ -134,11 +122,3 @@ Great! You're aiming for a **simple but scalable "Video Upload and View" service
 
 ---
 
-Would you like to move on to:
-
-1. **Designing the CDK stack** for this?
-2. **Building the frontend flow**?
-3. **API contract / interface design**?
-4. Or integrating user authentication (if needed)?
-
-Let me know how you want to proceed!
