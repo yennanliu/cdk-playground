@@ -19,6 +19,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return await handleGetUploadUrl(event);
     } else if (path === '/videos' && httpMethod === 'GET') {
       return await handleListVideos(event);
+    } else if (path === '/videos' && httpMethod === 'POST') {
+      return await handleSaveVideoMetadata(event);
     } else if (path.match(/\/videos\/[^/]+$/) && httpMethod === 'GET') {
       return await handleGetVideo(event);
     }
@@ -104,6 +106,66 @@ async function handleListVideos(event: APIGatewayProxyEvent): Promise<APIGateway
     },
     body: JSON.stringify(result.Items),
   };
+}
+
+async function handleSaveVideoMetadata(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  if (!event.body) {
+    return {
+      statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
+      body: JSON.stringify({ message: 'Request body is required' }),
+    };
+  }
+
+  const videoData = JSON.parse(event.body);
+  const { videoId, userId, title, s3Key } = videoData;
+
+  if (!videoId || !userId || !title || !s3Key) {
+    return {
+      statusCode: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
+      body: JSON.stringify({ message: 'Missing required fields' }),
+    };
+  }
+
+  const params = {
+    TableName: VIDEO_TABLE_NAME,
+    Item: {
+      videoId,
+      userId,
+      title,
+      s3Key,
+      createdAt: new Date().toISOString(),
+    },
+  };
+
+  try {
+    await dynamoDB.put(params).promise();
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
+      body: JSON.stringify({ message: 'Video metadata saved successfully' }),
+    };
+  } catch (error) {
+    console.error('Error saving video metadata:', error);
+    return {
+      statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
+      body: JSON.stringify({ message: 'Failed to save video metadata' }),
+    };
+  }
 }
 
 async function handleGetVideo(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {

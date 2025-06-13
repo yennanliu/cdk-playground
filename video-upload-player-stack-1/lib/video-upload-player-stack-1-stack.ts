@@ -68,6 +68,7 @@ export class VideoUploadPlayerStack1Stack extends cdk.Stack {
     const uploadUrl = api.root.addResource("upload-url");
 
     videos.addMethod("GET", new apigateway.LambdaIntegration(videoHandler));
+    videos.addMethod("POST", new apigateway.LambdaIntegration(videoHandler));
     video.addMethod("GET", new apigateway.LambdaIntegration(videoHandler));
     uploadUrl.addMethod("GET", new apigateway.LambdaIntegration(videoHandler));
 
