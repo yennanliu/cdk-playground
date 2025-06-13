@@ -100,16 +100,30 @@ export class VideoUploadPlayerStack1Stack extends cdk.Stack {
       })
     );
 
+    // Enable website hosting
+    const websiteConfiguration = {
+      indexDocument: "index.html",
+      errorDocument: "index.html",
+    };
+
+    const cfnBucket = frontendBucket.node.defaultChild as s3.CfnBucket;
+    cfnBucket.websiteConfiguration = websiteConfiguration;
+
     // CloudFront distribution for frontend
     const distribution = new cloudfront.Distribution(this, "FrontendDistribution", {
       defaultBehavior: {
-        origin: new origins.S3Origin(frontendBucket),
+        origin: origins.S3BucketOrigin.withOriginAccessControl(frontendBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       },
       defaultRootObject: "index.html",
       errorResponses: [
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
         {
           httpStatus: 404,
           responseHttpStatus: 200,
