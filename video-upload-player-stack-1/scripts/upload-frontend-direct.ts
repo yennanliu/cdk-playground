@@ -38,8 +38,7 @@ async function uploadFrontend() {
                 Key: file,
                 Body: fileContent,
                 ContentType: contentType,
-                CacheControl: 'max-age=31536000',
-                ACL: 'public-read'
+                CacheControl: 'max-age=31536000'
             }).promise();
 
             console.log(`Uploaded ${file} to S3 with content type ${contentType}`);
