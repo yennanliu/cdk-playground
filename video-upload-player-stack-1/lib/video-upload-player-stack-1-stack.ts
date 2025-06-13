@@ -79,21 +79,44 @@ export class VideoUploadPlayerStack1Stack extends cdk.Stack {
       websiteErrorDocument: "index.html",
       publicReadAccess: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      cors: [
+        {
+          allowedMethods: [
+            s3.HttpMethods.GET,
+            s3.HttpMethods.HEAD,
+          ],
+          allowedOrigins: ["*"],
+          allowedHeaders: ["*"],
+        },
+      ],
     });
 
-    // CloudFront distribution for frontend
-    const distribution = new cloudfront.Distribution(
-      this,
-      "FrontendDistribution",
-      {
-        defaultBehavior: {
-          origin: new origins.S3Origin(frontendBucket),
-          viewerProtocolPolicy:
-            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        },
-        defaultRootObject: "index.html",
-      }
+    // Add bucket policy to allow public read access
+    frontendBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ["s3:GetObject"],
+        resources: [frontendBucket.arnForObjects("*")],
+        principals: [new iam.AnyPrincipal()],
+      })
     );
+
+    // CloudFront distribution for frontend
+    const distribution = new cloudfront.Distribution(this, "FrontendDistribution", {
+      defaultBehavior: {
+        origin: new origins.S3Origin(frontendBucket),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+      },
+      defaultRootObject: "index.html",
+      errorResponses: [
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+      ],
+    });
 
     // Outputs
     new cdk.CfnOutput(this, "ApiEndpoint", {
@@ -102,8 +125,13 @@ export class VideoUploadPlayerStack1Stack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, "FrontendUrl", {
-      value: distribution.distributionDomainName,
+      value: `https://${distribution.distributionDomainName}`,
       description: "Frontend CloudFront URL",
+    });
+
+    new cdk.CfnOutput(this, "FrontendBucketName", {
+      value: frontendBucket.bucketName,
+      description: "Frontend S3 Bucket Name",
     });
   }
 }
