@@ -1,0 +1,9 @@
+{
+  "name": "db-sharding-lambda-functions",
+  "version": "1.0.0",
+  "description": "Lambda functions for DB sharding system",
+  "main": "shard-manager.js",
+  "dependencies": {
+    "mysql2": "^3.6.0"
+  }
+} 

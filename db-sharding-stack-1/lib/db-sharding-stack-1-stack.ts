@@ -110,208 +110,8 @@ export class DbShardingStack1Stack extends Stack {
     // Lambda function for Shard Manager
     const shardManager = new lambda.Function(this, "ShardManagerFunction", {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromInline(`
-const AWS = require('aws-sdk');
-const mysql = require('mysql2/promise');
-
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-const secretsManager = new AWS.SecretsManager();
-
-const SHARD_TABLE = process.env.SHARD_TABLE;
-const SHARD_COUNT = parseInt(process.env.SHARD_COUNT);
-
-// Hash function to determine shard
-function getShardId(userId) {
-  const hash = userId.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  return Math.abs(hash) % SHARD_COUNT;
-}
-
-// Get shard metadata from DynamoDB
-async function getShardMetadata(shardId) {
-  const params = {
-    TableName: SHARD_TABLE,
-    Key: { shardId: shardId.toString() }
-  };
-  
-  const result = await dynamodb.get(params).promise();
-  return result.Item;
-}
-
-// Get RDS credentials from Secrets Manager
-async function getDbCredentials(secretArn) {
-  const secret = await secretsManager.getSecretValue({ SecretId: secretArn }).promise();
-  return JSON.parse(secret.SecretString);
-}
-
-// Create MySQL connection
-async function createConnection(shardMetadata) {
-  const credentials = await getDbCredentials(shardMetadata.secretArn);
-  
-  return await mysql.createConnection({
-    host: shardMetadata.rdsEndpoint,
-    user: credentials.username,
-    password: credentials.password,
-    database: shardMetadata.dbName,
-    ssl: { rejectUnauthorized: false }
-  });
-}
-
-// Initialize user table in shard if not exists
-async function initializeUserTable(connection) {
-  await connection.execute(\`
-    CREATE TABLE IF NOT EXISTS users (
-      userId VARCHAR(255) PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      email VARCHAR(255),
-      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  \`);
-}
-
-exports.handler = async (event) => {
-  console.log('Event:', JSON.stringify(event, null, 2));
-  
-  const { httpMethod, path, pathParameters, body } = event;
-  
-  try {
-    // Handle different API endpoints
-    if (httpMethod === 'GET' && path === '/shards') {
-      // List all shards
-      const params = {
-        TableName: SHARD_TABLE
-      };
-      
-      const result = await dynamodb.scan(params).promise();
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shards: result.Items,
-          totalShards: result.Count
-        })
-      };
-    }
-    
-    if (httpMethod === 'POST' && path === '/user') {
-      // Create new user
-      const userData = JSON.parse(body);
-      const { userId, name, email } = userData;
-      
-      if (!userId || !name) {
-        return {
-          statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'userId and name are required' })
-        };
-      }
-      
-      // Determine shard
-      const shardId = getShardId(userId);
-      const shardMetadata = await getShardMetadata(shardId);
-      
-      if (!shardMetadata) {
-        return {
-          statusCode: 500,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Shard metadata not found' })
-        };
-      }
-      
-      // Connect to shard and create user
-      const connection = await createConnection(shardMetadata);
-      await initializeUserTable(connection);
-      
-      await connection.execute(
-        'INSERT INTO users (userId, name, email) VALUES (?, ?, ?)',
-        [userId, name, email || null]
-      );
-      
-      await connection.end();
-      
-      return {
-        statusCode: 201,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: 'User created successfully',
-          userId,
-          shardId
-        })
-      };
-    }
-    
-    if (httpMethod === 'GET' && path.startsWith('/user/')) {
-      // Get user by ID
-      const userId = pathParameters.userId;
-      
-      if (!userId) {
-        return {
-          statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'userId is required' })
-        };
-      }
-      
-      // Determine shard
-      const shardId = getShardId(userId);
-      const shardMetadata = await getShardMetadata(shardId);
-      
-      if (!shardMetadata) {
-        return {
-          statusCode: 500,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Shard metadata not found' })
-        };
-      }
-      
-      // Connect to shard and get user
-      const connection = await createConnection(shardMetadata);
-      await initializeUserTable(connection);
-      
-      const [rows] = await connection.execute(
-        'SELECT * FROM users WHERE userId = ?',
-        [userId]
-      );
-      
-      await connection.end();
-      
-      if (rows.length === 0) {
-        return {
-          statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'User not found' })
-        };
-      }
-      
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user: rows[0],
-          shardId
-        })
-      };
-    }
-    
-    return {
-      statusCode: 404,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Not found' })
-    };
-    
-  } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Internal server error' })
-    };
-  }
-};
-      `),
+      handler: "shard-manager.handler",
+      code: lambda.Code.fromAsset("lib/lambda"),
       environment: {
         SHARD_TABLE: shardMetadataTable.tableName,
         SHARD_COUNT: shardCount.toString(),
@@ -367,41 +167,8 @@ exports.handler = async (event) => {
     // Custom resource Lambda to populate DynamoDB with shard metadata
     const populateShards = new lambda.Function(this, "PopulateShardsFunction", {
       runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromInline(`
-const AWS = require('aws-sdk');
-const response = require('cfn-response');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-
-exports.handler = async (event, context) => {
-  console.log('Event:', JSON.stringify(event, null, 2));
-  
-  try {
-    if (event.RequestType === 'Create' || event.RequestType === 'Update') {
-      const shards = JSON.parse(event.ResourceProperties.Shards);
-      
-      for (const shard of shards) {
-        const params = {
-          TableName: event.ResourceProperties.TableName,
-          Item: shard
-        };
-        
-        await dynamodb.put(params).promise();
-        console.log(\`Populated shard: \${shard.shardId}\`);
-      }
-    }
-    
-    await response.send(event, context, response.SUCCESS, {
-      message: 'Shards populated successfully'
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    await response.send(event, context, response.FAILED, {
-      error: error.message
-    });
-  }
-};
-      `),
+      handler: "populate-shards.handler",
+      code: lambda.Code.fromAsset("lib/lambda"),
       timeout: Duration.seconds(60),
     });
 
@@ -423,6 +190,12 @@ exports.handler = async (event, context) => {
         TableName: shardMetadataTable.tableName,
         Shards: JSON.stringify(shardData),
       },
+    });
+
+    // Ensure custom resource runs after DynamoDB table and RDS instances are created
+    populateShardsResource.node.addDependency(shardMetadataTable);
+    shards.forEach(shard => {
+      populateShardsResource.node.addDependency(shard);
     });
 
     // Output the API Gateway URL
