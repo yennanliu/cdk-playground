@@ -1,0 +1,27 @@
+⸻
+
+✅ Prompt: AWS Serverless DB Sharding System with Lambda Shard Manager
+
+Design and generate an AWS architecture using AWS CDK (in TypeScript) for a horizontally sharded MySQL database system.
+
+Requirements:
+	1.	The system should use Amazon RDS (MySQL) with multiple shard instances (e.g., 2 or more RDS databases).
+	2.	A DynamoDB table (shard_metadata) should store the shard configuration, including:
+	•	shardId (string)
+	•	rdsEndpoint (string)
+	•	dbName (string)
+	•	Optional: rangeStart, rangeEnd, status
+	3.	A Lambda function will act as a Shard Manager that:
+	•	Receives API requests via API Gateway
+	•	Determines the correct shard using a hash of userId or userId % numShards
+	•	Fetches shard metadata from DynamoDB
+	•	Connects to the corresponding RDS instance inside a VPC
+	4.	Use API Gateway (HTTP API or REST) to expose:
+	•	POST /user to create a new user (routed to correct shard)
+	•	GET /user/{userId} to retrieve user info (routed)
+	•	GET /shards to list all registered shards from DynamoDB
+	5.	Configure VPC, Subnets, and Security Groups properly to allow the Lambda function to talk to the RDS instances.
+	6.	Ensure IAM permissions for Lambda to access DynamoDB.
+
+Note:
+	•	Keep the system as simple, minimal, and serverless as possible (aside from RDS).

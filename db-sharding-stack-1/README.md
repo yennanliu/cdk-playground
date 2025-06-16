@@ -1,15 +1,30 @@
-# Welcome to your CDK TypeScript project
+# DB sharding stack V1
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`DbShardingStack1Stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+## Run
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+```bash
+```
 
-## Useful commands
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+## Sys Arch
+
+```
+                        [Client / Frontend (S3)]
+                                |
+                                v
+                         [API Gateway (REST)]
+                                |
+                                v
+                      [Lambda: Shard Manager]
+                                |
+                                |---> [DynamoDB: shard_metadata table]
+                                |
+            +-------------------+--------------------+
+            |                                        |
+     [RDS Shard 0]                            [RDS Shard 1]
+     (e.g. users 0–4999)                    (e.g. users 5000–9999)
+```
+
+## Ref
+- 
+
