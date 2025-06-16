@@ -20,3 +20,12 @@ const opensearchStack = new OpensearchStack(app, 'OpensearchStack', {
     },
     vpc: loggingStack.vpc,
 });
+
+// Add explicit dependency
+opensearchStack.addDependency(loggingStack);
+
+// Connect the stacks by adding subscription filter
+loggingStack.addSubscriptionFilter(
+    opensearchStack.deliveryStream.attrArn,
+    opensearchStack.firehoseRole
+);

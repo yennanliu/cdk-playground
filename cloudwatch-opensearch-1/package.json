@@ -20,9 +20,6 @@
     "typescript": "~5.6.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-kinesis": "^1.203.0",
-    "@aws-cdk/aws-kinesisfirehose": "^1.203.0",
-    "@aws-cdk/aws-opensearchservice": "^1.203.0",
     "aws-cdk-lib": "^2.194.0",
     "constructs": "^10.4.2"
   }

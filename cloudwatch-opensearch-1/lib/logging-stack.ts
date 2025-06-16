@@ -2,21 +2,28 @@ import * as cdk from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as firehose from 'aws-cdk-lib/aws-kinesisfirehose';
 import { Construct } from 'constructs';
 
 export class LoggingStack extends cdk.Stack {
   public readonly vpc: ec2.Vpc;
+  public readonly logGroup: logs.LogGroup;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Create VPC
+    // Create VPC with 3 AZs for OpenSearch compatibility
     this.vpc = new ec2.Vpc(this, 'LoggingVPC', {
-      maxAzs: 1,
+      maxAzs: 3,
       subnetConfiguration: [
         {
           name: 'Public',
           subnetType: ec2.SubnetType.PUBLIC,
+          cidrMask: 24,
+        },
+        {
+          name: 'Private',
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
           cidrMask: 24,
         },
       ],
@@ -47,8 +54,9 @@ export class LoggingStack extends cdk.Stack {
     );
 
     // Create CloudWatch Log Group
-    const logGroup = new logs.LogGroup(this, 'SystemLogs', {
+    this.logGroup = new logs.LogGroup(this, 'SystemLogs', {
       retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Create EC2 instance
@@ -60,6 +68,9 @@ export class LoggingStack extends cdk.Stack {
       }),
       securityGroup: ec2SecurityGroup,
       role: ec2Role,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PUBLIC,
+      },
     });
 
     // Add user data to install and configure CloudWatch agent
@@ -74,8 +85,9 @@ export class LoggingStack extends cdk.Stack {
               "collect_list": [
                 {
                   "file_path": "/var/log/messages",
-                  "log_group_name": "${logGroup.logGroupName}",
-                  "log_stream_name": "{instance_id}"
+                  "log_group_name": "${this.logGroup.logGroupName}",
+                  "log_stream_name": "{instance_id}",
+                  "timezone": "UTC"
                 }
               ]
             }
@@ -90,5 +102,31 @@ EOF
 
     // Add tags
     cdk.Tags.of(this).add('Project', 'LogPipeline');
+  }
+
+  // Method to add subscription filter after Firehose is created
+  public addSubscriptionFilter(firehoseArn: string, firehoseRole: iam.Role) {
+    // Create IAM role for CloudWatch Logs to put records into Firehose
+    const logsRole = new iam.Role(this, 'LogsRole', {
+      assumedBy: new iam.ServicePrincipal('logs.amazonaws.com'),
+    });
+
+    logsRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'firehose:PutRecord',
+          'firehose:PutRecordBatch',
+        ],
+        resources: [firehoseArn],
+      })
+    );
+
+    // Create subscription filter to send logs to Firehose
+    new logs.CfnSubscriptionFilter(this, 'LogsSubscriptionFilter', {
+      logGroupName: this.logGroup.logGroupName,
+      filterPattern: '',
+      destinationArn: firehoseArn,
+      roleArn: logsRole.roleArn,
+    });
   }
 }

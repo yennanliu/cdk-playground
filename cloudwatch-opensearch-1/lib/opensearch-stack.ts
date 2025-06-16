@@ -3,7 +3,6 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as firehose from 'aws-cdk-lib/aws-kinesisfirehose';
-import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import { RemovalPolicy } from 'aws-cdk-lib';
@@ -15,6 +14,7 @@ export interface OpensearchStackProps extends cdk.StackProps {
 export class OpensearchStack extends cdk.Stack {
     public readonly domain: opensearch.Domain;
     public readonly firehoseRole: iam.Role;
+    public readonly deliveryStream: firehose.CfnDeliveryStream;
 
     constructor(scope: Construct, id: string, props: OpensearchStackProps) {
         super(scope, id, props);
@@ -25,48 +25,59 @@ export class OpensearchStack extends cdk.Stack {
             description: 'Security group for OpenSearch domain',
             allowAllOutbound: true,
         });
+        
+        // Only allow HTTPS access from within the VPC
         opensearchSG.addIngressRule(
-            ec2.Peer.anyIpv4(),
+            ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
             ec2.Port.tcp(443),
-            'Allow HTTPS access from anywhere'
+            'Allow HTTPS access from VPC'
         );
 
         // Create OpenSearch domain
         this.domain = new opensearch.Domain(this, 'LogsDomain', {
-            version: opensearch.EngineVersion.OPENSEARCH_1_3,
+            version: opensearch.EngineVersion.OPENSEARCH_2_3,
             removalPolicy: RemovalPolicy.DESTROY,
-            // capacity: {
-            //     dataNodes: 1,
-            //     dataNodeInstanceType: 'm6g.large.search', // Using m6g.large for better compatibility
-            // },
-            // // zoneAwareness: {
-            // //     enabled: false,
-            // //     availabilityZoneCount: 2
-            // // },
-            // zoneAwareness: { enabled: false },
-            zoneAwareness: {
-                enabled: true,
-                availabilityZoneCount: 3, // must be >=2
-            },
             capacity: {
                 dataNodes: 3,
-                dataNodeInstanceType: 'm6g.large.search',
+                dataNodeInstanceType: 'm6g.small.search',
             },
-
             ebs: {
                 volumeSize: 10,
             },
+            zoneAwareness: {
+                enabled: true,
+                availabilityZoneCount: 3,
+            },
+            vpc: props.vpc,
+            vpcSubnets: [
+                {
+                    subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                },
+            ],
+            securityGroups: [opensearchSG],
             enforceHttps: true,
             nodeToNodeEncryption: true,
             encryptionAtRest: {
                 enabled: true,
             },
-            // For development/testing purposes only
+            // Secure access policy - only allow specific actions from VPC CIDR
             accessPolicies: [
                 new iam.PolicyStatement({
-                    actions: ['es:*'],
-                    resources: ['*'],
+                    effect: iam.Effect.ALLOW,
                     principals: [new iam.AnyPrincipal()],
+                    actions: [
+                        'es:ESHttpGet',
+                        'es:ESHttpPost',
+                        'es:ESHttpPut',
+                        'es:ESHttpDelete',
+                        'es:ESHttpHead',
+                    ],
+                    resources: [`arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`],
+                    conditions: {
+                        IpAddress: {
+                            'aws:SourceIp': [props.vpc.vpcCidrBlock],
+                        },
+                    },
                 }),
             ],
         });
@@ -76,14 +87,14 @@ export class OpensearchStack extends cdk.Stack {
             assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
         });
 
-        // Add permissions to Firehose role
+        // Add permissions to Firehose role for OpenSearch
         this.firehoseRole.addToPolicy(
             new iam.PolicyStatement({
                 resources: [this.domain.domainArn, `${this.domain.domainArn}/*`],
                 actions: [
-                    'es:DescribeElasticsearchDomain',
-                    'es:DescribeElasticsearchDomains',
-                    'es:DescribeElasticsearchDomainConfig',
+                    'es:DescribeDomain',
+                    'es:DescribeDomains',
+                    'es:DescribeDomainConfig',
                     'es:ESHttpPost',
                     'es:ESHttpPut',
                 ],
@@ -92,8 +103,10 @@ export class OpensearchStack extends cdk.Stack {
 
         // Create S3 bucket for Firehose backup
         const backupBucket = new s3.Bucket(this, 'FirehoseBackupBucket', {
-            removalPolicy: cdk.RemovalPolicy.DESTROY, // For development/testing only
-            autoDeleteObjects: true, // For development/testing only
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            autoDeleteObjects: true,
+            blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+            encryption: s3.BucketEncryption.S3_MANAGED,
         });
 
         // Add S3 permissions to Firehose role
@@ -111,14 +124,19 @@ export class OpensearchStack extends cdk.Stack {
             })
         );
 
-        // Create Firehose delivery stream
-        const firehoseDeliveryStream = new firehose.CfnDeliveryStream(this, 'LogsDeliveryStream', {
+        // Create Firehose delivery stream with simplified configuration
+        this.deliveryStream = new firehose.CfnDeliveryStream(this, 'LogsDeliveryStream', {
             deliveryStreamType: 'DirectPut',
-            elasticsearchDestinationConfiguration: {
+            deliveryStreamName: 'opensearch-logs-stream',
+            amazonopensearchserviceDestinationConfiguration: {
                 domainArn: this.domain.domainArn,
                 indexName: 'logs',
                 roleArn: this.firehoseRole.roleArn,
-                s3BackupMode: 'FailedDocumentsOnly',
+                s3BackupMode: 'AllDocuments',
+                bufferingHints: {
+                    intervalInSeconds: 60,
+                    sizeInMBs: 1,
+                },
                 s3Configuration: {
                     bucketArn: backupBucket.bucketArn,
                     roleArn: this.firehoseRole.roleArn,
@@ -126,8 +144,21 @@ export class OpensearchStack extends cdk.Stack {
                         intervalInSeconds: 60,
                         sizeInMBs: 1,
                     },
+                    compressionFormat: 'GZIP',
                 },
             },
+        });
+
+        // Output domain endpoint
+        new cdk.CfnOutput(this, 'OpenSearchDomainEndpoint', {
+            value: `https://${this.domain.domainEndpoint}`,
+            description: 'OpenSearch Domain Endpoint',
+        });
+
+        // Output Firehose delivery stream ARN  
+        new cdk.CfnOutput(this, 'FirehoseDeliveryStreamArn', {
+            value: this.deliveryStream.attrArn,
+            description: 'Firehose Delivery Stream ARN',
         });
 
         // Add tags
