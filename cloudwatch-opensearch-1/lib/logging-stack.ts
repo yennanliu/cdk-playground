@@ -103,30 +103,4 @@ EOF
     // Add tags
     cdk.Tags.of(this).add('Project', 'LogPipeline');
   }
-
-  // Method to add subscription filter after Firehose is created
-  public addSubscriptionFilter(firehoseArn: string, firehoseRole: iam.Role) {
-    // Create IAM role for CloudWatch Logs to put records into Firehose
-    const logsRole = new iam.Role(this, 'LogsRole', {
-      assumedBy: new iam.ServicePrincipal('logs.amazonaws.com'),
-    });
-
-    logsRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: [
-          'firehose:PutRecord',
-          'firehose:PutRecordBatch',
-        ],
-        resources: [firehoseArn],
-      })
-    );
-
-    // Create subscription filter to send logs to Firehose
-    new logs.CfnSubscriptionFilter(this, 'LogsSubscriptionFilter', {
-      logGroupName: this.logGroup.logGroupName,
-      filterPattern: '',
-      destinationArn: firehoseArn,
-      roleArn: logsRole.roleArn,
-    });
-  }
 }

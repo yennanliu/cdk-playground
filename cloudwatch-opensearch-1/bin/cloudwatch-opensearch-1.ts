@@ -19,13 +19,5 @@ const opensearchStack = new OpensearchStack(app, 'OpensearchStack', {
         region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
     },
     vpc: loggingStack.vpc,
+    logGroup: loggingStack.logGroup,
 });
-
-// Add explicit dependency
-opensearchStack.addDependency(loggingStack);
-
-// Connect the stacks by adding subscription filter
-loggingStack.addSubscriptionFilter(
-    opensearchStack.deliveryStream.attrArn,
-    opensearchStack.firehoseRole
-);

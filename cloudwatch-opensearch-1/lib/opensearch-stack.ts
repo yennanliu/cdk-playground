@@ -3,12 +3,14 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as firehose from 'aws-cdk-lib/aws-kinesisfirehose';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import { RemovalPolicy } from 'aws-cdk-lib';
 
 export interface OpensearchStackProps extends cdk.StackProps {
     vpc: ec2.IVpc;
+    logGroup: logs.LogGroup;
 }
 
 export class OpensearchStack extends cdk.Stack {
@@ -147,6 +149,29 @@ export class OpensearchStack extends cdk.Stack {
                     compressionFormat: 'GZIP',
                 },
             },
+        });
+
+        // Create IAM role for CloudWatch Logs to put records into Firehose
+        const logsRole = new iam.Role(this, 'LogsRole', {
+            assumedBy: new iam.ServicePrincipal('logs.amazonaws.com'),
+        });
+
+        logsRole.addToPolicy(
+            new iam.PolicyStatement({
+                actions: [
+                    'firehose:PutRecord',
+                    'firehose:PutRecordBatch',
+                ],
+                resources: [this.deliveryStream.attrArn],
+            })
+        );
+
+        // Create subscription filter to send logs to Firehose
+        new logs.CfnSubscriptionFilter(this, 'LogsSubscriptionFilter', {
+            logGroupName: props.logGroup.logGroupName,
+            filterPattern: '',
+            destinationArn: this.deliveryStream.attrArn,
+            roleArn: logsRole.roleArn,
         });
 
         // Output domain endpoint
