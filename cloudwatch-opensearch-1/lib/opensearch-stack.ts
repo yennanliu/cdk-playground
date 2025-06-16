@@ -46,9 +46,6 @@ export class OpensearchStack extends cdk.Stack {
       ebs: {
         volumeSize: 10,
       },
-      zoneAwareness: {
-        enabled: false,
-      },
       vpc: props.vpc,
       vpcSubnets: [
         {
