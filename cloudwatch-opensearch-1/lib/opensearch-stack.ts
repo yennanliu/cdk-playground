@@ -46,19 +46,21 @@ export class OpensearchStack extends cdk.Stack {
       ebs: {
         volumeSize: 10,
       },
-      vpc: props.vpc,
-      vpcSubnets: [
-        {
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-        },
-      ],
-      securityGroups: [opensearchSG],
+      // Deploy without VPC to avoid zone awareness issues
+      // vpc: props.vpc,
+      // vpcSubnets: [
+      //     {
+      //         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      //         availabilityZones: [props.vpc.availabilityZones[0]], // Use only first AZ
+      //     },
+      // ],
+      // securityGroups: [opensearchSG],
       enforceHttps: true,
       nodeToNodeEncryption: true,
       encryptionAtRest: {
         enabled: true,
       },
-      // Secure access policy - only allow specific actions from VPC CIDR
+      // More permissive access policy for public domain (for development only)
       accessPolicies: [
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
@@ -73,11 +75,6 @@ export class OpensearchStack extends cdk.Stack {
           resources: [
             `arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`,
           ],
-          conditions: {
-            IpAddress: {
-              "aws:SourceIp": [props.vpc.vpcCidrBlock],
-            },
-          },
         }),
       ],
     });
