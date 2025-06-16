@@ -1,4 +1,11 @@
-import { Duration, Stack, StackProps, RemovalPolicy } from "aws-cdk-lib";
+import {
+  Duration,
+  Stack,
+  StackProps,
+  RemovalPolicy,
+  CfnOutput,
+  CustomResource,
+} from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
@@ -357,96 +364,8 @@ exports.handler = async (event) => {
       integration: lambdaIntegration,
     });
 
-    // Custom resource to populate DynamoDB with shard metadata
+    // Custom resource Lambda to populate DynamoDB with shard metadata
     const populateShards = new lambda.Function(this, "PopulateShardsFunction", {
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromInline(`
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-
-exports.handler = async (event) => {
-  console.log('Event:', JSON.stringify(event, null, 2));
-  
-  if (event.RequestType === 'Create' || event.RequestType === 'Update') {
-    try {
-      const shards = JSON.parse(event.ResourceProperties.Shards);
-      
-      for (const shard of shards) {
-        const params = {
-          TableName: event.ResourceProperties.TableName,
-          Item: shard
-        };
-        
-        await dynamodb.put(params).promise();
-        console.log(\`Populated shard: \${shard.shardId}\`);
-      }
-      
-      await sendResponse(event, 'SUCCESS', { message: 'Shards populated successfully' });
-    } catch (error) {
-      console.error('Error:', error);
-      await sendResponse(event, 'FAILED', { error: error.message });
-    }
-  } else {
-    await sendResponse(event, 'SUCCESS', { message: 'Delete operation completed' });
-  }
-};
-
-async function sendResponse(event, status, data) {
-  const responseBody = {
-    Status: status,
-    Reason: JSON.stringify(data),
-    PhysicalResourceId: event.LogicalResourceId,
-    StackId: event.StackId,
-    RequestId: event.RequestId,
-    LogicalResourceId: event.LogicalResourceId,
-    Data: data
-  };
-  
-  const https = require('https');
-  const url = require('url');
-  
-  const parsedUrl = url.parse(event.ResponseURL);
-  const options = {
-    hostname: parsedUrl.hostname,
-    port: 443,
-    path: parsedUrl.path,
-    method: 'PUT',
-    headers: {
-      'content-type': '',
-      'content-length': JSON.stringify(responseBody).length
-    }
-  };
-  
-  return new Promise((resolve, reject) => {
-    const request = https.request(options, (response) => {
-      resolve(response.statusCode);
-    });
-    
-    request.on('error', (error) => {
-      reject(error);
-    });
-    
-    request.write(JSON.stringify(responseBody));
-    request.end();
-  });
-}
-      `),
-      timeout: Duration.seconds(60),
-    });
-
-    shardMetadataTable.grantReadWriteData(populateShards);
-
-    // Create custom resource to populate shard metadata
-    const shardData = shards.map((shard, index) => ({
-      shardId: index.toString(),
-      rdsEndpoint: shard.instanceEndpoint.hostname,
-      dbName: `shard${index}db`,
-      secretArn: shard.secret?.secretArn || "",
-      status: "active",
-    }));
-
-    new lambda.Function(this, "PopulateShardsCustomResource", {
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: "index.handler",
       code: lambda.Code.fromInline(`
@@ -483,18 +402,38 @@ exports.handler = async (event, context) => {
   }
 };
       `),
-      environment: {
-        TABLE_NAME: shardMetadataTable.tableName,
-        SHARDS: JSON.stringify(shardData),
-      },
       timeout: Duration.seconds(60),
     });
 
-    // Output the API Gateway URL
-    new Stack(this, "ShardingApiUrl", {
-      parameters: {
-        ApiUrl: httpApi.apiEndpoint,
+    shardMetadataTable.grantReadWriteData(populateShards);
+
+    // Create custom resource to populate shard metadata
+    const shardData = shards.map((shard, index) => ({
+      shardId: index.toString(),
+      rdsEndpoint: shard.instanceEndpoint.hostname,
+      dbName: `shard${index}db`,
+      secretArn: shard.secret?.secretArn || "",
+      status: "active",
+    }));
+
+    // Create custom resource to populate shard metadata
+    const populateShardsResource = new CustomResource(this, "PopulateShardsResource", {
+      serviceToken: populateShards.functionArn,
+      properties: {
+        TableName: shardMetadataTable.tableName,
+        Shards: JSON.stringify(shardData),
       },
+    });
+
+    // Output the API Gateway URL
+    new CfnOutput(this, "ApiUrl", {
+      value: httpApi.apiEndpoint,
+      description: "API Gateway endpoint URL",
+    });
+
+    new CfnOutput(this, "DynamoTableName", {
+      value: shardMetadataTable.tableName,
+      description: "DynamoDB table name for shard metadata",
     });
   }
 }
