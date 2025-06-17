@@ -94,7 +94,8 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
     const myLambdaFunction4 = this.createLambdaFunction(
       'MyLambdaFunction4',
       'wikiScraper',
-      buckets[0]
+      buckets[0],
+      cdk.Duration.seconds(100) // 100 seconds timeout
     );
     this.createApiEndpoint(api, myLambdaFunction4, 'wikiScraper');
   }
