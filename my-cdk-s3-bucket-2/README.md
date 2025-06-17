@@ -30,6 +30,8 @@ curl $url/math
 
 curl $url/wikiScraper
 
+curl $url/wikiScraper?keyword=google
+
 #curl  https://xx5twhl26j.execute-api.ap-northeast-1.amazonaws.com/prod/timestamp
 ```
 

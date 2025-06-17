@@ -128,7 +128,13 @@ export const handlerMath = async (event: any = {}): Promise<any> => {
 
 export const wikiScraper = async (event: any = {}): Promise<any> => {
     try {
-        const url = 'https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=%E7%BB%B4%E5%9F%BA%E7%99%BE%E7%A7%91&format=json&formatversion=2';
+        // Get keyword from query parameters, default to '维基百科' if not provided
+        const keyword = event.queryStringParameters?.keyword || 'TESLA';
+        const encodedKeyword = encodeURIComponent(keyword);
+
+        // Construct the URL with the keyword
+        const url = `https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodedKeyword}&format=json&formatversion=2`;
+        console.log(`>>> Searching Wikipedia for: ${keyword}, encodedKeyword= ${encodedKeyword}`);
 
         // Make the GET request to Wikipedia API
         const response = await fetch(url);
