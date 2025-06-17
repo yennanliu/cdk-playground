@@ -1,4 +1,4 @@
-# Welcome to your CDK TypeScript project
+# My S3 Bucket V2
 
 ## Deploy
 
@@ -19,17 +19,16 @@ cdk deploy
 
 # test lamdba enpoint
 
-curl https://wdq50vslg5.execute-api.ap-northeast-1.amazonaws.com/prod/timestamp
+url=https://xx5twhl26j.execute-api.ap-northeast-1.amazonaws.com/prod
 
 
-curl https://wdq50vslg5.execute-api.ap-northeast-1.amazonaws.com/prod/scrape-books
+curl $url/timestamp
+
+
+curl $url/scrape-books
+
+
+#curl  https://xx5twhl26j.execute-api.ap-northeast-1.amazonaws.com/prod/timestamp
 ```
 
-## Useful commands
-
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+## Ref
