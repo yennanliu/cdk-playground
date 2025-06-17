@@ -25,6 +25,16 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
       buckets.push(bucket);
     }
 
+
+    // api getway ------------------------------------------------
+    const api = new apigateway.RestApi(this, 'simeple-api', {
+      restApiName: 'simple-api',
+      description: 'This is a simple API',
+    });
+
+
+    // Lambda func 1) ------------------------------------------------
+
     // Create a Lambda function
     const myLambdaFunction = new lambda.Function(this, 'MyLambdaFunction', {
       runtime: lambda.Runtime.NODEJS_18_X,
@@ -39,10 +49,12 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
     // Grant the Lambda function permission to write to the S3 bucket
     buckets[0].grantPut(myLambdaFunction);
 
-    const api = new apigateway.RestApi(this, 'simeple-api', {
-      restApiName: 'simple-api',
-      description: 'This is a simple API',
-    });
+    // const api = new apigateway.RestApi(this, 'simeple-api', {
+    //   restApiName: 'simple-api',
+    //   description: 'This is a simple API',
+    // });
+
+    // Lambda func 2) ------------------------------------------------
 
     // Create a resource and method for the Lambda function
     const lambdaIntegration = new apigateway.LambdaIntegration(myLambdaFunction);
@@ -69,6 +81,27 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
     const scrapeBooksIntegration = new apigateway.LambdaIntegration(scrapeBooksLambda);
     const scrapeResource = api.root.addResource('scrape-books');
     scrapeResource.addMethod('GET', scrapeBooksIntegration);
+
+    // Lambda func 3) ------------------------------------------------
+
+    // Create a Lambda function
+    const myLambdaFunction2 = new lambda.Function(this, 'MyLambdaFunction2', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
+      handler: 'handler.handlerMath',
+      environment: {
+        BUCKET_NAME: `my-second-cdk-bucket-1`,
+      },
+    });
+
+    // NOTE !!! grant the Lambda function permission to read from the S3 bucket
+    // Grant the Lambda function permission to write to the S3 bucket
+    buckets[0].grantPut(myLambdaFunction2);
+
+    const lambdaIntegration2 = new apigateway.LambdaIntegration(myLambdaFunction2);
+    const resource2 = api.root.addResource('math');
+    resource2.addMethod('GET', lambdaIntegration2); // Add a GET method to call the Lambda
+
   }
 
 

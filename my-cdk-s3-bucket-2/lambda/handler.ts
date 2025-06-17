@@ -82,3 +82,45 @@ export const scrapeBooksToScrape = async (): Promise<any> => {
         };
     }
 };
+
+
+export const handlerMath = async (event: any = {}): Promise<any> => {
+    const timestamp = new Date().toISOString();
+    const bucketName = process.env.BUCKET_NAME;
+    const key = `timestamp-${timestamp}.txt`;
+
+    // get some random number
+    const randomNumber = Math.floor(Math.random() * 100);
+
+    for (let i = 0; i < 10; i++) {
+        console.log(`>>> i: ${i}`);
+
+        console.log(`>>> randomNumber: ${randomNumber}`);
+
+        const event2 = {
+            randomNumber: randomNumber,
+        }
+        console.log(`>>> event2: ${JSON.stringify(event2)}`);
+        const bodyContent = JSON.stringify(event2);
+
+        const putParams = {
+            Bucket: bucketName,
+            Key: key,
+            Body: bodyContent,
+            ContentType: 'application/json',
+        };
+
+        try {
+            await s3.send(new PutObjectCommand(putParams));
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ message: 'Content saved', key }),
+            };
+        } catch (err) {
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ error: (err as Error)?.message || String(err) }),
+            }
+        }
+    }
+};

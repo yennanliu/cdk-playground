@@ -19,7 +19,7 @@ cdk deploy
 
 # test lamdba enpoint
 
-url=https://xx5twhl26j.execute-api.ap-northeast-1.amazonaws.com/prod
+url=https://xx5twhl26j.execute-api.ap-northeast-1.amazonaws.com/prod/
 
 
 curl $url/timestamp
@@ -27,6 +27,7 @@ curl $url/timestamp
 
 curl $url/scrape-books
 
+curl $url/math
 
 #curl  https://xx5twhl26j.execute-api.ap-northeast-1.amazonaws.com/prod/timestamp
 ```
