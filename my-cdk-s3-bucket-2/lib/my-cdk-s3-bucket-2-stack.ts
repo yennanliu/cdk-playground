@@ -89,5 +89,13 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
       buckets[0]
     );
     this.createApiEndpoint(api, myLambdaFunction2, 'math');
+
+    // Lambda func 4) ------------------------------------------------
+    const myLambdaFunction4 = this.createLambdaFunction(
+      'MyLambdaFunction4',
+      'wikiScraper',
+      buckets[0]
+    );
+    this.createApiEndpoint(api, myLambdaFunction4, 'wikiScraper');
   }
 }

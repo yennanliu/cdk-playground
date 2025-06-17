@@ -124,3 +124,51 @@ export const handlerMath = async (event: any = {}): Promise<any> => {
         }
     }
 };
+
+
+export const wikiScraper = async (event: any = {}): Promise<any> => {
+    try {
+        const url = 'https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=%E7%BB%B4%E5%9F%BA%E7%99%BE%E7%A7%91&format=json&formatversion=2';
+
+        // Make the GET request to Wikipedia API
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+        }
+
+        // Parse the JSON response
+        const jsonData = await response.json();
+        console.log('>>> Wiki API response:', JSON.stringify(jsonData, null, 2));
+
+        // Prepare to save to S3
+        const timestamp = new Date().toISOString();
+        const bucketName = process.env.BUCKET_NAME;
+        const key = `wiki-data-${timestamp}.json`;
+
+        const putParams = {
+            Bucket: bucketName,
+            Key: key,
+            Body: JSON.stringify(jsonData, null, 2), // Pretty print JSON
+            ContentType: 'application/json',
+        };
+
+        // Save to S3
+        await s3.send(new PutObjectCommand(putParams));
+        console.log(`>>> JSON data saved to S3 bucket: ${bucketName}, key: ${key}`);
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                message: 'Wikipedia data saved successfully',
+                key,
+                data: jsonData // Including the data in the response
+            })
+        };
+    } catch (err) {
+        console.error('Error in wikiScraper:', err);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: (err as Error)?.message || String(err) })
+        };
+    }
+};
