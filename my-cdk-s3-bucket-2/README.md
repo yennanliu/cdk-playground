@@ -24,7 +24,6 @@ url=https://xx5twhl26j.execute-api.ap-northeast-1.amazonaws.com/prod/
 
 curl $url/timestamp
 
-
 curl $url/scrape-books
 
 curl $url/math

@@ -9,6 +9,38 @@ import * as path from 'path';
 
 
 export class MyCdkS3Bucket2Stack extends cdk.Stack {
+  private createLambdaFunction(
+    id: string,
+    handler: string,
+    bucket: s3.Bucket,
+    timeout?: cdk.Duration
+  ): lambda.Function {
+    const lambdaFunction = new lambda.Function(this, id, {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
+      handler: `handler.${handler}`,
+      environment: {
+        BUCKET_NAME: 'my-second-cdk-bucket-1',
+      },
+      timeout: timeout,
+    });
+
+    // Grant the Lambda function permission to write to the S3 bucket
+    bucket.grantPut(lambdaFunction);
+
+    return lambdaFunction;
+  }
+
+  private createApiEndpoint(
+    api: apigateway.RestApi,
+    lambda: lambda.Function,
+    resourcePath: string
+  ): apigateway.Method {
+    const integration = new apigateway.LambdaIntegration(lambda);
+    const resource = api.root.addResource(resourcePath);
+    return resource.addMethod('GET', integration);
+  }
+
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -26,7 +58,7 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
     }
 
 
-    // api getway ------------------------------------------------
+    // api gateway ------------------------------------------------
     const api = new apigateway.RestApi(this, 'simeple-api', {
       restApiName: 'simple-api',
       description: 'This is a simple API',
@@ -34,75 +66,28 @@ export class MyCdkS3Bucket2Stack extends cdk.Stack {
 
 
     // Lambda func 1) ------------------------------------------------
-
-    // Create a Lambda function
-    const myLambdaFunction = new lambda.Function(this, 'MyLambdaFunction', {
-      runtime: lambda.Runtime.NODEJS_18_X,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
-      handler: 'handler.handler',
-      environment: {
-        BUCKET_NAME: `my-second-cdk-bucket-1`,
-      },
-    });
-
-    // NOTE !!! grant the Lambda function permission to read from the S3 bucket
-    // Grant the Lambda function permission to write to the S3 bucket
-    buckets[0].grantPut(myLambdaFunction);
-
-    // const api = new apigateway.RestApi(this, 'simeple-api', {
-    //   restApiName: 'simple-api',
-    //   description: 'This is a simple API',
-    // });
+    const myLambdaFunction = this.createLambdaFunction(
+      'MyLambdaFunction',
+      'handler',
+      buckets[0]
+    );
+    this.createApiEndpoint(api, myLambdaFunction, 'timestamp');
 
     // Lambda func 2) ------------------------------------------------
-
-    // Create a resource and method for the Lambda function
-    const lambdaIntegration = new apigateway.LambdaIntegration(myLambdaFunction);
-    const resource = api.root.addResource('timestamp');
-    resource.addMethod('GET', lambdaIntegration); // Add a GET method to call the Lambda
-
-    // Create a Lambda function for scraping books.toscrape.com
-    const scrapeBooksLambda = new lambda.Function(this, 'ScrapeBooksLambda', {
-      runtime: lambda.Runtime.NODEJS_18_X,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
-      handler: 'handler.scrapeBooksToScrape',
-      environment: {
-        BUCKET_NAME: `my-second-cdk-bucket-1`,
-      },
-      timeout: cdk.Duration.seconds(10),
-    });
-
-
-    // NOTE !!! grant the Lambda function permission to read from the S3 bucket
-    // Grant the Lambda function permission to write to the S3 bucket
-    buckets[0].grantPut(scrapeBooksLambda);
-
-    // API Gateway resource for scraping
-    const scrapeBooksIntegration = new apigateway.LambdaIntegration(scrapeBooksLambda);
-    const scrapeResource = api.root.addResource('scrape-books');
-    scrapeResource.addMethod('GET', scrapeBooksIntegration);
+    const scrapeBooksLambda = this.createLambdaFunction(
+      'ScrapeBooksLambda',
+      'scrapeBooksToScrape',
+      buckets[0],
+      cdk.Duration.seconds(10)
+    );
+    this.createApiEndpoint(api, scrapeBooksLambda, 'scrape-books');
 
     // Lambda func 3) ------------------------------------------------
-
-    // Create a Lambda function
-    const myLambdaFunction2 = new lambda.Function(this, 'MyLambdaFunction2', {
-      runtime: lambda.Runtime.NODEJS_18_X,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../dist/lambda')),
-      handler: 'handler.handlerMath',
-      environment: {
-        BUCKET_NAME: `my-second-cdk-bucket-1`,
-      },
-    });
-
-    // NOTE !!! grant the Lambda function permission to read from the S3 bucket
-    // Grant the Lambda function permission to write to the S3 bucket
-    buckets[0].grantPut(myLambdaFunction2);
-
-    const lambdaIntegration2 = new apigateway.LambdaIntegration(myLambdaFunction2);
-    const resource2 = api.root.addResource('math');
-    resource2.addMethod('GET', lambdaIntegration2); // Add a GET method to call the Lambda
-
+    const myLambdaFunction2 = this.createLambdaFunction(
+      'MyLambdaFunction2',
+      'handlerMath',
+      buckets[0]
+    );
+    this.createApiEndpoint(api, myLambdaFunction2, 'math');
   }
-
-
 }
