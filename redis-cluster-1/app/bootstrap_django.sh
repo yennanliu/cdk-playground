@@ -13,4 +13,5 @@ if [ ! -d "mysite" ]; then
 fi
 cd mysite
 python3 manage.py migrate
-nohup python3 manage.py runserver 0.0.0.0:80 &
+#nohup python3 manage.py runserver 0.0.0.0:8080 &
+python3 manage.py runserver 0.0.0.0:8080
