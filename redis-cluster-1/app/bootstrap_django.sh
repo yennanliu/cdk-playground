@@ -1,11 +1,16 @@
 #!/bin/bash
 # Bootstrap script to install Django and start a minimal app
 set -e
-sudo yum update -y
-sudo yum install -y python3 python3-pip
-python3 -m pip install --user django
-cd /home/ec2-user
-python3 -m django startproject mysite
+sudo apt update -y
+sudo apt install -y python3 python3-pip python3-venv
+
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install django
+if [ ! -d "mysite" ]; then
+  django-admin startproject mysite
+fi
 cd mysite
 python3 manage.py migrate
 nohup python3 manage.py runserver 0.0.0.0:80 &
