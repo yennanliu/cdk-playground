@@ -57,3 +57,8 @@ sudo docker rm $(docker ps -a -q) 2>/dev/null
 sudo docker rmi -f $(docker images -q) 2>/dev/null
 
 ```
+
+
+## Ref
+
+- https://hub.docker.com/r/yennanliu/mydjangoapp

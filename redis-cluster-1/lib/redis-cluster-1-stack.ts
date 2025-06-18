@@ -1,8 +1,9 @@
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
+import { Duration, Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as ecs_patterns from 'aws-cdk-lib/aws-ecs-patterns';
 import { Construct } from 'constructs';
 
 export class RedisCluster1Stack extends Stack {
@@ -26,15 +27,14 @@ export class RedisCluster1Stack extends Stack {
       ],
     });
 
-    // Security group for EC2 (Django)
-    const ec2Sg = new ec2.SecurityGroup(this, 'DjangoEc2Sg', {
+    // Security group for Django (ECS)
+    const djangoSg = new ec2.SecurityGroup(this, 'DjangoEcsSg', {
       vpc,
-      description: 'Allow HTTP/HTTPS and SSH',
+      description: 'Allow HTTP/HTTPS',
       allowAllOutbound: true,
     });
-    ec2Sg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow HTTP');
-    ec2Sg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Allow HTTPS');
-    ec2Sg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH');
+    djangoSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow HTTP');
+    djangoSg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Allow HTTPS');
 
     // Security group for Redis (ECS)
     const redisSg = new ec2.SecurityGroup(this, 'RedisSg', {
@@ -42,7 +42,7 @@ export class RedisCluster1Stack extends Stack {
       description: 'Allow Redis from EC2 only',
       allowAllOutbound: true,
     });
-    redisSg.addIngressRule(ec2Sg, ec2.Port.tcp(6379), 'Allow Redis from EC2 SG');
+    redisSg.addIngressRule(djangoSg, ec2.Port.tcp(6379), 'Allow Redis from Django ECS SG');
 
     // IAM role for EC2 instance
     const ec2Role = new iam.Role(this, 'DjangoEc2Role', {
@@ -54,18 +54,7 @@ export class RedisCluster1Stack extends Stack {
     });
 
     // Key pair for EC2 (user must create/import key manually and provide name)
-    const keyName = 'yen-wipro-aws-dev-key-2'; // <-- replace with your key pair name
-
-    // EC2 instance for Django
-    const ec2Instance = new ec2.Instance(this, 'DjangoInstance', {
-      vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
-      machineImage: ec2.MachineImage.latestAmazonLinux2023(),
-      securityGroup: ec2Sg,
-      role: ec2Role,
-      keyName,
-    });
+    //const keyName = 'yen-wipro-aws-dev-key-2'; // <-- replace with your key pair name
 
     // ECS Cluster
     const cluster = new ecs.Cluster(this, 'RedisCluster', {
@@ -99,6 +88,41 @@ export class RedisCluster1Stack extends Stack {
       desiredCount: 3, // updated to 3 nodes
       securityGroups: [redisSg],
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+    });
+
+    // ECS Fargate Task Definition for Django
+    const djangoTaskDef = new ecs.FargateTaskDefinition(this, 'DjangoTaskDef', {
+      memoryLimitMiB: 512,
+      cpu: 256,
+    });
+    djangoTaskDef.addContainer('DjangoContainer', {
+      image: ecs.ContainerImage.fromRegistry('yennanliu/mydjangoapp:dev-1'),
+      environment: {
+        REDIS_HOST: 'redis', // Use service discovery or update with actual endpoint if needed
+        REDIS_PORT: '6379',
+      },
+      logging: ecs.LogDriver.awsLogs({
+        streamPrefix: 'django',
+      }),
+      portMappings: [{ containerPort: 80 }],
+    });
+
+    // Application Load Balancer for Django ECS
+    const alb = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'DjangoAlbFargateService', {
+      cluster,
+      taskDefinition: djangoTaskDef,
+      publicLoadBalancer: true,
+      desiredCount: 1,
+      securityGroups: [djangoSg],
+      assignPublicIp: true,
+      listenerPort: 80,
+      taskSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+    });
+
+    // Output the Load Balancer DNS name
+    new CfnOutput(this, 'DjangoAlbUrl', {
+      value: alb.loadBalancer.loadBalancerDnsName,
+      description: 'The URL of the Django Application Load Balancer',
     });
   }
 }
