@@ -12,7 +12,10 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy project files
+# Create Django project if not exists
+RUN if [ ! -d "mysite" ]; then django-admin startproject mysite .; fi
+
+# Copy project files (after project creation)
 COPY . .
 
 # Expose port
