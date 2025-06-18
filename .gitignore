@@ -3,3 +3,5 @@
 **/**/node_modules
 maze-java-app/maze-be-1/logs/
 **/cdk.out.tmp/
+redis-cluster-1/venv/
+**/**/venv/
