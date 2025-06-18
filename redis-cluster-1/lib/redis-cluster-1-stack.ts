@@ -117,6 +117,18 @@ export class RedisCluster1Stack extends Stack {
       assignPublicIp: true,
       listenerPort: 80,
       taskSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+      healthCheckGracePeriod: Duration.seconds(120),
+    });
+
+    // Set health check path to Django default ('/')
+    alb.targetGroup.configureHealthCheck({
+      path: '/',
+      port: '80',
+      healthyHttpCodes: '200-399',
+      interval: Duration.seconds(30),
+      timeout: Duration.seconds(5),
+      healthyThresholdCount: 2,
+      unhealthyThresholdCount: 3,
     });
 
     // Output the Load Balancer DNS name
