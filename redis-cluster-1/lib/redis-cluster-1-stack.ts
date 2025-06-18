@@ -1,12 +1,8 @@
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import * as ecs_patterns from 'aws-cdk-lib/aws-ecs-patterns';
 import { Construct } from 'constructs';
 
 export class RedisCluster1Stack extends Stack {
@@ -58,7 +54,7 @@ export class RedisCluster1Stack extends Stack {
     });
 
     // Key pair for EC2 (user must create/import key manually and provide name)
-    const keyName = 'yen-wipro-aws-dev-key-2.pem'; // <-- replace with your key pair name
+    const keyName = 'yen-wipro-aws-dev-key-2'; // <-- replace with your key pair name
 
     // EC2 instance for Django
     const ec2Instance = new ec2.Instance(this, 'DjangoInstance', {
@@ -95,22 +91,14 @@ export class RedisCluster1Stack extends Stack {
       portMappings: [{ containerPort: 6379 }],
     });
 
-    // ECS Fargate Service for Redis
+    // ECS Fargate Service for Redis (3 nodes)
     new ecs.FargateService(this, 'RedisFargateService', {
       cluster,
       taskDefinition: redisTaskDef,
       assignPublicIp: true,
-      desiredCount: 1,
+      desiredCount: 3, // updated to 3 nodes
       securityGroups: [redisSg],
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
     });
-
-    const queue = new sqs.Queue(this, 'RedisCluster1Queue', {
-      visibilityTimeout: Duration.seconds(300)
-    });
-
-    const topic = new sns.Topic(this, 'RedisCluster1Topic');
-
-    topic.addSubscription(new subs.SqsSubscription(queue));
   }
 }
