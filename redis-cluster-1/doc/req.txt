@@ -1,0 +1,32 @@
+
+### 📌 **Prompt: Simple AWS Architecture with Django on EC2 and Redis on ECS Fargate**
+
+> Design a **simple, production-ready AWS infrastructure** that runs:
+>
+> 1. A **Django application on EC2**, with an emphasis on operational control and simplicity.
+> 2. A **Redis instance on Amazon ECS Fargate**, used as a caching layer for Django.
+>
+> Follow these key principles:
+>
+> * Keep the architecture **as simple as possible**, suitable for small to medium workloads.
+> * Ensure **secure communication** between services within a VPC.
+> * Follow AWS **Well-Architected Framework** best practices for **security, scalability, and operational efficiency**.
+>
+> ### 🏗️ Architecture Components:
+>
+> * **VPC** with public and private subnets across multiple AZs.
+> * **EC2 instance** for Django app:
+>
+>   * Use Amazon Linux 2 or Ubuntu.
+>   * Configure a security group to allow inbound HTTP/HTTPS traffic.
+>   * Attach IAM role for logging/monitoring.
+>   * Use key pair bootstrapping Django on launch.
+> * **Redis container on ECS Fargate**:
+>
+>   * Deploy in public subnets.
+>   * Expose port 6379 only to the EC2 instance’s security group.
+>   * Use CloudWatch Logs for container logging.
+> * **CloudWatch** for logs and metrics.
+> * **Security Groups** to allow only necessary traffic (least privilege).
+
+> Explain the **trade-offs** of each design choice (e.g., using EC2 vs ECS for Django, Fargate vs ElastiCache for Redis), and describe how this setup supports simplicity, cost efficiency, and operational clarity.
