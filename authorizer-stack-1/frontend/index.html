@@ -49,23 +49,28 @@
         </div>
 
         <!-- Navigation -->
-        <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="home-tab" data-bs-toggle="pill" data-bs-target="#home" type="button" role="tab">Home</button>
+        <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation" id="loginTabItem">
+                <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab">Login</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="register-tab" data-bs-toggle="pill" data-bs-target="#register" type="button" role="tab">Register</button>
+                <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">Register</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="login-tab" data-bs-toggle="pill" data-bs-target="#login" type="button" role="tab">Login</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="users-tab" data-bs-toggle="pill" data-bs-target="#users" type="button" role="tab">Users</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="profile-tab" data-bs-toggle="pill" data-bs-target="#profile" type="button" role="tab">Profile</button>
+                <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">Users</button>
             </li>
         </ul>
+
+        <!-- Add Toast Container for Notifications -->
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+            <div id="loginToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto" id="toastTitle">Login Status</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body" id="toastMessage"></div>
+            </div>
+        </div>
 
         <!-- Tab Content -->
         <div class="tab-content" id="pills-tabContent">
@@ -219,9 +224,9 @@
             if (apiUrl) {
                 API_URL = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
                 localStorage.setItem('apiUrl', API_URL);
-                showAlert('success', 'API URL saved successfully!');
+                showToast('Success', 'API URL saved successfully!', 'success');
             } else {
-                showAlert('danger', 'Please enter a valid API URL');
+                showToast('Error', 'Please enter a valid API URL', 'danger');
             }
         }
 
@@ -251,29 +256,43 @@
 
         // Update user info display
         function updateUserInfo() {
+            const userInfoDiv = document.getElementById('userInfo');
+            const loginTabItem = document.getElementById('loginTabItem');
+            const usersTab = document.getElementById('users-tab');
+            
             if (currentUser) {
-                document.getElementById('userInfo').classList.remove('hidden');
+                userInfoDiv.classList.remove('hidden');
                 document.getElementById('userDetails').innerHTML = `
-                    <strong>Email:</strong> ${currentUser.email}<br>
-                    <strong>Role:</strong> <span class="badge bg-${currentUser.role === 'admin' ? 'danger' : 'info'}">${currentUser.role}</span>
+                    <p><strong>Email:</strong> ${currentUser.email}</p>
+                    <p><strong>Role:</strong> ${currentUser.role}</p>
                 `;
+                
+                // Hide login tab when user is logged in
+                loginTabItem.style.display = 'none';
+                
+                // Switch to users tab if we're on login tab
+                if (document.querySelector('#login-tab.active')) {
+                    const usersTabButton = document.getElementById('users-tab');
+                    usersTabButton.click();
+                }
             } else {
-                document.getElementById('userInfo').classList.add('hidden');
+                userInfoDiv.classList.add('hidden');
+                document.getElementById('userDetails').innerHTML = '';
+                loginTabItem.style.display = 'block';
             }
         }
 
-        // Register form submission
+        // Registration form submission
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             if (!API_URL) {
-                showAlert('danger', 'Please configure your API URL first');
+                showToast('Error', 'Please configure your API URL first', 'danger');
                 return;
             }
 
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPassword').value;
-            const role = document.getElementById('regRole').value;
 
             try {
                 const response = await fetch(`${API_URL}/members`, {
@@ -281,30 +300,46 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password, role })
+                    body: JSON.stringify({ email, password })
                 });
 
                 if (response.ok) {
-                    showAlert('success', 'Registration successful! You can now login.');
+                    showToast('Success', 'Registration successful! Please login.', 'success');
                     document.getElementById('registerForm').reset();
                     // Switch to login tab
                     document.getElementById('login-tab').click();
                 } else {
                     const errorData = await response.json();
-                    showAlert('danger', `Registration failed: ${errorData.message}`);
+                    showToast('Error', `Registration failed: ${errorData.message}`, 'danger');
                 }
             } catch (error) {
                 console.error('Registration failed:', error);
-                showAlert('danger', 'Registration failed. Please check your API URL and try again.');
+                showToast('Error', 'Registration failed. Please check your API URL and try again.', 'danger');
             }
         });
+
+        // Show toast notification
+        function showToast(title, message, type = 'success') {
+            const toast = document.getElementById('loginToast');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            toast.classList.remove('bg-success', 'bg-danger');
+            toast.classList.add(type === 'success' ? 'bg-success' : 'bg-danger');
+            toast.classList.add('text-white');
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        }
 
         // Login form submission
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             if (!API_URL) {
-                showAlert('danger', 'Please configure your API URL first');
+                showToast('Error', 'Please configure your API URL first', 'danger');
                 return;
             }
 
@@ -331,17 +366,17 @@
                     document.getElementById('tokenDisplay').textContent = authToken;
                     
                     updateUserInfo();
-                    showAlert('success', 'Login successful!');
+                    showToast('Success', 'Login successful!', 'success');
                     
                     // Clear form
                     document.getElementById('loginForm').reset();
                 } else {
                     const errorData = await response.json();
-                    showAlert('danger', `Login failed: ${errorData.message}`);
+                    showToast('Error', `Login failed: ${errorData.message}`, 'danger');
                 }
             } catch (error) {
                 console.error('Login failed:', error);
-                showAlert('danger', 'Login failed. Please check your API URL and try again.');
+                showToast('Error', 'Login failed. Please check your API URL and try again.', 'danger');
             }
         });
 
