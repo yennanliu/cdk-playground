@@ -62,6 +62,9 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="users-tab" data-bs-toggle="pill" data-bs-target="#users" type="button" role="tab">Users</button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profile-tab" data-bs-toggle="pill" data-bs-target="#profile" type="button" role="tab">Profile</button>
+            </li>
         </ul>
 
         <!-- Tab Content -->
@@ -157,6 +160,37 @@
                         <div id="usersError" class="alert alert-warning hidden">
                             Please login to view users list.
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div class="tab-pane fade" id="profile" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        <h2>Edit Profile</h2>
+                        <div id="profileError" class="alert alert-warning hidden">
+                            Please login to edit your profile.
+                        </div>
+                        <form id="profileForm" class="hidden">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="profileEmail" disabled>
+                            </div>
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="currentPassword" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="newPassword" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirmPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Password</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -441,6 +475,71 @@
         // Load users when users tab is clicked
         document.getElementById('users-tab').addEventListener('click', function() {
             setTimeout(loadUsers, 100);
+        });
+
+        // Profile tab functionality
+        document.getElementById('profile-tab').addEventListener('click', function() {
+            updateProfileView();
+        });
+
+        function updateProfileView() {
+            const profileForm = document.getElementById('profileForm');
+            const profileError = document.getElementById('profileError');
+            const profileEmail = document.getElementById('profileEmail');
+
+            if (currentUser) {
+                profileForm.classList.remove('hidden');
+                profileError.classList.add('hidden');
+                profileEmail.value = currentUser.email;
+            } else {
+                profileForm.classList.add('hidden');
+                profileError.classList.remove('hidden');
+            }
+        }
+
+        // Handle profile form submission
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!API_URL) {
+                showAlert('danger', 'Please configure your API URL first');
+                return;
+            }
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Validate passwords
+            if (newPassword !== confirmPassword) {
+                showAlert('danger', 'New passwords do not match');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/members/password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+
+                if (response.ok) {
+                    showAlert('success', 'Password updated successfully!');
+                    document.getElementById('profileForm').reset();
+                } else {
+                    const errorData = await response.json();
+                    showAlert('danger', `Failed to update password: ${errorData.message}`);
+                }
+            } catch (error) {
+                console.error('Password update failed:', error);
+                showAlert('danger', 'Failed to update password. Please try again.');
+            }
         });
     </script>
 </body>

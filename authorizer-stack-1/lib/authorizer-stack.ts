@@ -93,6 +93,10 @@ export class AuthorizerStack extends cdk.Stack {
         const memberResource = membersResource.addResource('{email}');
         memberResource.addMethod('DELETE', new apigateway.LambdaIntegration(apiHandler));
 
+        // Add password update endpoint
+        const passwordResource = membersResource.addResource('password');
+        passwordResource.addMethod('PUT', new apigateway.LambdaIntegration(apiHandler));
+
         // S3 bucket for static website
         const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
             websiteIndexDocument: 'index.html',
