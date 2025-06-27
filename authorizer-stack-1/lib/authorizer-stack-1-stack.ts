@@ -72,6 +72,21 @@
 //       anyMethod: true,
 //     });
 
+//     // Add members endpoints
+//     api.root.addResource('members')
+//       .addMethod('GET', new apigateway.LambdaIntegration(authLambda))
+//       .addMethod('POST', new apigateway.LambdaIntegration(authLambda));
+
+//     const memberResource = api.root.addResource('members');
+//     
+//     // Add the password update endpoint
+//     memberResource.addResource('password')
+//       .addMethod('PUT', new apigateway.LambdaIntegration(authLambda));
+
+//     // Add individual member endpoint
+//     memberResource.addResource('{email}')
+//       .addMethod('DELETE', new apigateway.LambdaIntegration(authLambda));
+
 //     // Outputs
 //     new cdk.CfnOutput(this, 'ApiUrl', {
 //       value: api.url,

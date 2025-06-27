@@ -1,9 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, DeleteCommand, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcryptjs';
+import { compare, hash } from 'bcryptjs';
 
 const dynamoDb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const secretsClient = new SecretsManagerClient({});
@@ -193,6 +194,91 @@ async function handleDeleteMember(event: APIGatewayProxyEvent): Promise<APIGatew
     };
 }
 
+function getUserFromToken(event: APIGatewayProxyEvent): { email: string; role: string } | null {
+    const authHeader = event.headers['Authorization'] || event.headers['authorization'];
+    if (!authHeader?.startsWith('Bearer ')) {
+        return null;
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { email: string; role: string };
+        return decoded;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function updatePassword(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    try {
+        // Get user from JWT token
+        const user = getUserFromToken(event);
+        if (!user) {
+            return {
+                statusCode: 401,
+                body: JSON.stringify({ message: 'Unauthorized' })
+            };
+        }
+
+        const body = JSON.parse(event.body || '{}');
+        const { currentPassword, newPassword } = body;
+
+        // Validate input
+        if (!currentPassword || !newPassword) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ message: 'Current password and new password are required' })
+            };
+        }
+
+        // Get user from DynamoDB
+        const userRecord = await dynamoDb.send(new GetCommand({
+            TableName: process.env.USERS_TABLE!,
+            Key: { email: user.email }
+        }));
+
+        if (!userRecord.Item) {
+            return {
+                statusCode: 404,
+                body: JSON.stringify({ message: 'User not found' })
+            };
+        }
+
+        // Verify current password
+        const isPasswordValid = await compare(currentPassword, userRecord.Item.password);
+        if (!isPasswordValid) {
+            return {
+                statusCode: 401,
+                body: JSON.stringify({ message: 'Current password is incorrect' })
+            };
+        }
+
+        // Hash new password
+        const hashedPassword = await hash(newPassword, 10);
+
+        // Update password in DynamoDB
+        await dynamoDb.send(new UpdateCommand({
+            TableName: process.env.USERS_TABLE!,
+            Key: { email: user.email },
+            UpdateExpression: 'set password = :password',
+            ExpressionAttributeValues: {
+                ':password': hashedPassword
+            }
+        }));
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: 'Password updated successfully' })
+        };
+    } catch (error) {
+        console.error('Error updating password:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: 'Internal server error' })
+        };
+    }
+}
+
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         // Debug logging
@@ -229,6 +315,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             response = await handleAddMember(event);
         } else if (path.startsWith('/members/') && method === 'DELETE') {
             response = await handleDeleteMember(event);
+        } else if (event.resource === '/members/password' && event.httpMethod === 'PUT') {
+            response = await updatePassword(event);
         } else {
             response = {
                 statusCode: 404,
@@ -236,7 +324,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     message: 'Not Found',
                     receivedPath: path,
                     receivedMethod: method,
-                    availablePaths: ['/auth/login', '/auth/verify', '/members', '/members/{email}']
+                    availablePaths: ['/auth/login', '/auth/verify', '/members', '/members/{email}', '/members/password']
                 })
             };
         }
