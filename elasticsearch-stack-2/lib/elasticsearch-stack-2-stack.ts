@@ -1,54 +1,53 @@
-import * as sns from "aws-cdk-lib/aws-sns";
-import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
-import * as sqs from "aws-cdk-lib/aws-sqs";
+import { Stack, StackProps, RemovalPolicy, CfnOutput } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import {
-  Stack,
-  StackProps,
-  Duration,
-  CfnOutput,
-  RemovalPolicy,
-} from "aws-cdk-lib";
-import * as opensearch from "aws-cdk-lib/aws-opensearchservice";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as opensearch from "aws-cdk-lib/aws-opensearchservice";
 
 export class ElasticsearchStack2Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // Create a VPC (1 AZ, minimal config)
+    // ✅ Create a VPC across 2 AZs
     const vpc = new ec2.Vpc(this, "OpenSearchVpc", {
       maxAzs: 2,
+      subnetConfiguration: [
+        {
+          name: "Public",
+          subnetType: ec2.SubnetType.PUBLIC,
+          cidrMask: 24,
+        },
+        {
+          name: "Private",
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          cidrMask: 24,
+        },
+      ],
     });
 
-    // Security group allowing HTTPS access (port 443) from your IP
+    // ✅ Security Group to allow HTTPS access (for testing/demo)
     const sg = new ec2.SecurityGroup(this, "OpenSearchSG", {
       vpc,
-      description: "Allow HTTPS access to OpenSearch Domain",
+      description: "Allow HTTPS access to OpenSearch",
       allowAllOutbound: true,
     });
-    sg.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(443),
-      "Allow HTTPS from anywhere"
-    );
+    sg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), "Allow HTTPS");
 
-    // IAM role for OpenSearch (optional if using fine-grained access control)
-    const masterUserArn = new iam.AccountPrincipal(this.account);
-
-    // Create OpenSearch domain
+    // ✅ Create OpenSearch Domain with zone awareness enabled
     const domain = new opensearch.Domain(this, "BlankOpenSearchDomain", {
       version: opensearch.EngineVersion.OPENSEARCH_2_11,
       domainName: "blank-opensearch-domain",
       removalPolicy: RemovalPolicy.DESTROY,
       capacity: {
-        dataNodes: 1,
-        //dataNodeInstanceType: "t3.small.search",
+        dataNodes: 2,
         dataNodeInstanceType: "m5.large.search",
       },
       ebs: {
         volumeSize: 10,
+      },
+      zoneAwareness: {
+        enabled: true,
+        availabilityZoneCount: 2, // required when enabling zone awareness
       },
       vpc,
       vpcSubnets: [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }],
@@ -68,9 +67,10 @@ export class ElasticsearchStack2Stack extends Stack {
       ],
     });
 
+    // ✅ Outputs
     new CfnOutput(this, "OpenSearchEndpoint", {
       value: domain.domainEndpoint,
-      description: "OpenSearch HTTP Endpoint",
+      description: "OpenSearch Endpoint",
     });
 
     new CfnOutput(this, "DashboardsURL", {
