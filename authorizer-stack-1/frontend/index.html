@@ -59,6 +59,9 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">Users</button>
             </li>
+            <li class="nav-item" role="presentation" id="profileTabItem" style="display: none;">
+                <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">Profile</button>
+            </li>
         </ul>
 
         <!-- Add Toast Container for Notifications -->
@@ -173,15 +176,8 @@
             <div class="tab-pane fade" id="profile" role="tabpanel">
                 <div class="card">
                     <div class="card-body">
-                        <h2>Edit Profile</h2>
-                        <div id="profileError" class="alert alert-warning hidden">
-                            Please login to edit your profile.
-                        </div>
-                        <form id="profileForm" class="hidden">
-                            <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="profileEmail" disabled>
-                            </div>
+                        <h2>Update Password</h2>
+                        <form id="updatePasswordForm">
                             <div class="mb-3">
                                 <label for="currentPassword" class="form-label">Current Password</label>
                                 <input type="password" class="form-control" id="currentPassword" required>
@@ -189,10 +185,6 @@
                             <div class="mb-3">
                                 <label for="newPassword" class="form-label">New Password</label>
                                 <input type="password" class="form-control" id="newPassword" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                                <input type="password" class="form-control" id="confirmPassword" required>
                             </div>
                             <button type="submit" class="btn btn-primary">Update Password</button>
                         </form>
@@ -258,7 +250,7 @@
         function updateUserInfo() {
             const userInfoDiv = document.getElementById('userInfo');
             const loginTabItem = document.getElementById('loginTabItem');
-            const usersTab = document.getElementById('users-tab');
+            const profileTabItem = document.getElementById('profileTabItem');
             
             if (currentUser) {
                 userInfoDiv.classList.remove('hidden');
@@ -267,8 +259,9 @@
                     <p><strong>Role:</strong> ${currentUser.role}</p>
                 `;
                 
-                // Hide login tab when user is logged in
+                // Hide login tab and show profile tab when user is logged in
                 loginTabItem.style.display = 'none';
+                profileTabItem.style.display = 'block';
                 
                 // Switch to users tab if we're on login tab
                 if (document.querySelector('#login-tab.active')) {
@@ -279,6 +272,7 @@
                 userInfoDiv.classList.add('hidden');
                 document.getElementById('userDetails').innerHTML = '';
                 loginTabItem.style.display = 'block';
+                profileTabItem.style.display = 'none';
             }
         }
 
@@ -512,44 +506,22 @@
             setTimeout(loadUsers, 100);
         });
 
-        // Profile tab functionality
-        document.getElementById('profile-tab').addEventListener('click', function() {
-            updateProfileView();
-        });
-
-        function updateProfileView() {
-            const profileForm = document.getElementById('profileForm');
-            const profileError = document.getElementById('profileError');
-            const profileEmail = document.getElementById('profileEmail');
-
-            if (currentUser) {
-                profileForm.classList.remove('hidden');
-                profileError.classList.add('hidden');
-                profileEmail.value = currentUser.email;
-            } else {
-                profileForm.classList.add('hidden');
-                profileError.classList.remove('hidden');
-            }
-        }
-
-        // Handle profile form submission
-        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        // Handle password update
+        document.getElementById('updatePasswordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             if (!API_URL) {
-                showAlert('danger', 'Please configure your API URL first');
+                showToast('Error', 'Please configure your API URL first', 'danger');
+                return;
+            }
+
+            if (!authToken) {
+                showToast('Error', 'Please login first', 'danger');
                 return;
             }
 
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            // Validate passwords
-            if (newPassword !== confirmPassword) {
-                showAlert('danger', 'New passwords do not match');
-                return;
-            }
 
             try {
                 const response = await fetch(`${API_URL}/members/password`, {
@@ -558,22 +530,19 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({
-                        currentPassword,
-                        newPassword
-                    })
+                    body: JSON.stringify({ currentPassword, newPassword })
                 });
 
                 if (response.ok) {
-                    showAlert('success', 'Password updated successfully!');
-                    document.getElementById('profileForm').reset();
+                    showToast('Success', 'Password updated successfully!', 'success');
+                    document.getElementById('updatePasswordForm').reset();
                 } else {
                     const errorData = await response.json();
-                    showAlert('danger', `Failed to update password: ${errorData.message}`);
+                    showToast('Error', `Failed to update password: ${errorData.message}`, 'danger');
                 }
             } catch (error) {
                 console.error('Password update failed:', error);
-                showAlert('danger', 'Failed to update password. Please try again.');
+                showToast('Error', 'Failed to update password. Please try again.', 'danger');
             }
         });
     </script>
