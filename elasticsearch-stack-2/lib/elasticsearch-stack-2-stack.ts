@@ -44,7 +44,8 @@ export class ElasticsearchStack2Stack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
       capacity: {
         dataNodes: 1,
-        dataNodeInstanceType: "t3.small.search",
+        //dataNodeInstanceType: "t3.small.search",
+        dataNodeInstanceType: "m5.large.search",
       },
       ebs: {
         volumeSize: 10,
