@@ -49,23 +49,31 @@
         </div>
 
         <!-- Navigation -->
-        <ul class="nav nav-pills mb-4" id="pills-tab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="home-tab" data-bs-toggle="pill" data-bs-target="#home" type="button" role="tab">Home</button>
+        <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation" id="loginTabItem">
+                <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab">Login</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="register-tab" data-bs-toggle="pill" data-bs-target="#register" type="button" role="tab">Register</button>
+                <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">Register</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="login-tab" data-bs-toggle="pill" data-bs-target="#login" type="button" role="tab">Login</button>
+                <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">Users</button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="users-tab" data-bs-toggle="pill" data-bs-target="#users" type="button" role="tab">Users</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="profile-tab" data-bs-toggle="pill" data-bs-target="#profile" type="button" role="tab">Profile</button>
+            <li class="nav-item" role="presentation" id="profileTabItem" style="display: none;">
+                <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">Profile</button>
             </li>
         </ul>
+
+        <!-- Add Toast Container for Notifications -->
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+            <div id="loginToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto" id="toastTitle">Login Status</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body" id="toastMessage"></div>
+            </div>
+        </div>
 
         <!-- Tab Content -->
         <div class="tab-content" id="pills-tabContent">
@@ -168,15 +176,8 @@
             <div class="tab-pane fade" id="profile" role="tabpanel">
                 <div class="card">
                     <div class="card-body">
-                        <h2>Edit Profile</h2>
-                        <div id="profileError" class="alert alert-warning hidden">
-                            Please login to edit your profile.
-                        </div>
-                        <form id="profileForm" class="hidden">
-                            <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="profileEmail" disabled>
-                            </div>
+                        <h2>Update Password</h2>
+                        <form id="updatePasswordForm">
                             <div class="mb-3">
                                 <label for="currentPassword" class="form-label">Current Password</label>
                                 <input type="password" class="form-control" id="currentPassword" required>
@@ -184,10 +185,6 @@
                             <div class="mb-3">
                                 <label for="newPassword" class="form-label">New Password</label>
                                 <input type="password" class="form-control" id="newPassword" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                                <input type="password" class="form-control" id="confirmPassword" required>
                             </div>
                             <button type="submit" class="btn btn-primary">Update Password</button>
                         </form>
@@ -219,9 +216,9 @@
             if (apiUrl) {
                 API_URL = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
                 localStorage.setItem('apiUrl', API_URL);
-                showAlert('success', 'API URL saved successfully!');
+                showToast('Success', 'API URL saved successfully!', 'success');
             } else {
-                showAlert('danger', 'Please enter a valid API URL');
+                showToast('Error', 'Please enter a valid API URL', 'danger');
             }
         }
 
@@ -251,29 +248,45 @@
 
         // Update user info display
         function updateUserInfo() {
+            const userInfoDiv = document.getElementById('userInfo');
+            const loginTabItem = document.getElementById('loginTabItem');
+            const profileTabItem = document.getElementById('profileTabItem');
+            
             if (currentUser) {
-                document.getElementById('userInfo').classList.remove('hidden');
+                userInfoDiv.classList.remove('hidden');
                 document.getElementById('userDetails').innerHTML = `
-                    <strong>Email:</strong> ${currentUser.email}<br>
-                    <strong>Role:</strong> <span class="badge bg-${currentUser.role === 'admin' ? 'danger' : 'info'}">${currentUser.role}</span>
+                    <p><strong>Email:</strong> ${currentUser.email}</p>
+                    <p><strong>Role:</strong> ${currentUser.role}</p>
                 `;
+                
+                // Hide login tab and show profile tab when user is logged in
+                loginTabItem.style.display = 'none';
+                profileTabItem.style.display = 'block';
+                
+                // Switch to users tab if we're on login tab
+                if (document.querySelector('#login-tab.active')) {
+                    const usersTabButton = document.getElementById('users-tab');
+                    usersTabButton.click();
+                }
             } else {
-                document.getElementById('userInfo').classList.add('hidden');
+                userInfoDiv.classList.add('hidden');
+                document.getElementById('userDetails').innerHTML = '';
+                loginTabItem.style.display = 'block';
+                profileTabItem.style.display = 'none';
             }
         }
 
-        // Register form submission
+        // Registration form submission
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             if (!API_URL) {
-                showAlert('danger', 'Please configure your API URL first');
+                showToast('Error', 'Please configure your API URL first', 'danger');
                 return;
             }
 
             const email = document.getElementById('regEmail').value;
             const password = document.getElementById('regPassword').value;
-            const role = document.getElementById('regRole').value;
 
             try {
                 const response = await fetch(`${API_URL}/members`, {
@@ -281,30 +294,46 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password, role })
+                    body: JSON.stringify({ email, password })
                 });
 
                 if (response.ok) {
-                    showAlert('success', 'Registration successful! You can now login.');
+                    showToast('Success', 'Registration successful! Please login.', 'success');
                     document.getElementById('registerForm').reset();
                     // Switch to login tab
                     document.getElementById('login-tab').click();
                 } else {
                     const errorData = await response.json();
-                    showAlert('danger', `Registration failed: ${errorData.message}`);
+                    showToast('Error', `Registration failed: ${errorData.message}`, 'danger');
                 }
             } catch (error) {
                 console.error('Registration failed:', error);
-                showAlert('danger', 'Registration failed. Please check your API URL and try again.');
+                showToast('Error', 'Registration failed. Please check your API URL and try again.', 'danger');
             }
         });
+
+        // Show toast notification
+        function showToast(title, message, type = 'success') {
+            const toast = document.getElementById('loginToast');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            toast.classList.remove('bg-success', 'bg-danger');
+            toast.classList.add(type === 'success' ? 'bg-success' : 'bg-danger');
+            toast.classList.add('text-white');
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        }
 
         // Login form submission
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             if (!API_URL) {
-                showAlert('danger', 'Please configure your API URL first');
+                showToast('Error', 'Please configure your API URL first', 'danger');
                 return;
             }
 
@@ -331,17 +360,17 @@
                     document.getElementById('tokenDisplay').textContent = authToken;
                     
                     updateUserInfo();
-                    showAlert('success', 'Login successful!');
+                    showToast('Success', 'Login successful!', 'success');
                     
                     // Clear form
                     document.getElementById('loginForm').reset();
                 } else {
                     const errorData = await response.json();
-                    showAlert('danger', `Login failed: ${errorData.message}`);
+                    showToast('Error', `Login failed: ${errorData.message}`, 'danger');
                 }
             } catch (error) {
                 console.error('Login failed:', error);
-                showAlert('danger', 'Login failed. Please check your API URL and try again.');
+                showToast('Error', 'Login failed. Please check your API URL and try again.', 'danger');
             }
         });
 
@@ -477,44 +506,22 @@
             setTimeout(loadUsers, 100);
         });
 
-        // Profile tab functionality
-        document.getElementById('profile-tab').addEventListener('click', function() {
-            updateProfileView();
-        });
-
-        function updateProfileView() {
-            const profileForm = document.getElementById('profileForm');
-            const profileError = document.getElementById('profileError');
-            const profileEmail = document.getElementById('profileEmail');
-
-            if (currentUser) {
-                profileForm.classList.remove('hidden');
-                profileError.classList.add('hidden');
-                profileEmail.value = currentUser.email;
-            } else {
-                profileForm.classList.add('hidden');
-                profileError.classList.remove('hidden');
-            }
-        }
-
-        // Handle profile form submission
-        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        // Handle password update
+        document.getElementById('updatePasswordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             if (!API_URL) {
-                showAlert('danger', 'Please configure your API URL first');
+                showToast('Error', 'Please configure your API URL first', 'danger');
+                return;
+            }
+
+            if (!authToken) {
+                showToast('Error', 'Please login first', 'danger');
                 return;
             }
 
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            // Validate passwords
-            if (newPassword !== confirmPassword) {
-                showAlert('danger', 'New passwords do not match');
-                return;
-            }
 
             try {
                 const response = await fetch(`${API_URL}/members/password`, {
@@ -523,22 +530,19 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({
-                        currentPassword,
-                        newPassword
-                    })
+                    body: JSON.stringify({ currentPassword, newPassword })
                 });
 
                 if (response.ok) {
-                    showAlert('success', 'Password updated successfully!');
-                    document.getElementById('profileForm').reset();
+                    showToast('Success', 'Password updated successfully!', 'success');
+                    document.getElementById('updatePasswordForm').reset();
                 } else {
                     const errorData = await response.json();
-                    showAlert('danger', `Failed to update password: ${errorData.message}`);
+                    showToast('Error', `Failed to update password: ${errorData.message}`, 'danger');
                 }
             } catch (error) {
                 console.error('Password update failed:', error);
-                showAlert('danger', 'Failed to update password. Please try again.');
+                showToast('Error', 'Failed to update password. Please try again.', 'danger');
             }
         });
     </script>
