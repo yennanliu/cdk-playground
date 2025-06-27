@@ -194,7 +194,7 @@ async function handleDeleteMember(event: APIGatewayProxyEvent): Promise<APIGatew
     };
 }
 
-function getUserFromToken(event: APIGatewayProxyEvent): { email: string; role: string } | null {
+async function getUserFromToken(event: APIGatewayProxyEvent): Promise<{ email: string; role: string } | null> {
     const authHeader = event.headers['Authorization'] || event.headers['authorization'];
     if (!authHeader?.startsWith('Bearer ')) {
         return null;
@@ -202,7 +202,8 @@ function getUserFromToken(event: APIGatewayProxyEvent): { email: string; role: s
 
     const token = authHeader.split(' ')[1];
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { email: string; role: string };
+        const secret = await getJwtSecret();
+        const decoded = jwt.verify(token, secret) as { email: string; role: string };
         return decoded;
     } catch (error) {
         return null;
@@ -212,7 +213,7 @@ function getUserFromToken(event: APIGatewayProxyEvent): { email: string; role: s
 async function updatePassword(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
     try {
         // Get user from JWT token
-        const user = getUserFromToken(event);
+        const user = await getUserFromToken(event);
         if (!user) {
             return {
                 statusCode: 401,
@@ -287,11 +288,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Add CORS headers to all responses
         const headers = {
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,DELETE',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,DELETE,PUT',
             'Access-Control-Allow-Headers': 'Content-Type,Authorization'
         };
 
         // Handle OPTIONS requests (CORS preflight)
+        // for user profile update, we need to allow OPTIONS requests
         if (event.httpMethod === 'OPTIONS') {
             return { statusCode: 204, headers, body: '' };
         }
@@ -337,7 +339,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             statusCode: 500,
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,DELETE',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,DELETE,PUT',
                 'Access-Control-Allow-Headers': 'Content-Type,Authorization'
             },
             body: JSON.stringify({ message: 'Internal Server Error', error: error.message })
