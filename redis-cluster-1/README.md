@@ -39,13 +39,13 @@ sudo docker run -p 8081:8080 mydjangoapp
 
 
 # deploy to docker hub
-sudo docker  tag  mydjangoapp:latest  yennanliu/mydjangoapp:dev-1
+sudo docker  tag  mydjangoapp:latest  yennanliu/mydjangoapp:dev-2
 
-sudo docker  push  yennanliu/mydjangoapp:dev-1
+sudo docker  push  yennanliu/mydjangoapp:dev-2
 
 
 # run push docker at local as test
-docker run -d -p 8000:8000 yennanliu/mydjangoapp:dev-1
+docker run -d -p 8080:8080 yennanliu/mydjangoapp:dev-2
 ```
 
 ## Cmd
