@@ -32,7 +32,6 @@ sudo docker build -t mydjangoapp .
 
 sudo docker run -p 8080:8080 mydjangoapp
 
-
 # map internal 8080 port to external 8081 port
 sudo docker run -p 8081:8080 mydjangoapp
 
@@ -43,6 +42,10 @@ sudo docker run -p 8081:8080 mydjangoapp
 sudo docker  tag  mydjangoapp:latest  yennanliu/mydjangoapp:dev-1
 
 sudo docker  push  yennanliu/mydjangoapp:dev-1
+
+
+# run push docker at local as test
+docker run -d -p 8000:8000 yennanliu/mydjangoapp:dev-1
 ```
 
 ## Cmd
