@@ -28,24 +28,31 @@ bash bootstrap_django.sh
 
 ```bash
 
+# compatible version for both mac and AWS ECS cluster
+
+docker buildx build --platform linux/amd64 -t mydjangoapp:latest --load .
+
+#docker buildx build --platform linux/amd64 -t mydjangoapp .
+
+
 sudo docker build -t mydjangoapp .
 
-sudo docker run -p 8080:8080 mydjangoapp
+sudo docker run -p 80:80 mydjangoapp
 
 # map internal 8080 port to external 8081 port
-sudo docker run -p 8081:8080 mydjangoapp
+sudo docker run -p 81:80 mydjangoapp
 
 
 
 
 # deploy to docker hub
-sudo docker  tag  mydjangoapp:latest  yennanliu/mydjangoapp:dev-2
+sudo docker  tag  mydjangoapp:latest  yennanliu/mydjangoapp:dev-3
 
-sudo docker  push  yennanliu/mydjangoapp:dev-2
+sudo docker  push  yennanliu/mydjangoapp:dev-3
 
 
 # run push docker at local as test
-docker run -d -p 8080:8080 yennanliu/mydjangoapp:dev-2
+docker run -d -p 80:80 yennanliu/mydjangoapp:dev-3
 ```
 
 ## Cmd

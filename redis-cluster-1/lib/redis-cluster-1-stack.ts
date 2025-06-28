@@ -96,7 +96,7 @@ export class RedisCluster1Stack extends Stack {
       cpu: 256,
     });
     djangoTaskDef.addContainer('DjangoContainer', {
-      image: ecs.ContainerImage.fromRegistry('yennanliu/mydjangoapp:dev-2'),
+      image: ecs.ContainerImage.fromRegistry('yennanliu/mydjangoapp:dev-3'),
       environment: {
         REDIS_HOST: 'redis', // Use service discovery or update with actual endpoint if needed
         REDIS_PORT: '6379',
