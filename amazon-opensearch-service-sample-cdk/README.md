@@ -2,6 +2,19 @@
 
 This repo contains an IaC CDK solution for deploying an OpenSearch Service Domain. Users have the ability to easily deploy their Domain using default values or provide [configuration options](#Configuration-Options) for a more customized setup. The goal of this repo is not to become a one-size-fits-all solution for users. Supporting this would be unrealistic, and likely conflicting at times, when considering the needs of many users. Rather this code base should be viewed as a starting point for users to use and add to individually as their custom use case requires.
 
+### Run
+
+```bash
+npm install
+
+export CDK_DEPLOYMENT_STAGE=dev
+
+cdk bootstrap
+
+# OPENSEARCH_2_15
+cdk deploy "*" --c domainName="os-service-domain" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+```
+
 ### Getting Started
 
 If this is your first time using CDK in this region, will need to `cdk bootstrap` to setup required CDK resources for deployment
