@@ -1,91 +1,121 @@
-# MySQL - DMS - S3 Stack -1 
+# MySQL to S3 CDC Stack with AWS DMS
 
-🧱 System Design: MySQL to S3 via AWS DMS (CDC)
+This CDK project implements a Change Data Capture (CDC) pipeline from MySQL to Amazon S3 using AWS Database Migration Service (DMS). The stack automatically provisions and configures all necessary AWS resources for a complete CDC solution.
 
-🎯 Goal:
+## Architecture
 
-Continuously replicate changes (CDC) from a MySQL database to Amazon S3, using AWS DMS for minimal infrastructure and setup.
-
-⸻
-
-🖼️ Architecture Diagram
-
+```ascii
 +-------------------+        +-------------------------+         +------------------+
 |                   |        |                         |         |                  |
-|  MySQL RDS / EC2  +------->+      AWS DMS Task       +-------->+   Amazon S3      |
+|  MySQL RDS        +------->+      AWS DMS Task       +-------->+   Amazon S3      |
 |  (source DB)      |  CDC   | (Change Data Capture)   |  JSON   |  (bucket: cdc/)  |
 |                   |        |                         |         |                  |
 +-------------------+        +-------------------------+         +------------------+
+```
 
+## Stack Components
 
-⸻
+The CDK stack creates the following resources:
 
-⚙️ Components
+- **VPC Infrastructure**
+  - VPC with public and private subnets
+  - NAT Gateway for private subnet connectivity
+  - Security groups for RDS and DMS
 
-Component	Description
-MySQL DB	The source database; can be an RDS MySQL or EC2-hosted MySQL instance.
-AWS DMS	AWS Data Migration Service — handles data capture and replication.
-DMS Source Endpoint	Configured to connect to the MySQL database (CDC enabled).
-DMS Target Endpoint	Configured to write data into an S3 bucket.
-S3 Bucket	Stores CDC records as JSON or CSV files in s3://<bucket>/cdc/.
+- **Source Database**
+  - Amazon RDS MySQL 8.0 instance
+  - Publicly accessible for testing
+  - Automated password management via Secrets Manager
 
+- **AWS DMS Resources**
+  - DMS Replication Instance (t3.micro)
+  - DMS Subnet Group for VPC deployment
+  - Source endpoint (MySQL)
+  - Target endpoint (S3)
+  - Replication task configured for Full Load + CDC
 
-⸻
+- **S3 Configuration**
+  - S3 bucket for CDC data
+  - Appropriate IAM roles and policies
 
-✅ Step-by-Step Setup
-	1.	Enable Binary Logging in MySQL
-	•	Set binlog_format = ROW
-	•	Enable log_bin and set server_id
-	•	Grant DMS access:
+## Prerequisites
 
-GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'dms_user'@'%';
+- AWS CLI configured with appropriate credentials
+- Node.js and npm installed
+- AWS CDK CLI installed (`npm install -g aws-cdk`)
 
+## Deployment Instructions
 
-	2.	Create an S3 Bucket
-	•	Name: my-cdc-bucket
-	•	Enable server-side encryption (optional)
-	3.	Set up IAM Role for DMS to access S3
-	•	Create an IAM role with access to write to your S3 bucket
-	•	Attach the role to DMS
-	4.	Configure DMS
-	•	Source endpoint: MySQL with CDC enabled
-	•	Target endpoint: Amazon S3
-	•	Replication instance: Choose a small size for testing (e.g., dms.t3.micro)
-	•	Replication task:
-	•	Migration type: “CDC only” or “Full load + CDC”
-	•	Output format: JSON (default) or CSV
-	•	Target folder: cdc/ inside your S3 bucket
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd dms-s3-stack-1
+   ```
 
-⸻
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-📦 Example Folder Structure in S3
+3. Deploy the stack:
+   ```bash
+   cdk deploy
+   ```
 
-s3://my-cdc-bucket/cdc/
-  └── database_name/
-      └── table_name/
-          ├── LOAD0001.json
-          ├── CDC0001.json
-          └── CDC0002.json
+   The deployment will output important information:
+   - RDS endpoint
+   - S3 bucket name
+   - RDS secret name (for database credentials)
 
+## Testing the CDC Pipeline
 
-⸻
+1. Get the RDS credentials from Secrets Manager:
+   ```bash
+   aws secretsmanager get-secret-value --secret-id <RDS_SECRET_NAME>
+   ```
 
-💡 Benefits
-	•	✅ Serverless, fully managed
-	•	📤 Real-time data updates with minimal setup
-	•	💾 Files in S3 can be used for backup, analysis, or downstream ETL
+2. Connect to the RDS instance using any MySQL client:
+   ```bash
+   mysql -h <RDS_ENDPOINT> -u admin -p
+   ```
 
-⸻
+3. Create a test database and table:
+   ```sql
+   CREATE DATABASE mydb;
+   USE mydb;
+   CREATE TABLE users (
+     id INT PRIMARY KEY,
+     name VARCHAR(100),
+     created_at TIMESTAMP
+   );
+   ```
 
-🛡️ Optional Enhancements
+4. Insert some test data and watch it appear in the S3 bucket:
+   ```sql
+   INSERT INTO users VALUES (1, 'Test User', NOW());
+   ```
 
-Feature	Service
-Real-time event parsing	AWS Lambda on S3 event
-Searchable data	Load into OpenSearch or Athena
-Glue Catalog integration	AWS Glue Crawler
-Long-term archiving	S3 Lifecycle Policy
+## Security Considerations
 
+- The RDS instance is publicly accessible for testing purposes
+- In production, consider:
+  - Restricting RDS access to specific IP ranges
+  - Enabling encryption at rest
+  - Using private subnets only
+  - Implementing more strict security group rules
 
-⸻
+## Clean Up
 
-Would you like a CDK template to set this up programmatically as well?
+To avoid incurring charges, delete the stack when you're done:
+```bash
+cdk destroy
+```
+
+## Useful CDK Commands
+
+* `npm run build`   compile typescript to js
+* `npm run watch`   watch for changes and compile
+* `npm run test`    perform the jest unit tests
+* `cdk deploy`      deploy this stack to your default AWS account/region
+* `cdk diff`        compare deployed stack with current state
+* `cdk synth`       emits the synthesized CloudFormation template
