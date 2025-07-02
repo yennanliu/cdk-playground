@@ -10,6 +10,18 @@ export class DmsS3Stack1Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // Create required DMS roles
+    const dmsVpcRole = new iam.Role(this, "DmsVpcRole", {
+      roleName: "dms-vpc-role",
+      assumedBy: new iam.ServicePrincipal("dms.amazonaws.com"),
+    });
+
+    dmsVpcRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AmazonDMSVPCManagementRole"
+      )
+    );
+
     // Create VPC for our resources
     const vpc = new ec2.Vpc(this, "DmsVpc", {
       maxAzs: 2,
@@ -70,12 +82,28 @@ export class DmsS3Stack1Stack extends cdk.Stack {
       allowAllOutbound: true,
     });
 
+    // Allow DMS to connect to RDS
+    rdsSecurityGroup.addIngressRule(
+      dmsSecurityGroup,
+      ec2.Port.tcp(3306),
+      "Allow DMS to connect to RDS"
+    );
+
     const dmsRole = new iam.Role(this, "DmsS3Role", {
       assumedBy: new iam.ServicePrincipal("dms.amazonaws.com"),
     });
 
     // Grant DMS permissions to write to S3
     cdcBucket.grantReadWrite(dmsRole);
+
+    // Add S3 endpoint policy
+    dmsRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ["s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
+        resources: [cdcBucket.bucketArn, `${cdcBucket.bucketArn}/*`],
+      })
+    );
 
     const replicationInstance = new dms.CfnReplicationInstance(
       this,
