@@ -26,6 +26,19 @@ export class DmsS3Stack1Stack extends cdk.Stack {
     const vpc = new ec2.Vpc(this, "DmsVpc", {
       maxAzs: 2,
       natGateways: 1,
+      ipAddresses: ec2.IpAddresses.cidr("172.16.0.0/16"),
+      subnetConfiguration: [
+        {
+          cidrMask: 24,
+          name: "Public",
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        {
+          cidrMask: 24,
+          name: "Private",
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+      ],
     });
 
     // Create S3 bucket for CDC data
@@ -55,6 +68,9 @@ export class DmsS3Stack1Stack extends cdk.Stack {
         version: rds.MysqlEngineVersion.VER_8_0,
       }),
       vpc,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PUBLIC,
+      },
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T3,
         ec2.InstanceSize.MICRO
