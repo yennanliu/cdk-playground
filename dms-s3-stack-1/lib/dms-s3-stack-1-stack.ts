@@ -62,7 +62,27 @@ export class DmsS3Stack1Stack extends cdk.Stack {
       "Allow MySQL access from anywhere"
     );
 
-    // Create RDS instance
+    const dmsSecurityGroup = new ec2.SecurityGroup(this, "DmsSecurityGroup", {
+      vpc,
+      description: "Security group for DMS replication instance",
+      allowAllOutbound: true,
+    });
+
+    // Allow DMS to connect to RDS
+    rdsSecurityGroup.addIngressRule(
+      dmsSecurityGroup,
+      ec2.Port.tcp(3306),
+      "Allow DMS to connect to RDS"
+    );
+
+    // Allow DMS to connect to RDS from private subnets
+    rdsSecurityGroup.addIngressRule(
+      ec2.Peer.ipv4(vpc.vpcCidrBlock),
+      ec2.Port.tcp(3306),
+      "Allow access from within VPC"
+    );
+
+    // Create RDS instance with binary logging enabled
     const rdsInstance = new rds.DatabaseInstance(this, "MySQLInstance", {
       engine: rds.DatabaseInstanceEngine.mysql({
         version: rds.MysqlEngineVersion.VER_8_0,
@@ -77,14 +97,17 @@ export class DmsS3Stack1Stack extends cdk.Stack {
       ),
       allocatedStorage: 20,
       securityGroups: [rdsSecurityGroup],
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // For development/testing
-      deletionProtection: false, // For development/testing
-      publiclyAccessible: true, // As per requirement 8
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      deletionProtection: false,
+      publiclyAccessible: true,
       parameterGroup: new rds.ParameterGroup(this, "MysqlParameterGroup", {
         engine: rds.DatabaseInstanceEngine.mysql({
           version: rds.MysqlEngineVersion.VER_8_0,
         }),
         parameters: {
+          // Enable binary logging for CDC
+          binlog_format: "ROW",
+          // Use native password authentication
           default_authentication_plugin: "mysql_native_password",
         },
       }),
@@ -98,19 +121,6 @@ export class DmsS3Stack1Stack extends cdk.Stack {
         replicationSubnetGroupDescription: "DMS subnet group",
         subnetIds: vpc.privateSubnets.map((subnet) => subnet.subnetId),
       }
-    );
-
-    const dmsSecurityGroup = new ec2.SecurityGroup(this, "DmsSecurityGroup", {
-      vpc,
-      description: "Security group for DMS replication instance",
-      allowAllOutbound: true,
-    });
-
-    // Allow DMS to connect to RDS
-    rdsSecurityGroup.addIngressRule(
-      dmsSecurityGroup,
-      ec2.Port.tcp(3306),
-      "Allow DMS to connect to RDS"
     );
 
     const dmsRole = new iam.Role(this, "DmsS3Role", {
