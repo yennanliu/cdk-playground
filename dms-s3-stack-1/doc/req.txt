@@ -1,0 +1,21 @@
+Create an AWS CDK stack in TypeScript to implement a minimal system for Change Data Capture (CDC) from a MySQL database to Amazon S3 using AWS DMS.
+
+The stack should include:
+
+1. A MySQL-compatible Amazon RDS instance (or use an existing external MySQL source if you prefer).
+2. An S3 bucket to store the output CDC files in JSON format.
+3. An IAM role that allows AWS DMS to write to the S3 bucket.
+4. A DMS replication instance (e.g., dms.t3.micro).
+5. A DMS source endpoint pointing to the MySQL RDS.
+6. A DMS target endpoint pointing to the S3 bucket.
+7. A DMS replication task with the following settings:
+   - Migration type: Full load + CDC
+   - Output format: JSON
+   - Folder in S3: `cdc/`
+8. Mysql open to public, so I can test send data to it
+
+Assume the MySQL RDS instance has binary logging enabled (binlog_format = ROW), and that DMS user has necessary permissions (REPLICATION SLAVE, REPLICATION CLIENT).
+
+Keep the CDK stack as simple and modular as possible. Use appropriate removal policies for development and testing.
+
+Output the complete CDK code in a single TypeScript file.
