@@ -80,6 +80,14 @@ export class DmsS3Stack1Stack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // For development/testing
       deletionProtection: false, // For development/testing
       publiclyAccessible: true, // As per requirement 8
+      parameterGroup: new rds.ParameterGroup(this, "MysqlParameterGroup", {
+        engine: rds.DatabaseInstanceEngine.mysql({
+          version: rds.MysqlEngineVersion.VER_8_0,
+        }),
+        parameters: {
+          default_authentication_plugin: "mysql_native_password",
+        },
+      }),
     });
 
     // Create DMS replication instance

@@ -2,6 +2,15 @@
 
 This CDK project implements a Change Data Capture (CDC) pipeline from MySQL to Amazon S3 using AWS Database Migration Service (DMS). The stack automatically provisions and configures all necessary AWS resources for a complete CDC solution.
 
+## Run
+
+```bash
+
+/opt/homebrew/opt/mysql-client/bin/mysql -h <rds_url> -P 3306 -u admin -p
+
+
+```
+
 ## Architecture
 
 ```ascii
