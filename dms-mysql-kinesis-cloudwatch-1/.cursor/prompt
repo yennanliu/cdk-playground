@@ -1,0 +1,38 @@
+✅ Prompt: MySQL → Kinesis → CloudWatch CDC Stack on AWS (via AWS CDK, TypeScript)
+
+Create an AWS CDK stack in TypeScript to implement a minimal system for capturing Change Data Capture (CDC) events from a MySQL database and stream them into Amazon Kinesis, with logs and metrics monitored via CloudWatch.
+
+The stack should include:
+	1.	Amazon RDS for MySQL
+	•	Create a publicly accessible MySQL-compatible RDS instance.
+	•	Enable binary logging: binlog_format = ROW
+	•	Ensure user permissions: REPLICATION CLIENT, REPLICATION SLAVE
+	•	Include connection output to easily connect for data testing.
+	2.	Amazon Kinesis Data Stream
+	•	A stream to ingest MySQL change events from AWS DMS.
+	3.	AWS DMS (Database Migration Service)
+	•	DMS replication instance (e.g., dms.t3.micro).
+	•	DMS source endpoint pointing to the MySQL RDS.
+	•	DMS target endpoint pointing to Kinesis.
+	•	DMS replication task:
+	•	Migration type: CDC only
+	•	Output format: JSON
+	•	Target: Kinesis Data Stream
+	4.	IAM Role
+	•	A role allowing DMS to write to Kinesis and access RDS metadata.
+	5.	CloudWatch Integration
+	•	Enable DMS task metrics to be sent to CloudWatch.
+	•	(Optional) Add CloudWatch log group or alarms to monitor replication lag.
+	6.	Security and Networking
+	•	Place RDS and DMS in a VPC.
+	•	Open RDS to public (for testing only), ensure proper security group rules.
+	7.	Output
+	•	CDK should output:
+	•	RDS endpoint and credentials
+	•	Kinesis stream name
+	•	CloudWatch log group (if applicable)
+
+Constraints:
+	•	Keep the design simple and modular.
+	•	Use proper RemovalPolicy for testing/development (e.g., DESTROY).
+	•	Use CDK v2 and best practices in TypeScript.
