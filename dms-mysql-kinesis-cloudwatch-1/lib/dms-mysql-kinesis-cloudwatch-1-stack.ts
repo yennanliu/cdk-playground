@@ -1,9 +1,11 @@
 import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
-import * as s3 from "aws-cdk-lib/aws-s3";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as dms from "aws-cdk-lib/aws-dms";
+import * as kinesis from "aws-cdk-lib/aws-kinesis";
+import * as logs from "aws-cdk-lib/aws-logs";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Construct } from "constructs";
 
 export class DmsMysqlKinesisCloudwatch1Stack extends cdk.Stack {
@@ -41,12 +43,42 @@ export class DmsMysqlKinesisCloudwatch1Stack extends cdk.Stack {
       ],
     });
 
-    // Create S3 bucket for CDC data
-    const cdcBucket = new s3.Bucket(this, "CdcBucket", {
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // For development/testing
-      autoDeleteObjects: true, // For development/testing
-      versioned: true,
+    // Create Kinesis Data Stream
+    const kinesisStream = new kinesis.Stream(this, "CdcKinesisStream", {
+      streamName: "mysql-cdc-stream",
+      shardCount: 1,
+      retentionPeriod: cdk.Duration.hours(24),
+      streamMode: kinesis.StreamMode.PROVISIONED,
     });
+
+    // Create CloudWatch Log Group for DMS
+    const dmsLogGroup = new logs.LogGroup(this, "DmsLogGroup", {
+      logGroupName: "/aws/dms/replication",
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Create IAM role for DMS to access Kinesis
+    const dmsKinesisRole = new iam.Role(this, "DmsKinesisRole", {
+      assumedBy: new iam.ServicePrincipal("dms.amazonaws.com"),
+    });
+
+    // Grant DMS permissions to write to Kinesis
+    kinesisStream.grantWrite(dmsKinesisRole);
+
+    // Add CloudWatch permissions to DMS role
+    dmsKinesisRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "cloudwatch:PutMetricData",
+        ],
+        resources: ["*"],
+      })
+    );
 
     // Create security group for RDS
     const rdsSecurityGroup = new ec2.SecurityGroup(this, "RdsSecurityGroup", {
@@ -123,22 +155,6 @@ export class DmsMysqlKinesisCloudwatch1Stack extends cdk.Stack {
       }
     );
 
-    const dmsRole = new iam.Role(this, "DmsS3Role", {
-      assumedBy: new iam.ServicePrincipal("dms.amazonaws.com"),
-    });
-
-    // Grant DMS permissions to write to S3
-    cdcBucket.grantReadWrite(dmsRole);
-
-    // Add S3 endpoint policy
-    dmsRole.addToPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ["s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
-        resources: [cdcBucket.bucketArn, `${cdcBucket.bucketArn}/*`],
-      })
-    );
-
     const replicationInstance = new dms.CfnReplicationInstance(
       this,
       "DmsReplicationInstance",
@@ -170,22 +186,23 @@ export class DmsMysqlKinesisCloudwatch1Stack extends cdk.Stack {
       password,
     });
 
-    // Create DMS target endpoint (S3)
+    // Create DMS target endpoint (Kinesis)
     const targetEndpoint = new dms.CfnEndpoint(this, "TargetEndpoint", {
       endpointType: "target",
-      engineName: "s3",
-      s3Settings: {
-        bucketName: cdcBucket.bucketName,
-        serviceAccessRoleArn: dmsRole.roleArn,
+      engineName: "kinesis",
+      kinesisSettings: {
+        streamArn: kinesisStream.streamArn,
+        messageFormat: "json",
+        serviceAccessRoleArn: dmsKinesisRole.roleArn,
       },
     });
 
-    // Create DMS replication task
+    // Create DMS replication task with enhanced monitoring
     new dms.CfnReplicationTask(this, "DmsReplicationTask", {
       replicationInstanceArn: replicationInstance.ref,
       sourceEndpointArn: sourceEndpoint.ref,
       targetEndpointArn: targetEndpoint.ref,
-      migrationType: "full-load-and-cdc",
+      migrationType: "cdc",
       tableMappings: JSON.stringify({
         rules: [
           {
@@ -209,13 +226,47 @@ export class DmsMysqlKinesisCloudwatch1Stack extends cdk.Stack {
           LimitedSizeLobMode: true,
           LobMaxSize: 32,
         },
-        FullLoadSettings: {
-          TargetTablePrepMode: "DO_NOTHING",
-        },
         Logging: {
           EnableLogging: true,
+          LogComponents: [
+            {
+              Id: "TRANSFORMATION",
+              Severity: "LOGGER_SEVERITY_DEFAULT",
+            },
+            {
+              Id: "SOURCE_UNLOAD",
+              Severity: "LOGGER_SEVERITY_DEFAULT",
+            },
+            {
+              Id: "IO",
+              Severity: "LOGGER_SEVERITY_DEFAULT",
+            },
+            {
+              Id: "TARGET_LOAD",
+              Severity: "LOGGER_SEVERITY_DEFAULT",
+            },
+          ],
         },
+        CloudWatchLogGroup: dmsLogGroup.logGroupName,
+        CloudWatchLogStream: "dms-replication-task",
       }),
+    });
+
+    // Create CloudWatch Alarms for monitoring
+    new cloudwatch.Alarm(this, "DmsReplicationLagAlarm", {
+      metric: new cloudwatch.Metric({
+        namespace: "AWS/DMS",
+        metricName: "CDCLatencySource",
+        dimensionsMap: {
+          ReplicationInstanceIdentifier: replicationInstance.ref,
+        },
+        period: cdk.Duration.minutes(1),
+        statistic: "Average",
+      }),
+      threshold: 300, // 5 minutes lag
+      evaluationPeriods: 3,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: "DMS replication lag is too high",
     });
 
     // Output important information
@@ -224,14 +275,19 @@ export class DmsMysqlKinesisCloudwatch1Stack extends cdk.Stack {
       description: "RDS instance endpoint",
     });
 
-    new cdk.CfnOutput(this, "S3BucketName", {
-      value: cdcBucket.bucketName,
-      description: "S3 bucket for CDC data",
+    new cdk.CfnOutput(this, "KinesisStreamName", {
+      value: kinesisStream.streamName,
+      description: "Kinesis stream for CDC data",
     });
 
     new cdk.CfnOutput(this, "RdsSecretName", {
       value: rdsInstance.secret?.secretName || "No secret created",
       description: "Secret name for RDS credentials",
+    });
+
+    new cdk.CfnOutput(this, "CloudWatchLogGroup", {
+      value: dmsLogGroup.logGroupName,
+      description: "CloudWatch Log Group for DMS",
     });
   }
 }
