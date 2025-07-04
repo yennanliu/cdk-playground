@@ -13,7 +13,29 @@ The architecture implements a real-time CDC pipeline with the following componen
 
 ### Architecture Diagram
 
-[Architecture diagram shown above]
+```mermaid
+graph TD
+    RDS[RDS MySQL<br/>Binary Logging Enabled] -->|CDC Events| DMS[AWS DMS<br/>Replication Instance]
+    DMS -->|Stream Changes| KDS[Kinesis Data Stream]
+    DMS -->|Logs| CWL[CloudWatch Logs]
+    DMS -->|Metrics| CWM[CloudWatch Metrics]
+    CWM -->|Triggers| ALARM[CloudWatch Alarms]
+    
+    subgraph VPC[VPC 172.16.0.0/16]
+        subgraph Public Subnet
+            RDS
+        end
+        subgraph Private Subnet
+            DMS
+        end
+    end
+    
+    subgraph Monitoring
+        CWL
+        CWM
+        ALARM
+    end
+```
 
 ### Components
 
