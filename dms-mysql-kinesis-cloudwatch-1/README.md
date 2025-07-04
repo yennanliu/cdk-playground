@@ -6,31 +6,77 @@ This project implements a Change Data Capture (CDC) pipeline that streams change
 ## Run
 
 ```bash
-
-# deploy CDK
+# 1. Deploy CDK
 npm install
-
 cdk bootstrap
-
 cdk deploy
 
-# connect to MYSQL
-/opt/homebrew/opt/mysql-client/bin/mysql -h <rds_url> -P 3306 -u admin -p
+# 2. Get RDS credentials from Secrets Manager
+aws secretsmanager get-secret-value \
+  --secret-id $(aws cloudformation describe-stacks \
+    --stack-name DmsMysqlKinesisCloudwatch1Stack \
+    --query 'Stacks[0].Outputs[?OutputKey==`RdsSecretName`].OutputValue' \
+    --output text) \
+  --query 'SecretString' \
+  --output text
 
-# create, insert fake data to DB
-# check code under /sql/
+# 3. Connect to MySQL using the credentials from Secrets Manager
+mysql -h <rds_endpoint> -P 3306 -u <username> -p
 
+# 4. Run the setup SQL script
+# Copy the contents of sql/setup.sql and run them in MySQL
 
-# NOTE !!!
-# go to AWS DNS UI Page
-# test endpoints connection
-# then enable DNS task
+# 5. Verify MySQL Configuration
+SHOW VARIABLES LIKE 'log_bin';  # Should be ON
+SHOW VARIABLES LIKE 'binlog_format';  # Should be ROW
+SHOW MASTER STATUS;  # Should show binary log info
 
-# https://ap-northeast-1.console.aws.amazon.com/dms/v2/home?region=ap-northeast-1#tasks/provisioned/dmsreplicationtask-ptt49ulopdfgj3x7
+# 6. Test DMS Endpoints
+# Go to AWS DMS Console
+# Select Endpoints
+# Test the source endpoint (MySQL) - should succeed
+# Test the target endpoint (Kinesis) - should succeed
 
+# 7. Start DMS Task
+# Go to AWS DMS Console > Tasks
+# Select your task and click "Start/Resume"
+# Monitor the task status and metrics
 
-# then the dns can work
+# 8. Verify Data Flow
+# Insert test data into MySQL
+USE mydb;
+INSERT INTO users (name, email) VALUES ('Test User 3', 'test3@example.com');
+
+# Check Kinesis for the changes
+aws kinesis get-records --stream-name mysql-cdc-stream \
+  --shard-iterator $(aws kinesis get-shard-iterator \
+    --stream-name mysql-cdc-stream \
+    --shard-id 0 \
+    --shard-iterator-type TRIM_HORIZON \
+    --query 'ShardIterator' \
+    --output text)
 ```
+
+### Troubleshooting Connection Issues
+
+1. **MySQL Connection Issues:**
+   - Check Secrets Manager for correct credentials
+   - Verify security group allows access from DMS security group
+   - Verify binary logging is enabled
+   - Test direct connection with mysql client
+
+2. **DMS to Kinesis Issues:**
+   - Verify IAM roles and permissions
+   - Check Kinesis stream is active
+   - Verify DMS task settings
+   - Monitor CloudWatch logs for errors
+
+3. **Common Fixes:**
+   - Re-test endpoints in DMS console
+   - Check security group rules
+   - Verify all IAM permissions
+   - Monitor CloudWatch logs for detailed error messages
+   - Ensure DMS has access to Secrets Manager
 
 
 ## Architecture
