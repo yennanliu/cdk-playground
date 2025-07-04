@@ -2,6 +2,37 @@
 
 This project implements a Change Data Capture (CDC) pipeline that streams changes from a MySQL database to Amazon Kinesis using AWS Database Migration Service (DMS). The infrastructure is defined using AWS CDK in TypeScript.
 
+
+## Run
+
+```bash
+
+# deploy CDK
+npm install
+
+cdk bootstrap
+
+cdk deploy
+
+# connect to MYSQL
+/opt/homebrew/opt/mysql-client/bin/mysql -h <rds_url> -P 3306 -u admin -p
+
+# create, insert fake data to DB
+# check code under /sql/
+
+
+# NOTE !!!
+# go to AWS DNS UI Page
+# test endpoints connection
+# then enable DNS task
+
+# https://ap-northeast-1.console.aws.amazon.com/dms/v2/home?region=ap-northeast-1#tasks/provisioned/dmsreplicationtask-ptt49ulopdfgj3x7
+
+
+# then the dns can work
+```
+
+
 ## Architecture
 
 The architecture implements a real-time CDC pipeline with the following components:
