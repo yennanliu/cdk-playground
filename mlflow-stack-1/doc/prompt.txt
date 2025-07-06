@@ -1,0 +1,11 @@
+Create an AWS CDK stack in TypeScript that deploys a minimal MLflow Tracking Server using ECS Fargate.
+
+The system should include:
+
+1. An ECS Fargate service running an MLflow Docker container.
+2. An Application Load Balancer (ALB) to expose the MLflow server to the internet on port 80.
+3. An Amazon S3 bucket to store MLflow artifacts (e.g., models, metrics).
+4. An Amazon RDS MySQL instance as the backend metadata store for MLflow.
+5. A VPC with two public subnets for simplicity.
+6. A security group that allows HTTP access to the ALB and appropriate access between ECS and RDS/S3.
+7. MLflow open all ports to public for easier testing
