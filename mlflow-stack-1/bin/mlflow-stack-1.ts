@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
 //import { MlflowStack1Stack } from '../lib/mlflow-stack-1-stack';
-import { MlflowEcsStack } from '../lib/MlflowStack1Stack-2';
+import { MlflowEcsStack } from '../lib/mlflow-stack-1-stack-v2.ts';
 
 
 const app = new cdk.App();

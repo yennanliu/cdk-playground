@@ -43,7 +43,8 @@ export class MlflowEcsStack extends cdk.Stack {
       publicLoadBalancer: true,
       taskSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       taskImageOptions: {
-        image: ecs.ContainerImage.fromRegistry("ghcr.io/mlflow/mlflow:latest"),
+        // ghcr.io/mlflow/mlflow
+        image: ecs.ContainerImage.fromRegistry("ghcr.io/mlflow/mlflow"),
         containerPort: 5000,
         environment: {
           MLFLOW_S3_ENDPOINT_URL: `https://s3.${this.region}.amazonaws.com`,
