@@ -71,5 +71,6 @@ cdk destroy
 ## Ref
 
 - MLFlow
+   - https://www.mlflow.org/docs/latest/ml/getting-started/logging-first-model/
    - https://learn.microsoft.com/zh-tw/azure/machine-learning/how-to-use-mlflow-cli-runs?view=azureml-api-2&tabs=interactive%2Ccli&source=post_page-----a5d7d6d87fab---------------------------------------
    - https://medium.com/ai-academy-taiwan/mlflow-a-machine-learning-lifecycle-platform-%E5%85%A5%E9%96%80%E6%95%99%E5%AD%B8-5ec222abf5f8
