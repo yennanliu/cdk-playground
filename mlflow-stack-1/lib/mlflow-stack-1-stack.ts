@@ -1,4 +1,10 @@
-import { CfnOutput, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
+import {
+  CfnOutput,
+  Duration,
+  RemovalPolicy,
+  Stack,
+  StackProps,
+} from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
@@ -64,8 +70,18 @@ export class MlflowStack1Stack extends Stack {
     cfnTaskDefinition.addPropertyOverride("ContainerDefinitions.0.Command", [
       "sh",
       "-c",
-      `mlflow server --host 0.0.0.0 --port 5000 --default-artifact-root ${s3Bucket.s3UrlForObject()}`,
+      `mlflow server --host 0.0.0.0 --port 5000 --default-artifact-root ${s3Bucket.s3UrlForObject()} --gunicorn-opts "--timeout 120"`,
     ]);
+
+    // Configure a proper health check for the MLflow server
+    fargateService.targetGroup.configureHealthCheck({
+      path: "/api/2.0/mlflow/experiments/list",
+      port: "5000",
+      healthyThresholdCount: 2,
+      unhealthyThresholdCount: 5,
+      interval: Duration.seconds(30),
+      timeout: Duration.seconds(5),
+    });
 
     // Grant IAM permissions for the ECS task to access the S3 bucket
     s3Bucket.grantReadWrite(fargateService.taskDefinition.taskRole);
