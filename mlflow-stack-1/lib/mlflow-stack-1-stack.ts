@@ -93,27 +93,14 @@ export class MlflowStack1Stack extends Stack {
     // Add environment variables to the container
     const container = fargateService.taskDefinition.defaultContainer!;
     container.addEnvironment("DB_HOST", rdsInstance.dbInstanceEndpointAddress);
-    container.addEnvironment("DB_NAME", dbName);
-    container.addEnvironment(
-      "DEFAULT_ARTIFACT_ROOT",
-      s3Bucket.s3UrlForObject()
-    );
 
-    // Override the container command to start the MLflow server correctly
-    // The MLflow container's entrypoint is a script that expects the command arguments directly.
+    // Override the container command to install pymysql and then start the MLflow server
     const cfnTaskDefinition = fargateService.taskDefinition.node
       .defaultChild as ecs.CfnTaskDefinition;
     cfnTaskDefinition.addPropertyOverride("ContainerDefinitions.0.Command", [
-      "mlflow",
-      "server",
-      "--host",
-      "0.0.0.0",
-      "--port",
-      "5000",
-      "--backend-store-uri",
-      `mysql+pymysql://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):3306/${dbName}`,
-      "--default-artifact-root",
-      s3Bucket.s3UrlForObject(),
+      "sh",
+      "-c",
+      `pip install pymysql && mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri mysql+pymysql://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):3306/${dbName} --default-artifact-root ${s3Bucket.s3UrlForObject()}`,
     ]);
 
     // 6. Security group configuration
