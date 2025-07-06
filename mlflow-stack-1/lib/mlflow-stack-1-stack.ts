@@ -21,6 +21,7 @@ export class MlflowStack1Stack extends Stack {
         },
       ],
     });
+    vpc.applyRemovalPolicy(RemovalPolicy.DESTROY);
 
     // 2. S3 bucket for MLflow artifacts
     const s3Bucket = new s3.Bucket(this, "MlflowArtifactBucket", {
