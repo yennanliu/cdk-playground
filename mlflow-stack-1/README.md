@@ -1,15 +1,68 @@
-# Welcome to your CDK TypeScript project
+# MLflow Tracking Server on AWS Fargate
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`MlflowStack1Stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+This project provides an AWS CDK stack in TypeScript to deploy a minimal, scalable MLflow Tracking Server on AWS ECS Fargate.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+The stack includes:
+- An **ECS Fargate service** running the official MLflow Docker container.
+- An **Application Load Balancer (ALB)** to expose the MLflow server to the internet on port 80.
+- An **S3 bucket** for storing MLflow artifacts (models, metrics, etc.).
+- An **RDS for MySQL instance** as the backend metadata store.
+- A **VPC** with public subnets to host the resources.
+- **Security Groups** to manage traffic between the components.
+- **IAM Roles** to grant necessary permissions for ECS tasks to access S3 and RDS credentials from AWS Secrets Manager.
 
-## Useful commands
+## Architecture
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+```mermaid
+graph TD
+    User[Internet User] -->|Port 80| ALB(Application Load Balancer);
+    
+    subgraph "VPC (aws-ec2)"
+        ALB -->|Port 5000| ECS[ECS Fargate Service <br> MLflow Container];
+        ECS -->|MySQL Port 3306| RDS(RDS MySQL Instance);
+    end
+
+    subgraph "AWS Services"
+      S3(S3 Artifact Bucket);
+      SecretsManager(AWS Secrets Manager);
+    end
+
+    ECS -->|Backend Store| RDS;
+    ECS -->|Artifact Store| S3;
+    ECS -->|Credentials| SecretsManager;
+```
+
+## Prerequisites
+
+- AWS Account and configured credentials
+- Node.js installed
+- AWS CDK Toolkit installed (`npm install -g aws-cdk`)
+
+## Deployment
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Bootstrap your AWS environment (if you haven't already):**
+   ```bash
+   cdk bootstrap
+   ```
+
+3. **Deploy the stack:**
+   ```bash
+   cdk deploy
+   ```
+   The deployment will take several minutes, primarily for the RDS instance to be provisioned.
+
+4. **Access the MLflow UI:**
+   After deployment, the CDK will output the DNS name of the Application Load Balancer (e.g., `MlflowStack1.MlflowAlbDns = ...`). Open this URL in your web browser to access the MLflow Tracking Server.
+
+## Cleanup
+
+To avoid incurring further charges, you can destroy the stack once you are finished.
+
+```bash
+cdk destroy
+```
