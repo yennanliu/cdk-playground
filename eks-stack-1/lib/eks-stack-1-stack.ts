@@ -6,6 +6,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as kubectl from '@aws-cdk/lambda-layer-kubectl-v31';
 import { Construct } from 'constructs';
 
 export class EksStack1Stack extends Stack {
@@ -65,9 +66,7 @@ export class EksStack1Stack extends Stack {
         eks.ClusterLoggingTypes.CONTROLLER_MANAGER,
         eks.ClusterLoggingTypes.AUDIT,
       ],
-      kubectlLayer: eks.KubectlProvider.getOrCreateProvider(this, {
-        version: eks.KubernetesVersion.V1_31,
-      }).serviceRole.node.tryFindChild('Provider') as lambda.ILayerVersion,
+      kubectlLayer: new kubectl.KubectlV31Layer(this, 'KubectlLayer'),
     });
 
     // Create CloudWatch Log Group for Container Insights
