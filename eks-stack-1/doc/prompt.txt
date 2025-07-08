@@ -1,0 +1,17 @@
+
+Prompt: Simplest EKS System Design
+
+You are a Senior AWS Cloud Architect and DevOps Engineer with deep expertise in EKS, Kubernetes, and AWS architecture.
+
+I want the simplest possible system design for deploying Amazon EKS on AWS — enough for a functional dev/test or small-scale production setup, but still aligned with basic AWS best practices.
+
+Please follow these guidelines:
+	1.	Keep the architecture minimal — avoid unnecessary complexity.
+	2.	Prioritize security, cost-efficiency, and operational simplicity.
+	3.	Use Amazon EC2-managed node groups (no Fargate).
+	4.	Use AWS native services wherever possible (e.g., CloudWatch, ALB).
+	5.	List the core AWS components, and draw a simple text-based architecture diagram.
+	6.	Explain the trade-offs of your choices (cost, scalability, simplicity).
+	7.	Include basic security practices (e.g., IAM roles, VPC config, secrets).
+	8.	Add cost control tips for small teams.
+	9.	Keep it CDK-friendly — I may want to build this with AWS CDK in TypeScript next.
