@@ -139,7 +139,81 @@ export class EksStack2Stack extends Stack {
       },
     });
 
-    // Add cluster autoscaler
+    // Create service account for cluster autoscaler
+    const clusterAutoscalerServiceAccount = cluster.addServiceAccount('ClusterAutoscalerServiceAccount', {
+      name: 'cluster-autoscaler',
+      namespace: 'kube-system',
+    });
+
+    // Add IAM policy for cluster autoscaler
+    clusterAutoscalerServiceAccount.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'autoscaling:DescribeAutoScalingGroups',
+          'autoscaling:DescribeAutoScalingInstances',
+          'autoscaling:DescribeLaunchConfigurations',
+          'autoscaling:DescribeTags',
+          'autoscaling:SetDesiredCapacity',
+          'autoscaling:TerminateInstanceInAutoScalingGroup',
+          'ec2:DescribeLaunchTemplateVersions',
+          'ec2:DescribeInstanceTypes',
+        ],
+        resources: ['*'],
+      })
+    );
+
+    // Create namespace for cluster autoscaler
+    const autoscalerNamespace = cluster.addManifest('ClusterAutoscalerNamespace', {
+      apiVersion: 'v1',
+      kind: 'Namespace',
+      metadata: {
+        name: 'cluster-autoscaler',
+      },
+    });
+
+    // Create RBAC role for cluster autoscaler
+    const autoscalerRole = cluster.addManifest('ClusterAutoscalerRole', {
+      apiVersion: 'rbac.authorization.k8s.io/v1',
+      kind: 'Role',
+      metadata: {
+        name: 'cluster-autoscaler',
+        namespace: 'cluster-autoscaler',
+      },
+      rules: [
+        {
+          apiGroups: [''],
+          resources: ['pods'],
+          verbs: ['get', 'list', 'watch'],
+        },
+      ],
+    });
+    autoscalerRole.node.addDependency(autoscalerNamespace);
+
+    // Create RBAC role binding
+    const autoscalerRoleBinding = cluster.addManifest('ClusterAutoscalerRoleBinding', {
+      apiVersion: 'rbac.authorization.k8s.io/v1',
+      kind: 'RoleBinding',
+      metadata: {
+        name: 'cluster-autoscaler',
+        namespace: 'cluster-autoscaler',
+      },
+      roleRef: {
+        apiGroup: 'rbac.authorization.k8s.io',
+        kind: 'Role',
+        name: 'cluster-autoscaler',
+      },
+      subjects: [
+        {
+          kind: 'ServiceAccount',
+          name: 'cluster-autoscaler',
+          namespace: 'kube-system',
+        },
+      ],
+    });
+    autoscalerRoleBinding.node.addDependency(autoscalerRole);
+
+    // Add cluster autoscaler deployment with dependencies
     const clusterAutoscaler = cluster.addManifest('ClusterAutoscaler', {
       apiVersion: 'apps/v1',
       kind: 'Deployment',
@@ -151,6 +225,7 @@ export class EksStack2Stack extends Stack {
         },
       },
       spec: {
+        replicas: 1,
         selector: {
           matchLabels: {
             app: 'cluster-autoscaler',
@@ -200,31 +275,11 @@ export class EksStack2Stack extends Stack {
       },
     });
 
-    // Create service account for cluster autoscaler
-    const clusterAutoscalerServiceAccount = cluster.addServiceAccount('ClusterAutoscalerServiceAccount', {
-      name: 'cluster-autoscaler',
-      namespace: 'kube-system',
-    });
+    // Add explicit dependencies
+    clusterAutoscaler.node.addDependency(clusterAutoscalerServiceAccount);
+    clusterAutoscaler.node.addDependency(autoscalerRoleBinding);
 
-    // Add IAM policy for cluster autoscaler
-    clusterAutoscalerServiceAccount.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          'autoscaling:DescribeAutoScalingGroups',
-          'autoscaling:DescribeAutoScalingInstances',
-          'autoscaling:DescribeLaunchConfigurations',
-          'autoscaling:DescribeTags',
-          'autoscaling:SetDesiredCapacity',
-          'autoscaling:TerminateInstanceInAutoScalingGroup',
-          'ec2:DescribeLaunchTemplateVersions',
-          'ec2:DescribeInstanceTypes',
-        ],
-        resources: ['*'],
-      })
-    );
-
-    // Deploy Nginx pods
+    // Deploy Nginx pods with dependency on autoscaler
     const nginxDeployment = cluster.addManifest('NginxDeployment', {
       apiVersion: 'apps/v1',
       kind: 'Deployment',
