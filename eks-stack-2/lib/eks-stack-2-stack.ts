@@ -224,6 +224,118 @@ export class EksStack2Stack extends Stack {
       })
     );
 
+    // Deploy Nginx pods
+    const nginxDeployment = cluster.addManifest('NginxDeployment', {
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      metadata: {
+        name: 'nginx-deployment',
+        namespace: 'default',
+        labels: {
+          app: 'nginx'
+        }
+      },
+      spec: {
+        replicas: 2,
+        selector: {
+          matchLabels: {
+            app: 'nginx'
+          }
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'nginx'
+            }
+          },
+          spec: {
+            containers: [{
+              name: 'nginx',
+              image: 'nginx:1.25',
+              ports: [{
+                containerPort: 80
+              }],
+              resources: {
+                requests: {
+                  cpu: '100m',
+                  memory: '128Mi'
+                },
+                limits: {
+                  cpu: '200m',
+                  memory: '256Mi'
+                }
+              }
+            }]
+          }
+        }
+      }
+    });
+
+    // Create Kubernetes Service for Nginx
+    const nginxService = cluster.addManifest('NginxService', {
+      apiVersion: 'v1',
+      kind: 'Service',
+      metadata: {
+        name: 'nginx-service',
+        namespace: 'default'
+      },
+      spec: {
+        type: 'NodePort',
+        ports: [{
+          port: 80,
+          targetPort: 80,
+          protocol: 'TCP'
+        }],
+        selector: {
+          app: 'nginx'
+        }
+      }
+    });
+
+    // Create ALB Ingress for Nginx
+    const nginxIngress = cluster.addManifest('NginxIngress', {
+      apiVersion: 'networking.k8s.io/v1',
+      kind: 'Ingress',
+      metadata: {
+        name: 'nginx-ingress',
+        namespace: 'default',
+        annotations: {
+          'kubernetes.io/ingress.class': 'alb',
+          'alb.ingress.kubernetes.io/scheme': 'internet-facing',
+          'alb.ingress.kubernetes.io/target-type': 'ip',
+          'alb.ingress.kubernetes.io/healthcheck-path': '/'
+        }
+      },
+      spec: {
+        rules: [{
+          http: {
+            paths: [{
+              path: '/',
+              pathType: 'Prefix',
+              backend: {
+                service: {
+                  name: 'nginx-service',
+                  port: {
+                    number: 80
+                  }
+                }
+              }
+            }]
+          }
+        }]
+      }
+    });
+
+    // Add dependency to ensure ALB Controller is ready before creating ingress
+    nginxIngress.node.addDependency(albController);
+
+    // Add new output for Nginx Ingress URL
+    new CfnOutput(this, 'NginxIngressUrl', {
+      value: 'http://' + alb.loadBalancerDnsName,
+      description: 'URL for accessing Nginx deployment',
+      exportName: `${this.stackName}-NginxUrl`,
+    });
+
     // Outputs for easy access
     new CfnOutput(this, 'ClusterName', {
       value: cluster.clusterName,
