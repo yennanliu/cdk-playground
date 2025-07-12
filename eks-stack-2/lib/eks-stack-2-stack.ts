@@ -69,6 +69,11 @@ export class EksStack2Stack extends Stack {
       kubectlLayer: new kubectl.KubectlV31Layer(this, 'KubectlLayer'),
     });
 
+    // The ARN 'arn:aws:iam::423623844109:user/yen-dev' is for an IAM User.
+    // We will map this user to the 'system:masters' group to grant admin access.
+    const adminUser = iam.User.fromUserArn(this, 'AdminUser', 'arn:aws:iam::423623844109:user/yen-dev');
+    cluster.awsAuth.addUserMapping(adminUser, { groups: ['system:masters'] });
+
     // Create CloudWatch Log Group for Container Insights
     const containerInsightsLogGroup = new logs.LogGroup(this, 'ContainerInsightsLogGroup', {
       logGroupName: `/aws/containerinsights/${cluster.clusterName}/performance`,

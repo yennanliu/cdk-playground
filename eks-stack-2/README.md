@@ -1,15 +1,34 @@
-# Welcome to your CDK TypeScript project
+# EKS stack V2
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`EksStack2Stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+## Prerequiste
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+```bash
+# get AWS role id, name
 
-## Useful commands
+aws sts get-caller-identity
+```
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+## Run
+
+```bash
+# 1. Configure kubectl to connect to your EKS cluster.
+#    You can get the correct command from the output of the cdk deploy command.
+#    It should look like this (replace with your region and cluster name):
+
+
+#aws eks update-kubeconfig --region <your-region> --name <your-cluster-name>
+
+# EksStack2Stack.ConfigCommand = aws eks update-kubeconfig --region ap-northeast-1 --name EksClusterFAB68BDB-d58485b963184f869f7757fef19a31bd
+
+aws eks update-kubeconfig --region ap-northeast-1 --name EksClusterFAB68BDB-d58485b963184f869f7757fef19a31bd
+
+
+# 2. Apply the kubernetes manifest to deploy Kafka UI
+kubectl apply -f k8s/kafka-ui-deployment.yaml
+
+# 3. Check the status of your deployments
+kubectl get deployments
+
+# 4. Check the status of your services
+kubectl get services
+```
