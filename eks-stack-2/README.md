@@ -31,4 +31,15 @@ kubectl get deployments
 
 # 4. Check the status of your services
 kubectl get services
+
+# get external port:
+
+kubectl port-forward service/kafka-ui-1-service 8081:80
+
+# 127.0.0.1:8081
+
+kubectl port-forward service/kafka-ui-2-service 8082:80
+
+# 127.0.0.1:8082
+
 ```
