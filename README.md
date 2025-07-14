@@ -134,7 +134,6 @@ cdk destroy CdkWorkshopStack
 - node_modules：nodejs 套件包執行完 npm install 後的文件都會安裝在此資料夾裡面
 
 - test：CDK 測試的程式位置
-
 ```
 
 </details>
