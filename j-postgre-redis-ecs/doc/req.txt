@@ -1,0 +1,19 @@
+
+
+🧑‍💻 Prompt:
+
+You are a Senior AWS CDK expert (TypeScript) helping me build a minimal proof-of-concept AWS infrastructure. I want you to help me create CDK code (in TypeScript) for the following:
+	1.	A public PostgreSQL database (Amazon RDS), accessible to all IPs (0.0.0.0/0), with:
+	•	Username: postgre
+	•	Password: postgre
+	•	Minimal configuration for testing only (single AZ, default VPC, no encryption, no backups)
+	2.	A public Redis instance (Amazon ElastiCache for Redis), with:
+	•	No password (open access for testing)
+	•	Allow all traffic from 0.0.0.0/0
+	3.	An Amazon ECR repository for hosting Docker images
+
+Constraints:
+	•	Keep the CDK project structure and configuration as minimal as possible.
+	•	Use TypeScript.
+	•	No advanced networking (no private subnets, no VPC peering, etc.).
+	•	This is just a test/prototype — security is NOT a concern for now.
