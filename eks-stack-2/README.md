@@ -32,6 +32,8 @@ kubectl apply -f k8s/mongo-deployment.yaml
 
 kubectl apply -f k8s/kafka-zk-kafkaUI-deployment.yaml
 
+kubectl apply -f k8s/java-maze-app-deployment.yaml
+
 # 2-1 Destroy pods
 kubectl delete -f k8s/kafka-ui-deployment.yaml
 
@@ -74,7 +76,7 @@ kubectl port-forward mongo-express-service 8081:8081
 
 
 #-----------------------
-# 1) Kafka broker, ZK, UI
+# 3) Kafka broker, ZK, UI
 #-----------------------
 
 kubectl port-forward service/kafka-ui-service 9997:80
@@ -82,4 +84,12 @@ kubectl port-forward service/kafka-ui-service 9997:80
 
 kubectl port-forward service/kafka 9092:9092
 # 127.0.0.1:9092
+
+
+#-----------------------
+# 4) Maze Java app
+#-----------------------
+
+kubectl port-forward service/maze-app-service 7777:80
+# 127.0.0.1:7777
 ```
