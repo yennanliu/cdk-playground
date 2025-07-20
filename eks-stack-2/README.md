@@ -30,6 +30,15 @@ kubectl apply -f k8s/kafka-ui-deployment.yaml
 
 kubectl apply -f k8s/mongo-deployment.yaml
 
+kubectl apply -f k8s/kafka-zk-kafkaUI-deployment.yaml
+
+# 2-1 Destroy pods
+kubectl delete -f k8s/kafka-ui-deployment.yaml
+
+
+kubectl delete -f k8s/mongo-deployment.yaml
+
+
 # 3. Check the status of your deployments
 kubectl get deployments
 
@@ -42,10 +51,10 @@ kubectl get services
 # 1) Kafka UI
 #-----------------------
 
-kubectl port-forward service/kafka-ui-1-service 8081:80
-# 127.0.0.1:8081
+kubectl port-forward service/kafka-ui-primary-service 9999:80
+# 127.0.0.1:9999
 
-kubectl port-forward service/kafka-ui-2-service 8082:80
+kubectl port-forward service/kafka-ui-secondary-service 8082:80
 # 127.0.0.1:8082
 
 
