@@ -1,28 +1,28 @@
 # ---------------------------
-# Kafka UI Instance 1
+# Kafka UI Instance 1 (Primary)
 # ---------------------------
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kafka-ui-1
+  name: kafka-ui-primary
   labels:
-    app: kafka-ui-1
+    app: kafka-ui-primary
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kafka-ui-1
+      app: kafka-ui-primary
   template:
     metadata:
       labels:
-        app: kafka-ui-1
+        app: kafka-ui-primary
     spec:
       containers:
         - name: kafka-ui
           image: provectuslabs/kafka-ui:latest
           env:
             - name: KAFKA_CLUSTERS_0_NAME
-              value: "kafka-1"
+              value: "my-kafka-cluster"
             - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
               value: "kafka:9092"
           ports:
@@ -31,10 +31,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kafka-ui-1-service
+  name: kafka-ui-primary-service
 spec:
   selector:
-    app: kafka-ui-1
+    app: kafka-ui-primary
   ports:
     - port: 80
       targetPort: 8080
@@ -42,30 +42,30 @@ spec:
 
 ---
 # ---------------------------
-# Kafka UI Instance 2
+# Kafka UI Instance 2 (Secondary)
 # ---------------------------
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kafka-ui-2
+  name: kafka-ui-secondary
   labels:
-    app: kafka-ui-2
+    app: kafka-ui-secondary
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kafka-ui-2
+      app: kafka-ui-secondary
   template:
     metadata:
       labels:
-        app: kafka-ui-2
+        app: kafka-ui-secondary
     spec:
       containers:
         - name: kafka-ui
           image: provectuslabs/kafka-ui:latest
           env:
             - name: KAFKA_CLUSTERS_0_NAME
-              value: "kafka-2"
+              value: "my-kafka-cluster"
             - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
               value: "kafka:9092"
           ports:
@@ -74,10 +74,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kafka-ui-2-service
+  name: kafka-ui-secondary-service
 spec:
   selector:
-    app: kafka-ui-2
+    app: kafka-ui-secondary
   ports:
     - port: 80
       targetPort: 8080
