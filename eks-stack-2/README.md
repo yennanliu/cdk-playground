@@ -41,6 +41,7 @@ kubectl delete -f k8s/mongo-deployment.yaml
 
 kubectl delete -f k8s/kafka-zk-kafkaUI-deployment.yaml
 
+kubectl delete -f k8s/java-maze-app-deployment.yaml
 
 # 3. Check the status of your deployments
 kubectl get deployments
