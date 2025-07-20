@@ -1,0 +1,121 @@
+# ---------------------------
+# MySQL Deployment
+# ---------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "rootpassword"  # Change this in production
+            - name: MYSQL_DATABASE
+              value: "mazedb"
+            - name: MYSQL_USER
+              value: "mazeuser"
+            - name: MYSQL_PASSWORD
+              value: "mazepassword"  # Change this in production
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-data
+          emptyDir: {}  # For development. Use PVC in production
+
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+# ---------------------------
+# Java Maze App Deployment
+# ---------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maze-app
+  labels:
+    app: maze-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: maze-app
+  template:
+    metadata:
+      labels:
+        app: maze-app
+    spec:
+      containers:
+        - name: maze-app
+          image: yennanliu/maze-app:dev-1
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://mysql:3306/mazedb"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: "mazeuser"
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: "mazepassword"  # Change this in production
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "update"
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health  # Adjust this path based on your app's health endpoint
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health  # Adjust this path based on your app's health endpoint
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+
+---
+# Java Maze App Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: maze-app-service
+spec:
+  selector:
+    app: maze-app
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: NodePort  # Makes the app accessible from outside the cluster

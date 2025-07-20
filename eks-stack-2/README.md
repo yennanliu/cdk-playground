@@ -71,4 +71,15 @@ kubectl port-forward mongo-express-service 8081:8081
 
 # account: admin
 # pwd: admin123
+
+
+#-----------------------
+# 1) Kafka broker, ZK, UI
+#-----------------------
+
+kubectl port-forward service/kafka-ui-service 9997:80
+# 127.0.0.1:9997
+
+kubectl port-forward service/kafka 9092:9092
+# 127.0.0.1:9092
 ```
