@@ -35,8 +35,9 @@ kubectl apply -f k8s/kafka-zk-kafkaUI-deployment.yaml
 # 2-1 Destroy pods
 kubectl delete -f k8s/kafka-ui-deployment.yaml
 
-
 kubectl delete -f k8s/mongo-deployment.yaml
+
+kubectl delete -f k8s/kafka-zk-kafkaUI-deployment.yaml
 
 
 # 3. Check the status of your deployments
@@ -44,6 +45,10 @@ kubectl get deployments
 
 # 4. Check the status of your services
 kubectl get services
+
+# 5. get pod logs
+kubectl logs kafka-f476556c8-w2bvq
+kubectl logs <pod_name>
 
 # get external port:
 
