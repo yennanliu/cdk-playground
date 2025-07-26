@@ -31,12 +31,14 @@ spec:
         env:
         - name: HADOOP_HOME
           value: "/opt/hadoop"
+        - name: HADOOP_CONF_DIR
+          value: "/opt/hadoop/etc/hadoop"
         command:
         - "/bin/bash"
         - "-c"
         - |
           mkdir -p /tmp/hadoop/dfs/data
-          $HADOOP_HOME/bin/hdfs --config /opt/hadoop/etc/hadoop datanode
+          $HADOOP_HOME/bin/hdfs --config $HADOOP_CONF_DIR datanode
         volumeMounts:
         - name: hadoop-config
           mountPath: /opt/hadoop/etc/hadoop

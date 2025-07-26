@@ -24,7 +24,18 @@ data:
         <name>dfs.namenode.name.dir</name>
         <value>/tmp/hadoop/dfs/name</value>
       </property>
+      <property>
+        <name>dfs.permissions.enabled</name>
+        <value>false</value>
+      </property>
     </configuration>
+  log4j.properties: |
+    hadoop.root.logger=INFO,console
+    log4j.rootLogger=INFO,console
+    log4j.appender.console=org.apache.log4j.ConsoleAppender
+    log4j.appender.console.target=System.err
+    log4j.appender.console.layout=org.apache.log4j.PatternLayout
+    log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{2}: %m%n
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -59,13 +70,15 @@ spec:
         env:
         - name: HADOOP_HOME
           value: "/opt/hadoop"
+        - name: HADOOP_CONF_DIR
+          value: "/opt/hadoop/etc/hadoop"
         command:
         - "/bin/bash"
         - "-c"
         - |
           mkdir -p /tmp/hadoop/dfs/name
-          $HADOOP_HOME/bin/hdfs namenode -format -force
-          $HADOOP_HOME/bin/hdfs --config /opt/hadoop/etc/hadoop namenode
+          $HADOOP_HOME/bin/hdfs namenode -format -nonInteractive -force
+          $HADOOP_HOME/bin/hdfs --config $HADOOP_CONF_DIR namenode
         volumeMounts:
         - name: hadoop-config
           mountPath: /opt/hadoop/etc/hadoop

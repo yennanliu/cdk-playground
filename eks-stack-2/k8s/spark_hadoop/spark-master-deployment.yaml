@@ -6,6 +6,11 @@ data:
   spark-defaults.conf: |
     spark.master                     spark://spark-master:7077
     spark.hadoop.fs.defaultFS       hdfs://hadoop-namenode:9000
+  spark-env.sh: |
+    #!/bin/bash
+    export SPARK_MASTER_PORT=7077
+    export SPARK_MASTER_WEBUI_PORT=8080
+    export SPARK_WORKER_WEBUI_PORT=8081
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -37,17 +42,18 @@ spec:
         env:
         - name: SPARK_MODE
           value: "master"
-        - name: SPARK_MASTER_PORT
-          value: "7077"
-        - name: SPARK_MASTER_WEBUI_PORT
-          value: "8080"
         volumeMounts:
         - name: spark-config
-          mountPath: /opt/bitnami/spark/conf
+          mountPath: /opt/bitnami/spark/conf/spark-defaults.conf
+          subPath: spark-defaults.conf
+        - name: spark-config
+          mountPath: /opt/bitnami/spark/conf/spark-env.sh
+          subPath: spark-env.sh
       volumes:
       - name: spark-config
         configMap:
           name: spark-config
+          defaultMode: 0755
 ---
 apiVersion: v1
 kind: Service
