@@ -9,7 +9,7 @@ data:
     <configuration>
       <property>
         <name>fs.defaultFS</name>
-        <value>hdfs://hadoop-namenode:9000</value>
+        <value>hdfs://0.0.0.0:9000</value>
       </property>
     </configuration>
   hdfs-site.xml: |
@@ -27,6 +27,22 @@ data:
       <property>
         <name>dfs.permissions.enabled</name>
         <value>false</value>
+      </property>
+      <property>
+        <name>dfs.namenode.rpc-bind-host</name>
+        <value>0.0.0.0</value>
+      </property>
+      <property>
+        <name>dfs.namenode.servicerpc-bind-host</name>
+        <value>0.0.0.0</value>
+      </property>
+      <property>
+        <name>dfs.namenode.http-bind-host</name>
+        <value>0.0.0.0</value>
+      </property>
+      <property>
+        <name>dfs.namenode.https-bind-host</name>
+        <value>0.0.0.0</value>
       </property>
     </configuration>
   log4j.properties: |
