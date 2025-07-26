@@ -119,4 +119,22 @@ kubectl apply -f k8s/spark_hadoop/spark-worker-deployment.yaml
 kubectl delete -f k8s/spark_hadoop
 
 kubectl apply -f k8s/spark_hadoop/
+
+
+#-------------
+# Forward port for local access
+
+kubectl port-forward svc/hadoop-namenode 9870:9870 9000:9000
+
+
+kubectl port-forward svc/spark-master 8080:8080 7077:7077
+
+
+# Hadoop NameNode:
+# UI: localhost:9870 -> 9870
+# HDFS: localhost:9000 -> 9000
+# Spark Master:
+# UI: localhost:8080 -> 8080
+# Spark: localhost:7077 -> 7077
+
 ```
