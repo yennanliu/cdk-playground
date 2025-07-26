@@ -28,18 +28,14 @@ spec:
           value: "worker"
         - name: SPARK_MASTER_URL
           value: "spark://spark-master:7077"
-        volumeMounts:
-        - name: spark-config
-          mountPath: /opt/bitnami/spark/conf/spark-defaults.conf
-          subPath: spark-defaults.conf
-        - name: spark-config
-          mountPath: /opt/bitnami/spark/conf/spark-env.sh
-          subPath: spark-env.sh
-      volumes:
-      - name: spark-config
-        configMap:
-          name: spark-config
-          defaultMode: 0755
+        - name: SPARK_WORKER_WEBUI_PORT
+          value: "8081"
+        - name: SPARK_WORKER_PORT
+          value: "38000"
+        - name: SPARK_LOCAL_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
 ---
 apiVersion: v1
 kind: Service
