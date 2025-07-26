@@ -30,10 +30,18 @@ export class EcsN8nStack extends cdk.Stack {
         containerPort: 5678,
         image: ecs.ContainerImage.fromRegistry("n8nio/n8n:latest"),
         environment: {
-          N8N_BASIC_AUTH_ACTIVE: "false",
+          // enable basic auth
+          N8N_BASIC_AUTH_ACTIVE: "true",
+          N8N_BASIC_AUTH_USER: "admin",
+          N8N_BASIC_AUTH_PASSWORD: "admin",
           N8N_SECURE_COOKIE: "false",
           N8N_PROTOCOL: "http",
           N8N_HOST: "localhost",
+          // disable basic auth
+          // N8N_BASIC_AUTH_ACTIVE: "false",
+          // N8N_SECURE_COOKIE: "false",
+          // N8N_PROTOCOL: "http",
+          // N8N_HOST: "localhost",
         },
       },
     });
