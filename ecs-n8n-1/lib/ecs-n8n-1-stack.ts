@@ -37,6 +37,7 @@ export class EcsN8nStack extends cdk.Stack {
           N8N_SECURE_COOKIE: "false",
           N8N_PROTOCOL: "http",
           N8N_HOST: "localhost",
+          N8N_RUNNERS_ENABLED: "true",  // Enable task runners as recommended
           // disable basic auth
           // N8N_BASIC_AUTH_ACTIVE: "false",
           // N8N_SECURE_COOKIE: "false",
