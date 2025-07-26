@@ -1,0 +1,17 @@
+
+I want to deploy a distributed big data processing system using Hadoop and Spark on Kubernetes (EKS preferred, but general K8s is fine).
+
+Please generate a complete setup with the following:
+	1.	Hadoop Cluster:
+	•	1 NameNode and 2+ DataNodes as StatefulSets or Deployments
+	•	Expose NameNode UI on a NodePort or LoadBalancer
+	2.	Spark Cluster:
+	•	Spark Master and 2+ Workers as Deployments or StatefulSets
+	•	Spark configured to connect to Hadoop HDFS
+	•	Expose Spark Web UI (Master and Workers) via NodePort or LoadBalancer
+	3.	Networking:
+	•	Ensure all pods/services can talk to each other (consider headless services or service DNS)
+	•	Use Kubernetes ConfigMaps or environment variables to inject cluster configs
+	4.	Bonus (optional):
+	•	Example Spark job to test the setup (e.g., word count on HDFS data)
+	•	Helm chart or kustomize setup for reusable deployment

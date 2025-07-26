@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hadoop-datanode
+  labels:
+    app: hadoop
+    component: datanode
+spec:
+  selector:
+    matchLabels:
+      app: hadoop
+      component: datanode
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: hadoop
+        component: datanode
+    spec:
+      containers:
+      - name: datanode
+        image: apache/hadoop:3
+        ports:
+        - containerPort: 9864
+          name: web
+        - containerPort: 9866
+          name: data
+        env:
+        - name: HADOOP_HOME
+          value: "/opt/hadoop"
+        command:
+        - "/bin/bash"
+        - "-c"
+        - |
+          mkdir -p /hadoop/dfs/data
+          $HADOOP_HOME/bin/hdfs --config /opt/hadoop/etc/hadoop datanode
+        volumeMounts:
+        - name: hadoop-config
+          mountPath: /opt/hadoop/etc/hadoop
+      volumes:
+      - name: hadoop-config
+        configMap:
+          name: hadoop-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hadoop-datanode
+  labels:
+    app: hadoop
+    component: datanode
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9864
+    targetPort: 9864
+    name: web
+  - port: 9866
+    targetPort: 9866
+    name: data
+  selector:
+    app: hadoop
+    component: datanode 

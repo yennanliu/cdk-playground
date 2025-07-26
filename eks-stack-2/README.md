@@ -94,3 +94,16 @@ kubectl port-forward service/kafka 9092:9092
 kubectl port-forward service/maze-app-service 7777:80
 # 127.0.0.1:7777
 ```
+
+
+- Spark Hadoop deployment
+
+```bash
+kubectl apply -f k8s/spark_hadoop/hadoop-namenode-deployment.yaml
+
+kubectl apply -f k8s/spark_hadoop/hadoop-datanode-deployment.yaml
+
+kubectl apply -f k8s/spark_hadoop/spark-master-deployment.yaml
+
+kubectl apply -f k8s/spark_hadoop/spark-worker-deployment.yaml
+```
