@@ -22,7 +22,7 @@ data:
       </property>
       <property>
         <name>dfs.namenode.name.dir</name>
-        <value>/hadoop/dfs/name</value>
+        <value>/tmp/hadoop/dfs/name</value>
       </property>
     </configuration>
 ---
@@ -45,6 +45,9 @@ spec:
         app: hadoop
         component: namenode
     spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
       containers:
       - name: namenode
         image: apache/hadoop:3
@@ -60,16 +63,20 @@ spec:
         - "/bin/bash"
         - "-c"
         - |
-          mkdir -p /hadoop/dfs/name
+          mkdir -p /tmp/hadoop/dfs/name
           $HADOOP_HOME/bin/hdfs namenode -format -force
           $HADOOP_HOME/bin/hdfs --config /opt/hadoop/etc/hadoop namenode
         volumeMounts:
         - name: hadoop-config
           mountPath: /opt/hadoop/etc/hadoop
+        - name: hadoop-data
+          mountPath: /tmp/hadoop
       volumes:
       - name: hadoop-config
         configMap:
           name: hadoop-config
+      - name: hadoop-data
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

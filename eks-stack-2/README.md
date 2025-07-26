@@ -99,6 +99,11 @@ kubectl port-forward service/maze-app-service 7777:80
 - Spark Hadoop deployment
 
 ```bash
+
+#-------------------
+# V1
+#-------------------
+
 kubectl apply -f k8s/spark_hadoop/hadoop-namenode-deployment.yaml
 
 kubectl apply -f k8s/spark_hadoop/hadoop-datanode-deployment.yaml
@@ -106,4 +111,12 @@ kubectl apply -f k8s/spark_hadoop/hadoop-datanode-deployment.yaml
 kubectl apply -f k8s/spark_hadoop/spark-master-deployment.yaml
 
 kubectl apply -f k8s/spark_hadoop/spark-worker-deployment.yaml
+
+#-------------------
+# V2
+#-------------------
+
+kubectl delete -f k8s/spark_hadoop
+
+kubectl apply -f k8s/spark_hadoop/
 ```

@@ -17,6 +17,9 @@ spec:
         app: hadoop
         component: datanode
     spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
       containers:
       - name: datanode
         image: apache/hadoop:3
@@ -32,15 +35,19 @@ spec:
         - "/bin/bash"
         - "-c"
         - |
-          mkdir -p /hadoop/dfs/data
+          mkdir -p /tmp/hadoop/dfs/data
           $HADOOP_HOME/bin/hdfs --config /opt/hadoop/etc/hadoop datanode
         volumeMounts:
         - name: hadoop-config
           mountPath: /opt/hadoop/etc/hadoop
+        - name: hadoop-data
+          mountPath: /tmp/hadoop
       volumes:
       - name: hadoop-config
         configMap:
           name: hadoop-config
+      - name: hadoop-data
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

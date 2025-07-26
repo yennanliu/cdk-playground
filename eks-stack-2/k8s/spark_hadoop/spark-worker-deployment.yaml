@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: spark-worker
-        image: apache/spark:3.4.0
+        image: bitnami/spark:3.4.1
         ports:
         - containerPort: 8081
           name: web
@@ -32,7 +32,7 @@ spec:
           value: "spark://spark-master:7077"
         volumeMounts:
         - name: spark-config
-          mountPath: /opt/spark/conf
+          mountPath: /opt/bitnami/spark/conf
       volumes:
       - name: spark-config
         configMap:
