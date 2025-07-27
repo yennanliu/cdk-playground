@@ -75,45 +75,6 @@ spec:
         - "/bin/bash"
         - "-c"
         - "airflow db init && airflow users create --username admin --password admin --firstname Anonymous --lastname Admin --role Admin --email admin@example.com"
-      - name: init-dags
-        image: busybox
-        command: ["/bin/sh", "-c"]
-        args:
-        - |
-          cat > /airflow-dags/dag_1.py << 'EOF'
-          from airflow import DAG
-          from airflow.operators.python_operator import PythonOperator
-          from datetime import datetime, timedelta
-
-          default_args = {
-              'owner': 'airflow',
-              'depends_on_past': False,
-              'start_date': datetime(2024, 1, 1),
-              'email_on_failure': False,
-              'email_on_retry': False,
-              'retries': 1,
-              'retry_delay': timedelta(minutes=5),
-          }
-
-          def hello_world():
-              print("Hello World from Airflow!")
-
-          dag = DAG(
-              'hello_world_dag',
-              default_args=default_args,
-              description='A simple Hello World DAG',
-              schedule_interval=timedelta(days=1),
-          )
-
-          hello_task = PythonOperator(
-              task_id='hello_task',
-              python_callable=hello_world,
-              dag=dag,
-          )
-          EOF
-        volumeMounts:
-        - name: airflow-dags
-          mountPath: /airflow-dags
       containers:
       - name: webserver
         image: apache/airflow:2.7.1
@@ -142,10 +103,31 @@ spec:
         args:
         - "webserver"
         volumeMounts:
-        - name: airflow-dags
+        - name: dags-volume
           mountPath: /opt/airflow/dags
+          readOnly: true
+      - name: git-sync
+        image: k8s.gcr.io/git-sync/git-sync:v3.6.3
+        env:
+        - name: GIT_SYNC_REPO
+          value: "https://github.com/yennanliu/cdk-playground.git"
+        - name: GIT_SYNC_BRANCH
+          value: "main"
+        - name: GIT_SYNC_ROOT
+          value: "/git"
+        - name: GIT_SYNC_DEST
+          value: "eks-stack-2"
+        - name: GIT_SYNC_ONE_TIME
+          value: "false"
+        - name: GIT_SYNC_WAIT
+          value: "60"
+        - name: GIT_SYNC_SUBMODULES
+          value: "recursive"
+        volumeMounts:
+        - name: dags-volume
+          mountPath: /git
       volumes:
-      - name: airflow-dags
+      - name: dags-volume
         emptyDir: {}
 ---
 # Airflow Webserver Service
@@ -175,46 +157,6 @@ spec:
       labels:
         app: airflow-scheduler
     spec:
-      initContainers:
-      - name: init-dags
-        image: busybox
-        command: ["/bin/sh", "-c"]
-        args:
-        - |
-          cat > /airflow-dags/dag_1.py << 'EOF'
-          from airflow import DAG
-          from airflow.operators.python_operator import PythonOperator
-          from datetime import datetime, timedelta
-
-          default_args = {
-              'owner': 'airflow',
-              'depends_on_past': False,
-              'start_date': datetime(2024, 1, 1),
-              'email_on_failure': False,
-              'email_on_retry': False,
-              'retries': 1,
-              'retry_delay': timedelta(minutes=5),
-          }
-
-          def hello_world():
-              print("Hello World from Airflow!")
-
-          dag = DAG(
-              'hello_world_dag',
-              default_args=default_args,
-              description='A simple Hello World DAG',
-              schedule_interval=timedelta(days=1),
-          )
-
-          hello_task = PythonOperator(
-              task_id='hello_task',
-              python_callable=hello_world,
-              dag=dag,
-          )
-          EOF
-        volumeMounts:
-        - name: airflow-dags
-          mountPath: /airflow-dags
       containers:
       - name: scheduler
         image: apache/airflow:2.7.1
@@ -241,8 +183,29 @@ spec:
         args:
         - "scheduler"
         volumeMounts:
-        - name: airflow-dags
+        - name: dags-volume
           mountPath: /opt/airflow/dags
+          readOnly: true
+      - name: git-sync
+        image: k8s.gcr.io/git-sync/git-sync:v3.6.3
+        env:
+        - name: GIT_SYNC_REPO
+          value: "https://github.com/yennanliu/cdk-playground.git"
+        - name: GIT_SYNC_BRANCH
+          value: "main"
+        - name: GIT_SYNC_ROOT
+          value: "/git"
+        - name: GIT_SYNC_DEST
+          value: "eks-stack-2"
+        - name: GIT_SYNC_ONE_TIME
+          value: "false"
+        - name: GIT_SYNC_WAIT
+          value: "60"
+        - name: GIT_SYNC_SUBMODULES
+          value: "recursive"
+        volumeMounts:
+        - name: dags-volume
+          mountPath: /git
       volumes:
-      - name: airflow-dags
+      - name: dags-volume
         emptyDir: {}
