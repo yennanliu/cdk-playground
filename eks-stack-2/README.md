@@ -36,6 +36,9 @@ kubectl apply -f k8s/java-maze-app-deployment.yaml
 
 kubectl apply -f k8s/airflow/airflow-deployment.yaml
 
+kubectl create namespace monitoring
+kubectl apply -f k8s/prometheus-grafana-deployment.yaml
+
 
 # 2-1 Destroy pods
 kubectl delete -f k8s/kafka-ui-deployment.yaml
