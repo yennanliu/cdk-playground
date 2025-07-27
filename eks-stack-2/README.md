@@ -107,6 +107,14 @@ kubectl port-forward service/maze-app-service 7777:80
 kubectl port-forward service/airflow-webserver 9999:8080
 
 
+
+#-----------------------
+# 6) grafana
+#-----------------------
+
+kubectl port-forward service/grafana-service 4000:3000 -n monitoring
+# account: admin
+# pwd: admin
 ```
 
 
