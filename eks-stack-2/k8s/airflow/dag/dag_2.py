@@ -10,7 +10,8 @@ def hello():
 with DAG(
     dag_id="hello_world_dag_2",
     start_date=datetime(2023, 1, 1),
-    schedule_interval="@once",  # run once
+    #schedule_interval="@once",  # run once
+    schedule_interval='@hourly',
     catchup=False
 ) as dag:
     task = PythonOperator(

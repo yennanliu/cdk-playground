@@ -15,7 +15,8 @@ def calculate_product():
 with DAG(
     dag_id="basic_math_dag",
     start_date=datetime(2023, 1, 1),
-    schedule_interval="@once",
+    #schedule_interval="@once",
+    schedule_interval='@hourly',
     catchup=False
 ) as dag:
     
