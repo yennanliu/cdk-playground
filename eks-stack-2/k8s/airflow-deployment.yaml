@@ -1,0 +1,141 @@
+---
+# MySQL deployment for Airflow backend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-mysql
+  template:
+    metadata:
+      labels:
+        app: airflow-mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:5.7
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "airflow"
+        - name: MYSQL_DATABASE
+          value: "airflow"
+        - name: MYSQL_USER
+          value: "airflow"
+        - name: MYSQL_PASSWORD
+          value: "airflow"
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-mysql
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: airflow-mysql
+---
+# Airflow Webserver Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-webserver
+  template:
+    metadata:
+      labels:
+        app: airflow-webserver
+    spec:
+      containers:
+      - name: webserver
+        image: apache/airflow:2.7.1
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
+        - name: AIRFLOW__CORE__EXECUTOR
+          value: "LocalExecutor"
+        command:
+        - "/bin/bash"
+        - "-c"
+        args:
+        - "airflow db init && airflow users create --username admin --password admin --firstname Anonymous --lastname Admin --role Admin --email admin@example.com && airflow webserver"
+---
+# Airflow Webserver Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-webserver
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8080
+  selector:
+    app: airflow-webserver
+---
+# Airflow Scheduler Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-scheduler
+  template:
+    metadata:
+      labels:
+        app: airflow-scheduler
+    spec:
+      containers:
+      - name: scheduler
+        image: apache/airflow:2.7.1
+        env:
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
+        - name: AIRFLOW__CORE__EXECUTOR
+          value: "LocalExecutor"
+        command:
+        - "airflow"
+        args:
+        - "scheduler"
+---
+# Airflow Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-worker
+  template:
+    metadata:
+      labels:
+        app: airflow-worker
+    spec:
+      containers:
+      - name: worker
+        image: apache/airflow:2.7.1
+        env:
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
+        - name: AIRFLOW__CORE__EXECUTOR
+          value: "LocalExecutor"
+        command:
+        - "airflow"
+        args:
+        - "celery"
+        - "worker" 
