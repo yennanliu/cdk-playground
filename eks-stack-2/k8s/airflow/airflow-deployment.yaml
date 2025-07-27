@@ -98,6 +98,8 @@ spec:
           value: "4"
         - name: AIRFLOW__WEBSERVER__WORKER_REFRESH_INTERVAL
           value: "3600"
+        - name: AIRFLOW__CORE__DAGS_FOLDER
+          value: "/opt/airflow/dags/eks-stack-2/k8s/airflow/dag"
         command:
         - "airflow"
         args:
@@ -178,6 +180,8 @@ spec:
           value: "10"
         - name: AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL
           value: "30"
+        - name: AIRFLOW__CORE__DAGS_FOLDER
+          value: "/opt/airflow/dags/eks-stack-2/k8s/airflow/dag"
         command:
         - "airflow"
         args:
