@@ -28,6 +28,9 @@ spec:
           value: "airflow"
         - name: MYSQL_PASSWORD
           value: "airflow"
+        args:
+        - --explicit_defaults_for_timestamp=1
+        - --sql-mode=NO_ENGINE_SUBSTITUTION
 ---
 # MySQL Service
 apiVersion: v1
@@ -55,21 +58,30 @@ spec:
       labels:
         app: airflow-webserver
     spec:
+      initContainers:
+      - name: init-db
+        image: apache/airflow:2.7.1
+        env:
+        - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+          value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
+        command:
+        - "/bin/bash"
+        - "-c"
+        - "airflow db init && airflow users create --username admin --password admin --firstname Anonymous --lastname Admin --role Admin --email admin@example.com"
       containers:
       - name: webserver
         image: apache/airflow:2.7.1
         ports:
         - containerPort: 8080
         env:
-        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+        - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
           value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
         - name: AIRFLOW__CORE__EXECUTOR
           value: "LocalExecutor"
         command:
-        - "/bin/bash"
-        - "-c"
+        - "airflow"
         args:
-        - "airflow db init && airflow users create --username admin --password admin --firstname Anonymous --lastname Admin --role Admin --email admin@example.com && airflow webserver"
+        - "webserver"
 ---
 # Airflow Webserver Service
 apiVersion: v1
@@ -102,7 +114,7 @@ spec:
       - name: scheduler
         image: apache/airflow:2.7.1
         env:
-        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+        - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
           value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
         - name: AIRFLOW__CORE__EXECUTOR
           value: "LocalExecutor"
@@ -130,12 +142,12 @@ spec:
       - name: worker
         image: apache/airflow:2.7.1
         env:
-        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+        - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
           value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
         - name: AIRFLOW__CORE__EXECUTOR
           value: "LocalExecutor"
         command:
         - "airflow"
         args:
-        - "celery"
+        - "tasks"
         - "worker" 
