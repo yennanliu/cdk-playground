@@ -36,8 +36,11 @@ kubectl apply -f k8s/java-maze-app-deployment.yaml
 
 kubectl apply -f k8s/airflow/airflow-deployment.yaml
 
+
 kubectl create namespace monitoring
-kubectl apply -f k8s/prometheus-grafana-deployment.yaml
+kubectl apply -f k8s/prometheus/prometheus-grafana-deployment.yaml
+
+bash k8s/prometheus/deploy-monitoring.sh
 
 
 # 2-1 Destroy pods
@@ -111,6 +114,8 @@ kubectl port-forward service/airflow-webserver 9999:8080
 #-----------------------
 # 6) grafana
 #-----------------------
+
+kubectl get services -n monitoring
 
 kubectl port-forward service/grafana-service 4000:3000 -n monitoring
 # account: admin
