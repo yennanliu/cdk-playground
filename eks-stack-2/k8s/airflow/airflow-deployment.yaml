@@ -68,6 +68,45 @@ spec:
         - "/bin/bash"
         - "-c"
         - "airflow db init && airflow users create --username admin --password admin --firstname Anonymous --lastname Admin --role Admin --email admin@example.com"
+      - name: init-dags
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /airflow-dags/dag_1.py << 'EOF'
+          from airflow import DAG
+          from airflow.operators.python_operator import PythonOperator
+          from datetime import datetime, timedelta
+
+          default_args = {
+              'owner': 'airflow',
+              'depends_on_past': False,
+              'start_date': datetime(2024, 1, 1),
+              'email_on_failure': False,
+              'email_on_retry': False,
+              'retries': 1,
+              'retry_delay': timedelta(minutes=5),
+          }
+
+          def hello_world():
+              print("Hello World from Airflow!")
+
+          dag = DAG(
+              'hello_world_dag',
+              default_args=default_args,
+              description='A simple Hello World DAG',
+              schedule_interval=timedelta(days=1),
+          )
+
+          hello_task = PythonOperator(
+              task_id='hello_task',
+              python_callable=hello_world,
+              dag=dag,
+          )
+          EOF
+        volumeMounts:
+        - name: airflow-dags
+          mountPath: /airflow-dags
       containers:
       - name: webserver
         image: apache/airflow:2.7.1
@@ -78,10 +117,18 @@ spec:
           value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
         - name: AIRFLOW__CORE__EXECUTOR
           value: "LocalExecutor"
+        - name: AIRFLOW__CORE__LOAD_EXAMPLES
+          value: "false"
         command:
         - "airflow"
         args:
         - "webserver"
+        volumeMounts:
+        - name: airflow-dags
+          mountPath: /opt/airflow/dags
+      volumes:
+      - name: airflow-dags
+        emptyDir: {}
 ---
 # Airflow Webserver Service
 apiVersion: v1
@@ -110,6 +157,46 @@ spec:
       labels:
         app: airflow-scheduler
     spec:
+      initContainers:
+      - name: init-dags
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          cat > /airflow-dags/dag_1.py << 'EOF'
+          from airflow import DAG
+          from airflow.operators.python_operator import PythonOperator
+          from datetime import datetime, timedelta
+
+          default_args = {
+              'owner': 'airflow',
+              'depends_on_past': False,
+              'start_date': datetime(2024, 1, 1),
+              'email_on_failure': False,
+              'email_on_retry': False,
+              'retries': 1,
+              'retry_delay': timedelta(minutes=5),
+          }
+
+          def hello_world():
+              print("Hello World from Airflow!")
+
+          dag = DAG(
+              'hello_world_dag',
+              default_args=default_args,
+              description='A simple Hello World DAG',
+              schedule_interval=timedelta(days=1),
+          )
+
+          hello_task = PythonOperator(
+              task_id='hello_task',
+              python_callable=hello_world,
+              dag=dag,
+          )
+          EOF
+        volumeMounts:
+        - name: airflow-dags
+          mountPath: /airflow-dags
       containers:
       - name: scheduler
         image: apache/airflow:2.7.1
@@ -118,7 +205,15 @@ spec:
           value: "mysql://airflow:airflow@airflow-mysql:3306/airflow"
         - name: AIRFLOW__CORE__EXECUTOR
           value: "LocalExecutor"
+        - name: AIRFLOW__CORE__LOAD_EXAMPLES
+          value: "false"
         command:
         - "airflow"
         args:
         - "scheduler"
+        volumeMounts:
+        - name: airflow-dags
+          mountPath: /opt/airflow/dags
+      volumes:
+      - name: airflow-dags
+        emptyDir: {}
