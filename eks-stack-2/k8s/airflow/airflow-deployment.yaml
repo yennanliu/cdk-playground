@@ -99,7 +99,7 @@ spec:
         - name: AIRFLOW__WEBSERVER__WORKER_REFRESH_INTERVAL
           value: "3600"
         - name: AIRFLOW__CORE__DAGS_FOLDER
-          value: "/opt/airflow/dags/eks-stack-2/k8s/airflow/dag"
+          value: "/opt/airflow/dags/dag"
         command:
         - "airflow"
         args:
@@ -118,7 +118,7 @@ spec:
         - name: GIT_SYNC_ROOT
           value: "/git"
         - name: GIT_SYNC_DEST
-          value: "eks-stack-2"
+          value: "repo"
         - name: GIT_SYNC_ONE_TIME
           value: "false"
         - name: GIT_SYNC_WAIT
@@ -128,6 +128,23 @@ spec:
         volumeMounts:
         - name: dags-volume
           mountPath: /git
+      - name: dags-installer
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          while true; do
+            if [ -d "/git/repo/eks-stack-2/k8s/airflow/dag" ]; then
+              rm -rf /opt/airflow/dags/dag
+              cp -r /git/repo/eks-stack-2/k8s/airflow/dag /opt/airflow/dags/
+            fi
+            sleep 60
+          done
+        volumeMounts:
+        - name: dags-volume
+          mountPath: /git
+        - name: dags-volume
+          mountPath: /opt/airflow/dags
       volumes:
       - name: dags-volume
         emptyDir: {}
@@ -181,7 +198,7 @@ spec:
         - name: AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL
           value: "30"
         - name: AIRFLOW__CORE__DAGS_FOLDER
-          value: "/opt/airflow/dags/eks-stack-2/k8s/airflow/dag"
+          value: "/opt/airflow/dags/dag"
         command:
         - "airflow"
         args:
@@ -200,7 +217,7 @@ spec:
         - name: GIT_SYNC_ROOT
           value: "/git"
         - name: GIT_SYNC_DEST
-          value: "eks-stack-2"
+          value: "repo"
         - name: GIT_SYNC_ONE_TIME
           value: "false"
         - name: GIT_SYNC_WAIT
@@ -210,6 +227,23 @@ spec:
         volumeMounts:
         - name: dags-volume
           mountPath: /git
+      - name: dags-installer
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          while true; do
+            if [ -d "/git/repo/eks-stack-2/k8s/airflow/dag" ]; then
+              rm -rf /opt/airflow/dags/dag
+              cp -r /git/repo/eks-stack-2/k8s/airflow/dag /opt/airflow/dags/
+            fi
+            sleep 60
+          done
+        volumeMounts:
+        - name: dags-volume
+          mountPath: /git
+        - name: dags-volume
+          mountPath: /opt/airflow/dags
       volumes:
       - name: dags-volume
         emptyDir: {}
