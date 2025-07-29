@@ -41,7 +41,7 @@ export class OpensearchStack extends cdk.Stack {
       version: opensearch.EngineVersion.OPENSEARCH_2_3,
       removalPolicy: RemovalPolicy.DESTROY,
       capacity: {
-        dataNodes: 1,
+        dataNodes: 2,
         dataNodeInstanceType: "m6g.large.search",
       },
       ebs: {
@@ -49,9 +49,10 @@ export class OpensearchStack extends cdk.Stack {
         volumeType: ec2.EbsDeviceVolumeType.GP3,
       },
       vpc: props.vpc,
-      vpcSubnets: [{ subnets: props.vpc.privateSubnets }],
+      vpcSubnets: [{ subnets: props.vpc.privateSubnets.slice(0, 2) }],
       zoneAwareness: {
         enabled: true,
+        availabilityZoneCount: 2,
       },
       enforceHttps: true,
       nodeToNodeEncryption: true,
