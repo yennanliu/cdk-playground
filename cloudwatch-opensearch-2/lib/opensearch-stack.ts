@@ -64,16 +64,7 @@ export class OpensearchStack extends cdk.Stack {
       encryptionAtRestOptions: {
         enabled: true,
       },
-      // Enable fine-grained access control with master user
-      advancedSecurityOptions: {
-        enabled: true,
-        internalUserDatabaseEnabled: true,
-        masterUserOptions: {
-          masterUserName: "admin",
-          masterUserPassword: "TempPassword123!", // Change this in production
-        },
-      },
-      // More restrictive access policy for fine-grained access control
+      // Use restrictive access policy instead of fine-grained access control for easier Firehose integration
       accessPolicies: {
         Version: "2012-10-17",
         Statement: [
@@ -82,10 +73,33 @@ export class OpensearchStack extends cdk.Stack {
             Principal: {
               AWS: [
                 `arn:aws:iam::${this.account}:root`,
-                this.firehoseRole.roleArn, // Add Firehose role
+                this.firehoseRole.roleArn,
               ],
             },
-            Action: "es:*",
+            Action: [
+              "es:ESHttpGet",
+              "es:ESHttpPost",
+              "es:ESHttpPut",
+              "es:ESHttpDelete",
+              "es:ESHttpHead",
+              "es:DescribeDomain",
+              "es:DescribeDomains",
+              "es:DescribeDomainConfig",
+            ],
+            Resource: `arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`,
+          },
+          {
+            Effect: "Allow",
+            Principal: {
+              Service: "firehose.amazonaws.com",
+            },
+            Action: [
+              "es:DescribeDomain",
+              "es:DescribeDomains",
+              "es:DescribeDomainConfig",
+              "es:ESHttpPost",
+              "es:ESHttpPut",
+            ],
             Resource: `arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`,
           },
         ],
@@ -318,18 +332,7 @@ def handler(event, context):
     // Output domain endpoint
     new cdk.CfnOutput(this, "OpenSearchDomainEndpoint", {
       value: `https://${cfnDomain.attrDomainEndpoint}`,
-      description: "OpenSearch Domain Endpoint",
-    });
-
-    // Output master user credentials
-    new cdk.CfnOutput(this, "OpenSearchMasterUser", {
-      value: "admin",
-      description: "OpenSearch Master Username",
-    });
-
-    new cdk.CfnOutput(this, "OpenSearchMasterPassword", {
-      value: "TempPassword123!",
-      description: "OpenSearch Master Password (CHANGE IN PRODUCTION!)",
+      description: "OpenSearch Domain Endpoint (No authentication required)",
     });
 
     // Output Firehose delivery stream ARN
