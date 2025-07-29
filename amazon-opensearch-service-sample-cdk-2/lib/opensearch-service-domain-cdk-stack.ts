@@ -44,8 +44,7 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
   readonly vpcSubnets?: SubnetSelection[],
   readonly vpcSecurityGroups?: ISecurityGroup[],
   readonly availabilityZoneCount?: number,
-  readonly domainRemovalPolicy?: RemovalPolicy,
-  readonly firehoseRoleArn?: string
+  readonly domainRemovalPolicy?: RemovalPolicy
 }
 
 
@@ -59,23 +58,21 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Create base access policies array if not provided
     const accessPolicies = props.accessPolicies || [];
 
-    // Add Firehose role access policy if provided
-    if (props.firehoseRoleArn) {
-      const firehosePolicy = new PolicyStatement({
-        effect: Effect.ALLOW,
-        principals: [new ArnPrincipal(props.firehoseRoleArn)],
-        actions: [
-          'es:ESHttpPost',
-          'es:ESHttpPut',
-          'es:ESHttpGet',
-          'opensearch:ESHttpPost',
-          'opensearch:ESHttpPut', 
-          'opensearch:ESHttpGet'
-        ],
-        resources: [`arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`]
-      });
-      accessPolicies.push(firehosePolicy);
-    }
+    // Add policy to allow Firehose service to write to OpenSearch
+    const firehosePolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      principals: [new iam.ServicePrincipal('firehose.amazonaws.com')],
+      actions: [
+        'es:ESHttpPost',
+        'es:ESHttpPut',
+        'es:ESHttpGet',
+        'opensearch:ESHttpPost',
+        'opensearch:ESHttpPut', 
+        'opensearch:ESHttpGet'
+      ],
+      resources: [`arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`]
+    });
+    accessPolicies.push(firehosePolicy);
 
     // Only add policies if not using open access policy
     // The open access policy from context will override these anyway
