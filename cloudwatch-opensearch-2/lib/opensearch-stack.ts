@@ -36,86 +36,47 @@ export class OpensearchStack extends cdk.Stack {
       "Allow HTTPS access from VPC"
     );
 
-    // Create IAM role for Firehose first (needed for OpenSearch access policy)
+    // Create OpenSearch domain with simplified configuration for reliable Firehose integration
+    this.domain = new opensearch.Domain(this, "LogsDomain", {
+      version: opensearch.EngineVersion.OPENSEARCH_2_3,
+      removalPolicy: RemovalPolicy.DESTROY,
+      capacity: {
+        dataNodes: 3,
+        dataNodeInstanceType: "c5.large.search",
+      },
+      ebs: {
+        volumeSize: 10,
+        volumeType: ec2.EbsDeviceVolumeType.GP3,
+      },
+      zoneAwareness: {
+        enabled: true,
+        availabilityZoneCount: 3,
+      },
+      enforceHttps: true,
+      nodeToNodeEncryption: true,
+      encryptionAtRest: {
+        enabled: true,
+      },
+      // Simple access policy that allows account root access
+      accessPolicies: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          principals: [new iam.AccountRootPrincipal()],
+          actions: ["es:*"],
+          resources: ["*"],
+        }),
+      ],
+    });
+
+    // Create IAM role for Firehose
     this.firehoseRole = new iam.Role(this, "FirehoseRole", {
       assumedBy: new iam.ServicePrincipal("firehose.amazonaws.com"),
-    });
-
-    // Create OpenSearch domain using CfnDomain for precise control
-    const cfnDomain = new opensearch.CfnDomain(this, "LogsDomain", {
-      engineVersion: "OpenSearch_2.3",
-      clusterConfig: {
-        instanceType: "t3.small.search",
-        instanceCount: 1,
-        dedicatedMasterEnabled: false,
-        zoneAwarenessEnabled: false, // Explicitly disable zone awareness
-      },
-      ebsOptions: {
-        ebsEnabled: true,
-        volumeSize: 10,
-        volumeType: "gp3",
-      },
-      domainEndpointOptions: {
-        enforceHttps: true,
-      },
-      nodeToNodeEncryptionOptions: {
-        enabled: true,
-      },
-      encryptionAtRestOptions: {
-        enabled: true,
-      },
-      // Use restrictive access policy instead of fine-grained access control for easier Firehose integration
-      accessPolicies: {
-        Version: "2012-10-17",
-        Statement: [
-          {
-            Effect: "Allow",
-            Principal: {
-              AWS: [
-                `arn:aws:iam::${this.account}:root`,
-                this.firehoseRole.roleArn,
-              ],
-            },
-            Action: [
-              "es:ESHttpGet",
-              "es:ESHttpPost",
-              "es:ESHttpPut",
-              "es:ESHttpDelete",
-              "es:ESHttpHead",
-              "es:DescribeDomain",
-              "es:DescribeDomains",
-              "es:DescribeDomainConfig",
-            ],
-            Resource: `arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`,
-          },
-          {
-            Effect: "Allow",
-            Principal: {
-              Service: "firehose.amazonaws.com",
-            },
-            Action: [
-              "es:DescribeDomain",
-              "es:DescribeDomains",
-              "es:DescribeDomainConfig",
-              "es:ESHttpPost",
-              "es:ESHttpPut",
-            ],
-            Resource: `arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`,
-          },
-        ],
-      },
-    });
-
-    // Create Domain wrapper for compatibility
-    this.domain = opensearch.Domain.fromDomainAttributes(this, "LogsDomainRef", {
-      domainArn: cfnDomain.attrArn,
-      domainEndpoint: cfnDomain.attrDomainEndpoint,
     });
 
     // Add permissions to Firehose role for OpenSearch
     this.firehoseRole.addToPolicy(
       new iam.PolicyStatement({
-        resources: [cfnDomain.attrArn, `${cfnDomain.attrArn}/*`],
+        resources: [this.domain.domainArn, `${this.domain.domainArn}/*`],
         actions: [
           "es:DescribeDomain",
           "es:DescribeDomains",
@@ -157,7 +118,7 @@ export class OpensearchStack extends cdk.Stack {
         deliveryStreamType: "DirectPut",
         deliveryStreamName: "opensearch-logs-stream",
         amazonopensearchserviceDestinationConfiguration: {
-          domainArn: cfnDomain.attrArn,
+          domainArn: this.domain.domainArn,
           indexName: "logs",
           roleArn: this.firehoseRole.roleArn,
           s3BackupMode: "AllDocuments",
@@ -331,7 +292,7 @@ def handler(event, context):
 
     // Output domain endpoint
     new cdk.CfnOutput(this, "OpenSearchDomainEndpoint", {
-      value: `https://${cfnDomain.attrDomainEndpoint}`,
+      value: `https://${this.domain.domainEndpoint}`,
       description: "OpenSearch Domain Endpoint (No authentication required)",
     });
 
