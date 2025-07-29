@@ -6,7 +6,7 @@ import {EbsDeviceVolumeType, ISecurityGroup, IVpc, SubnetSelection} from "aws-cd
 import {Domain, EngineVersion, TLSSecurityPolicy, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
 import {RemovalPolicy, SecretValue, Stack, StackProps} from "aws-cdk-lib";
 import {IKey, Key} from "aws-cdk-lib/aws-kms";
-import {PolicyStatement} from "aws-cdk-lib/aws-iam";
+import {PolicyStatement, Effect, ArnPrincipal} from "aws-cdk-lib/aws-iam";
 import {ILogGroup, LogGroup} from "aws-cdk-lib/aws-logs";
 import {Secret} from "aws-cdk-lib/aws-secretsmanager";
 import {StackPropsExt} from "./stack-composer";
@@ -53,6 +53,30 @@ export class OpensearchServiceDomainCdkStack extends Stack {
   constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
     super(scope, id, props);
 
+    // Create base access policies array if not provided
+    const accessPolicies = props.accessPolicies || [];
+
+    // Add CloudWatch Logs read permissions
+    const cloudwatchLogsPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      principals: [new ArnPrincipal(`arn:aws:iam::${Stack.of(this).account}:root`)], // Use the account root ARN
+      actions: [
+        'logs:DescribeLogGroups',
+        'logs:DescribeLogStreams',
+        'logs:GetLogEvents',
+        'logs:FilterLogEvents',
+        'logs:StartQuery',
+        'logs:StopQuery',
+        'logs:GetQueryResults',
+        'logs:GetLogGroupFields',
+        'logs:GetLogRecord'
+      ],
+      resources: ['*'] // This allows access to all log groups
+    });
+
+    // Add the policy to the access policies array
+    accessPolicies.push(cloudwatchLogsPolicy);
+
     // The code that defines your stack goes here
 
     // Retrieve existing account resources if defined
@@ -75,7 +99,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     const domain = new Domain(this, 'Domain', {
       version: props.version,
       domainName: props.domainName,
-      accessPolicies: props.accessPolicies,
+      accessPolicies: accessPolicies,
       useUnsignedBasicAuth: props.useUnsignedBasicAuth,
       capacity: {
         dataNodeInstanceType: props.dataNodeInstanceType,
