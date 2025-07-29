@@ -9,6 +9,7 @@ import {EbsDeviceVolumeType} from "aws-cdk-lib/aws-ec2";
 import {AnyPrincipal, Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
 import * as defaultValuesJson from "../default-values.json"
 import {NetworkStack} from "./network-stack";
+import {KinesisFirehoseStack} from "./kinesis-firehose-stack";
 
 export interface StackPropsExt extends StackProps {
     readonly stage: string
@@ -151,6 +152,16 @@ export class StackComposer {
             description: "This stack contains resources to create/manage an OpenSearch Service domain",
             ...props,
         });
+
+        // Add Kinesis Firehose Stack
+        const firehoseStack = new KinesisFirehoseStack(scope, 'firehoseStack', {
+            stage: props.stage,
+            opensearchDomain: opensearchStack.domain,
+            opensearchIndex: 'cloudwatch-logs',
+        });
+
+        // Add dependency to ensure OpenSearch is created first
+        firehoseStack.addDependency(opensearchStack);
 
         if (networkStack) {
             opensearchStack.addDependency(networkStack)

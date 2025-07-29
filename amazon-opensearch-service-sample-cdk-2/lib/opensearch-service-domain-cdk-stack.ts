@@ -49,6 +49,7 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
 
 export class OpensearchServiceDomainCdkStack extends Stack {
   public readonly domainEndpoint: string;
+  public readonly domain: Domain;
 
   constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
     super(scope, id, props);
@@ -140,6 +141,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       removalPolicy: props.domainRemovalPolicy
     });
 
-    this.domainEndpoint = domain.domainEndpoint
+    this.domainEndpoint = domain.domainEndpoint;
+    this.domain = domain;
   }
 }
