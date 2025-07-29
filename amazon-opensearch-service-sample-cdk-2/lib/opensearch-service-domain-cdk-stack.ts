@@ -4,9 +4,10 @@
 import {Construct} from "constructs";
 import {EbsDeviceVolumeType, ISecurityGroup, IVpc, SubnetSelection} from "aws-cdk-lib/aws-ec2";
 import {Domain, EngineVersion, TLSSecurityPolicy, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
-import {RemovalPolicy, SecretValue, Stack, StackProps} from "aws-cdk-lib";
+import {RemovalPolicy, SecretValue, Stack, StackProps, CfnOutput} from "aws-cdk-lib";
 import {IKey, Key} from "aws-cdk-lib/aws-kms";
-import {PolicyStatement, Effect, ArnPrincipal} from "aws-cdk-lib/aws-iam";
+import * as iam from "aws-cdk-lib/aws-iam";
+import {PolicyStatement, Effect, ArnPrincipal, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {ILogGroup, LogGroup} from "aws-cdk-lib/aws-logs";
 import {Secret} from "aws-cdk-lib/aws-secretsmanager";
 import {StackPropsExt} from "./stack-composer";
@@ -50,33 +51,73 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
 export class OpensearchServiceDomainCdkStack extends Stack {
   public readonly domainEndpoint: string;
   public readonly domain: Domain;
+  public readonly firehoseRole: iam.Role;
 
   constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
     super(scope, id, props);
 
+    // Create Firehose role with all necessary permissions
+    this.firehoseRole = new iam.Role(this, 'FirehoseRole', {
+      assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
+    });
+
+    // Add OpenSearch permissions to the Firehose role
+    this.firehoseRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'es:DescribeElasticsearchDomain',
+        'es:DescribeElasticsearchDomains',
+        'es:DescribeElasticsearchDomainConfig',
+        'es:ESHttpPost',
+        'es:ESHttpPut',
+        'es:ESHttpGet',
+        'opensearch:DescribeDomain',
+        'opensearch:DescribeDomains', 
+        'opensearch:DescribeDomainConfig',
+        'opensearch:ESHttpPost',
+        'opensearch:ESHttpPut',
+        'opensearch:ESHttpGet',
+      ],
+      resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+      ],
+    }));
+
+    // Add CloudWatch Logs permissions
+    this.firehoseRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:PutLogEvents',
+        'logs:CreateLogStream',
+        'logs:CreateLogGroup'
+      ],
+      resources: [
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*:*`
+      ]
+    }));
+
     // Create base access policies array if not provided
     const accessPolicies = props.accessPolicies || [];
 
-    // Add CloudWatch Logs read permissions
-    const cloudwatchLogsPolicy = new PolicyStatement({
+    // Add policy to allow the specific Firehose role to write to OpenSearch
+    const firehosePolicy = new PolicyStatement({
       effect: Effect.ALLOW,
-      principals: [new ArnPrincipal(`arn:aws:iam::${Stack.of(this).account}:root`)], // Use the account root ARN
+      principals: [new ArnPrincipal(this.firehoseRole.roleArn)],
       actions: [
-        'logs:DescribeLogGroups',
-        'logs:DescribeLogStreams',
-        'logs:GetLogEvents',
-        'logs:FilterLogEvents',
-        'logs:StartQuery',
-        'logs:StopQuery',
-        'logs:GetQueryResults',
-        'logs:GetLogGroupFields',
-        'logs:GetLogRecord'
+        'es:ESHttpPost',
+        'es:ESHttpPut',
+        'es:ESHttpGet',
+        'opensearch:ESHttpPost',
+        'opensearch:ESHttpPut', 
+        'opensearch:ESHttpGet'
       ],
-      resources: ['*'] // This allows access to all log groups
+      resources: [`arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`]
     });
+    accessPolicies.push(firehosePolicy);
 
-    // Add the policy to the access policies array
-    accessPolicies.push(cloudwatchLogsPolicy);
+    // Only add policies if not using open access policy
+    // The open access policy from context will override these anyway
 
     // The code that defines your stack goes here
 
@@ -143,5 +184,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
 
     this.domainEndpoint = domain.domainEndpoint;
     this.domain = domain;
+
+    // Export the Firehose role ARN for use by other stacks
+    new CfnOutput(this, 'FirehoseRoleArn', {
+      value: this.firehoseRole.roleArn,
+      exportName: `${this.stackName}-FirehoseRoleArn`,
+      description: 'ARN of the Firehose role for OpenSearch access'
+    });
   }
 }
