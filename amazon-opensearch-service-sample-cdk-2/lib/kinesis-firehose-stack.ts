@@ -14,6 +14,7 @@ import { StackPropsExt } from './stack-composer';
 export interface KinesisFirehoseStackProps extends StackPropsExt {
   readonly opensearchDomain: opensearch.Domain;
   readonly opensearchIndex: string;
+  readonly firehoseRole?: iam.Role;
 }
 
 export class KinesisFirehoseStack extends Stack {
@@ -29,8 +30,8 @@ export class KinesisFirehoseStack extends Stack {
       autoDeleteObjects: true,
     });
 
-    // Create IAM role for Firehose
-    const firehoseRole = new iam.Role(this, 'FirehoseRole', {
+    // Use provided role or create new one
+    const firehoseRole = props.firehoseRole || new iam.Role(this, 'FirehoseRole', {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
     });
     this.firehoseRole = firehoseRole;
@@ -108,19 +109,11 @@ export class KinesisFirehoseStack extends Stack {
       }
     });
 
-    // Create CloudWatch Logs Subscription Filter
+    // Create CloudWatch Logs for Firehose operations (not for subscription)
     const logGroup = new LogGroup(this, 'FirehoseLogGroup', {
       logGroupName: `/aws/firehose/${props.opensearchIndex}`,
       removalPolicy: RemovalPolicy.DESTROY,
       retention: logs.RetentionDays.ONE_WEEK,
-    });
-
-    // Create a subscription filter for the log group
-    new logs.CfnSubscriptionFilter(this, 'FirehoseSubscription', {
-      logGroupName: logGroup.logGroupName,
-      filterPattern: '',  // Empty string means all events
-      destinationArn: deliveryStream.attrArn,
-      roleArn: firehoseRole.roleArn,
     });
   }
 } 

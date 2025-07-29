@@ -6,6 +6,7 @@ import {RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
 import {OpensearchServiceDomainCdkStack} from "./opensearch-service-domain-cdk-stack";
 import {EngineVersion, TLSSecurityPolicy} from "aws-cdk-lib/aws-opensearchservice";
 import {EbsDeviceVolumeType} from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import {AnyPrincipal, Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
 import * as defaultValuesJson from "../default-values.json"
 import {NetworkStack} from "./network-stack";
@@ -116,6 +117,11 @@ export class StackComposer {
             this.stacks.push(networkStack)
         }
 
+        // Create IAM role for Firehose in this scope to share between stacks
+        const firehoseRole = new iam.Role(scope, 'SharedFirehoseRole', {
+            assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
+        });
+
         const opensearchStack = new OpensearchServiceDomainCdkStack(scope, 'opensearchDomainStack', {
             version: version,
             domainName: domainName,
@@ -148,6 +154,7 @@ export class StackComposer {
             vpcSecurityGroups: networkStack ? networkStack.domainSecurityGroups : undefined,
             availabilityZoneCount: availabilityZoneCount,
             domainRemovalPolicy: domainRemovalPolicy,
+            firehoseRoleArn: firehoseRole.roleArn,
             stackName: `Opensearch-${stage}-${region}`,
             description: "This stack contains resources to create/manage an OpenSearch Service domain",
             ...props,
@@ -157,6 +164,7 @@ export class StackComposer {
         const firehoseStack = new KinesisFirehoseStack(scope, 'firehoseStack', {
             opensearchDomain: opensearchStack.domain,
             opensearchIndex: 'cloudwatch-logs',
+            firehoseRole: firehoseRole,
             stackName: `Firehose-${stage}-${region}`,
             description: "This stack contains resources to create/manage Kinesis Firehose for OpenSearch",
             ...props,

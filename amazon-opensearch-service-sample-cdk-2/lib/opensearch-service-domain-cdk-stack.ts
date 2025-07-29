@@ -44,7 +44,8 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
   readonly vpcSubnets?: SubnetSelection[],
   readonly vpcSecurityGroups?: ISecurityGroup[],
   readonly availabilityZoneCount?: number,
-  readonly domainRemovalPolicy?: RemovalPolicy
+  readonly domainRemovalPolicy?: RemovalPolicy,
+  readonly firehoseRoleArn?: string
 }
 
 
@@ -58,39 +59,26 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Create base access policies array if not provided
     const accessPolicies = props.accessPolicies || [];
 
-    // Add CloudWatch Logs read permissions
-    const cloudwatchLogsPolicy = new PolicyStatement({
-      effect: Effect.ALLOW,
-      principals: [new ArnPrincipal(`arn:aws:iam::${Stack.of(this).account}:root`)], // Use the account root ARN
-      actions: [
-        'logs:DescribeLogGroups',
-        'logs:DescribeLogStreams',
-        'logs:GetLogEvents',
-        'logs:FilterLogEvents',
-        'logs:StartQuery',
-        'logs:StopQuery',
-        'logs:GetQueryResults',
-        'logs:GetLogGroupFields',
-        'logs:GetLogRecord'
-      ],
-      resources: ['*'] // This allows access to all log groups
-    });
+    // Add Firehose role access policy if provided
+    if (props.firehoseRoleArn) {
+      const firehosePolicy = new PolicyStatement({
+        effect: Effect.ALLOW,
+        principals: [new ArnPrincipal(props.firehoseRoleArn)],
+        actions: [
+          'es:ESHttpPost',
+          'es:ESHttpPut',
+          'es:ESHttpGet',
+          'opensearch:ESHttpPost',
+          'opensearch:ESHttpPut', 
+          'opensearch:ESHttpGet'
+        ],
+        resources: [`arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`]
+      });
+      accessPolicies.push(firehosePolicy);
+    }
 
-    // Add broader access policy for development (allows account root)
-    // In production, this should be more restrictive
-    const accountRootPolicy = new PolicyStatement({
-      effect: Effect.ALLOW,
-      principals: [new ArnPrincipal(`arn:aws:iam::${Stack.of(this).account}:root`)],
-      actions: [
-        'es:*',
-        'opensearch:*',
-      ],
-      resources: [`arn:aws:es:${Stack.of(this).region}:${Stack.of(this).account}:domain/${props.domainName}/*`]
-    });
-    accessPolicies.push(accountRootPolicy);
-
-    // Add the policies to the access policies array
-    accessPolicies.push(cloudwatchLogsPolicy);
+    // Only add policies if not using open access policy
+    // The open access policy from context will override these anyway
 
     // The code that defines your stack goes here
 
