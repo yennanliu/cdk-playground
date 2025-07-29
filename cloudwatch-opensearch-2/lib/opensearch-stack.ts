@@ -41,21 +41,22 @@ export class OpensearchStack extends cdk.Stack {
       version: opensearch.EngineVersion.OPENSEARCH_2_3,
       removalPolicy: RemovalPolicy.DESTROY,
       capacity: {
-        dataNodes: 3,
-        dataNodeInstanceType: "c5.large.search",
+        dataNodes: 1,
+        dataNodeInstanceType: "m6g.large.search",
       },
       ebs: {
         volumeSize: 10,
         volumeType: ec2.EbsDeviceVolumeType.GP3,
       },
+      vpc: props.vpc,
+      vpcSubnets: [{ subnets: props.vpc.privateSubnets }],
       zoneAwareness: {
         enabled: true,
-        availabilityZoneCount: 3,
       },
       enforceHttps: true,
       nodeToNodeEncryption: true,
       encryptionAtRest: {
-        enabled: true,
+        enabled: false,
       },
       // Simple access policy that allows account root access
       accessPolicies: [
