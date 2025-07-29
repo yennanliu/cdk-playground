@@ -13,7 +13,7 @@ const loggingStack = new LoggingStack(app, 'LoggingStack-2', {
     },
 });
 
-const opensearchStack = new OpensearchStack(app, 'OpensearchsStack-16', {
+const opensearchStack = new OpensearchStack(app, 'OpensearchsStack-17', {
     env: {
         account: process.env.CDK_DEFAULT_ACCOUNT,
         region: process.env.CDK_DEFAULT_REGION || 'ap-northeast-1',
