@@ -6,6 +6,7 @@ import {EbsDeviceVolumeType, ISecurityGroup, IVpc, SubnetSelection} from "aws-cd
 import {Domain, EngineVersion, TLSSecurityPolicy, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
 import {RemovalPolicy, SecretValue, Stack, StackProps} from "aws-cdk-lib";
 import {IKey, Key} from "aws-cdk-lib/aws-kms";
+import * as iam from "aws-cdk-lib/aws-iam";
 import {PolicyStatement, Effect, ArnPrincipal, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {ILogGroup, LogGroup} from "aws-cdk-lib/aws-logs";
 import {Secret} from "aws-cdk-lib/aws-secretsmanager";
@@ -43,8 +44,7 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
   readonly vpcSubnets?: SubnetSelection[],
   readonly vpcSecurityGroups?: ISecurityGroup[],
   readonly availabilityZoneCount?: number,
-  readonly domainRemovalPolicy?: RemovalPolicy,
-  readonly firehoseRoleArn?: string
+  readonly domainRemovalPolicy?: RemovalPolicy
 }
 
 
@@ -55,6 +55,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
 
   constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
     super(scope, id, props);
+
+    // Create Firehose role first
+    const firehoseRole = new Role(this, 'FirehoseRole', {
+      assumedBy: new ServicePrincipal('firehose.amazonaws.com'),
+    });
+    this.firehoseRole = firehoseRole;
 
     // Create base access policies array if not provided
     const accessPolicies = props.accessPolicies || [];
@@ -77,29 +83,27 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       resources: ['*'] // This allows access to all log groups
     });
 
-    // Add Firehose access policy if Firehose role ARN is provided
-    if (props.firehoseRoleArn) {
-      const firehosePolicy = new PolicyStatement({
-        effect: Effect.ALLOW,
-        principals: [new ArnPrincipal(props.firehoseRoleArn)],
-        actions: [
-          'es:DescribeElasticsearchDomain',
-          'es:DescribeElasticsearchDomains',
-          'es:DescribeElasticsearchDomainConfig',
-          'es:ESHttpPost',
-          'es:ESHttpPut',
-          'es:ESHttpGet',
-          'opensearch:DescribeDomain',
-          'opensearch:DescribeDomains',
-          'opensearch:DescribeDomainConfig',
-          'opensearch:ESHttpPost',
-          'opensearch:ESHttpPut',
-          'opensearch:ESHttpGet',
-        ],
-        resources: [`arn:aws:es:${Stack.of(this).region}:${Stack.of(this).account}:domain/${props.domainName}/*`]
-      });
-      accessPolicies.push(firehosePolicy);
-    }
+    // Add Firehose access policy using the created role
+    const firehosePolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      principals: [new ArnPrincipal(firehoseRole.roleArn)],
+      actions: [
+        'es:DescribeElasticsearchDomain',
+        'es:DescribeElasticsearchDomains',
+        'es:DescribeElasticsearchDomainConfig',
+        'es:ESHttpPost',
+        'es:ESHttpPut',
+        'es:ESHttpGet',
+        'opensearch:DescribeDomain',
+        'opensearch:DescribeDomains',
+        'opensearch:DescribeDomainConfig',
+        'opensearch:ESHttpPost',
+        'opensearch:ESHttpPut',
+        'opensearch:ESHttpGet',
+      ],
+      resources: [`arn:aws:es:${Stack.of(this).region}:${Stack.of(this).account}:domain/${props.domainName}/*`]
+    });
+    accessPolicies.push(firehosePolicy);
 
     // Add the policies to the access policies array
     accessPolicies.push(cloudwatchLogsPolicy);

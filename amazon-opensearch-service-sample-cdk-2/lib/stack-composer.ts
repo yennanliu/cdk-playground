@@ -158,6 +158,7 @@ export class StackComposer {
             stage: props.stage,
             opensearchDomain: opensearchStack.domain,
             opensearchIndex: 'cloudwatch-logs',
+            firehoseRole: opensearchStack.firehoseRole,
         });
 
         // Add dependency to ensure OpenSearch is created first

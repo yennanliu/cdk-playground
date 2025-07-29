@@ -14,11 +14,10 @@ import { StackPropsExt } from './stack-composer';
 export interface KinesisFirehoseStackProps extends StackPropsExt {
   readonly opensearchDomain: opensearch.Domain;
   readonly opensearchIndex: string;
+  readonly firehoseRole: iam.Role;
 }
 
 export class KinesisFirehoseStack extends Stack {
-  public readonly firehoseRole: iam.Role;
-
   constructor(scope: Construct, id: string, props: KinesisFirehoseStackProps) {
     super(scope, id, props);
 
@@ -28,13 +27,8 @@ export class KinesisFirehoseStack extends Stack {
       autoDeleteObjects: true,
     });
 
-    // Create IAM role for Firehose
-    const firehoseRole = new iam.Role(this, 'FirehoseRole', {
-      assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
-    });
-
-    // Expose the role for other stacks to use
-    this.firehoseRole = firehoseRole;
+    // Use Firehose role from OpenSearch stack
+    const firehoseRole = props.firehoseRole;
 
     // Grant permissions to access OpenSearch
     firehoseRole.addToPolicy(new iam.PolicyStatement({
