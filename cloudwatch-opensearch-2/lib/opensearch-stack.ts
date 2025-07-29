@@ -15,7 +15,7 @@ export interface OpensearchStackProps extends cdk.StackProps {
 }
 
 export class OpensearchStack extends cdk.Stack {
-  public readonly domain: opensearch.Domain;
+  public readonly domain: opensearch.IDomain;
   public readonly firehoseRole: iam.Role;
   public readonly deliveryStream: firehose.CfnDeliveryStream;
 
@@ -36,48 +36,46 @@ export class OpensearchStack extends cdk.Stack {
       "Allow HTTPS access from VPC"
     );
 
-    // Create OpenSearch domain
-    this.domain = new opensearch.Domain(this, "LogsDomain", {
-      version: opensearch.EngineVersion.OPENSEARCH_2_3,
-      removalPolicy: RemovalPolicy.DESTROY,
-      capacity: {
-        dataNodes: 1,
-        dataNodeInstanceType: "m5.large.search",
+    // Create OpenSearch domain using CfnDomain for precise control
+    const cfnDomain = new opensearch.CfnDomain(this, "LogsDomain", {
+      engineVersion: "OpenSearch_2.3",
+      clusterConfig: {
+        instanceType: "t3.small.search",
+        instanceCount: 1,
+        dedicatedMasterEnabled: false,
+        zoneAwarenessEnabled: false, // Explicitly disable zone awareness
       },
-      ebs: {
+      ebsOptions: {
+        ebsEnabled: true,
         volumeSize: 10,
+        volumeType: "gp3",
       },
-      // Deploy without VPC to avoid zone awareness issues
-      // vpc: props.vpc,
-      // vpcSubnets: [
-      //     {
-      //         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      //         availabilityZones: [props.vpc.availabilityZones[0]], // Use only first AZ
-      //     },
-      // ],
-      // securityGroups: [opensearchSG],
-      enforceHttps: true,
-      nodeToNodeEncryption: true,
-      encryptionAtRest: {
+      domainEndpointOptions: {
+        enforceHttps: true,
+      },
+      nodeToNodeEncryptionOptions: {
         enabled: true,
       },
-      // More permissive access policy for public domain (for development only)
-      accessPolicies: [
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
-          principals: [new iam.AnyPrincipal()],
-          actions: [
-            "es:ESHttpGet",
-            "es:ESHttpPost",
-            "es:ESHttpPut",
-            "es:ESHttpDelete",
-            "es:ESHttpHead",
-          ],
-          resources: [
-            `arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`,
-          ],
-        }),
-      ],
+      encryptionAtRestOptions: {
+        enabled: true,
+      },
+      accessPolicies: {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: "*",
+            Action: "es:*",
+            Resource: `arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`,
+          },
+        ],
+      },
+    });
+
+    // Create Domain wrapper for compatibility
+    this.domain = opensearch.Domain.fromDomainAttributes(this, "LogsDomainRef", {
+      domainArn: cfnDomain.attrArn,
+      domainEndpoint: cfnDomain.attrDomainEndpoint,
     });
 
     // Create IAM role for Firehose
