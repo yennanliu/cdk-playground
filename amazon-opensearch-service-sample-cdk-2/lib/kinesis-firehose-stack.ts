@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
-import { Stack, StackProps, RemovalPolicy, Duration } from 'aws-cdk-lib';
+import { Stack, StackProps, RemovalPolicy, Duration, Fn } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as firehose from 'aws-cdk-lib/aws-kinesisfirehose';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -14,6 +14,7 @@ import { StackPropsExt } from './stack-composer';
 export interface KinesisFirehoseStackProps extends StackPropsExt {
     readonly opensearchDomain: opensearch.Domain;
     readonly opensearchIndex: string;
+    readonly opensearchStackName: string;
 }
 
 export class KinesisFirehoseStack extends Stack {
@@ -26,63 +27,12 @@ export class KinesisFirehoseStack extends Stack {
             autoDeleteObjects: true,
         });
 
-        // Create IAM role for Firehose
-        const firehoseRole = new iam.Role(this, 'FirehoseRole', {
-            assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
-        });
+        // Import the Firehose role ARN from the OpenSearch stack
+        const firehoseRoleArn = Fn.importValue(`${props.opensearchStackName}-FirehoseRoleArn`);
+        const firehoseRole = iam.Role.fromRoleArn(this, 'ImportedFirehoseRole', firehoseRoleArn);
 
-        // Grant permissions to access OpenSearch
-        firehoseRole.addToPolicy(new iam.PolicyStatement({
-            effect: iam.Effect.ALLOW,
-            actions: [
-                'es:DescribeElasticsearchDomain',
-                'es:DescribeElasticsearchDomains',
-                'es:DescribeElasticsearchDomainConfig',
-                'es:ESHttpPost',
-                'es:ESHttpPut',
-                'es:ESHttpGet',
-                'opensearch:DescribeDomain',
-                'opensearch:DescribeDomains', 
-                'opensearch:DescribeDomainConfig',
-                'opensearch:ESHttpPost',
-                'opensearch:ESHttpPut',
-                'opensearch:ESHttpGet',
-            ],
-            resources: [
-                props.opensearchDomain.domainArn,
-                `${props.opensearchDomain.domainArn}/*`,
-            ],
-        }));
-
-        // Grant permissions to write to S3
-        firehoseRole.addToPolicy(new iam.PolicyStatement({
-            effect: iam.Effect.ALLOW,
-            actions: [
-                's3:AbortMultipartUpload',
-                's3:GetBucketLocation',
-                's3:GetObject',
-                's3:ListBucket',
-                's3:ListBucketMultipartUploads',
-                's3:PutObject'
-            ],
-            resources: [
-                backupBucket.bucketArn,
-                `${backupBucket.bucketArn}/*`
-            ]
-        }));
-
-        // Grant permissions to write to CloudWatch Logs
-        firehoseRole.addToPolicy(new iam.PolicyStatement({
-            effect: iam.Effect.ALLOW,
-            actions: [
-                'logs:PutLogEvents',
-                'logs:CreateLogStream',
-                'logs:CreateLogGroup'
-            ],
-            resources: [
-                `arn:aws:logs:${Stack.of(this).region}:${Stack.of(this).account}:log-group:/aws/kinesisfirehose/*:*`
-            ]
-        }));
+        // Grant the imported role permissions to write to this stack's S3 bucket
+        backupBucket.grantReadWrite(firehoseRole);
 
         // Create Kinesis Firehose
         const deliveryStream = new firehose.CfnDeliveryStream(this, 'OpenSearchDeliveryStream', {
@@ -130,19 +80,11 @@ export class KinesisFirehoseStack extends Stack {
             }
         });
 
-        // Create CloudWatch Logs Subscription Filter
+        // Create CloudWatch Logs for Firehose operations (not for subscription)
         const logGroup = new LogGroup(this, 'FirehoseLogGroup', {
             logGroupName: `/aws/firehose/${props.opensearchIndex}`,
             removalPolicy: RemovalPolicy.DESTROY,
             retention: logs.RetentionDays.ONE_WEEK,
-        });
-
-        // Create a subscription filter for the log group
-        new logs.CfnSubscriptionFilter(this, 'FirehoseSubscription', {
-            logGroupName: logGroup.logGroupName,
-            filterPattern: '',  // Empty string means all events
-            destinationArn: deliveryStream.attrArn,
-            roleArn: firehoseRole.roleArn,
         });
     }
 } 

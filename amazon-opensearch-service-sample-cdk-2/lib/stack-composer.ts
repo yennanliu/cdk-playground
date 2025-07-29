@@ -157,6 +157,7 @@ export class StackComposer {
         const firehoseStack = new KinesisFirehoseStack(scope, 'firehoseStack', {
             opensearchDomain: opensearchStack.domain,
             opensearchIndex: 'cloudwatch-logs',
+            opensearchStackName: opensearchStack.stackName,
             stackName: `Firehose-${stage}-${region}`,
             description: "This stack contains resources to create/manage Kinesis Firehose for OpenSearch",
             ...props,
