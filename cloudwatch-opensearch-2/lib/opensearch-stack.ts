@@ -36,6 +36,11 @@ export class OpensearchStack extends cdk.Stack {
       "Allow HTTPS access from VPC"
     );
 
+    // Create IAM role for Firehose first (needed for OpenSearch access policy)
+    this.firehoseRole = new iam.Role(this, "FirehoseRole", {
+      assumedBy: new iam.ServicePrincipal("firehose.amazonaws.com"),
+    });
+
     // Create OpenSearch domain using CfnDomain for precise control
     const cfnDomain = new opensearch.CfnDomain(this, "LogsDomain", {
       engineVersion: "OpenSearch_2.3",
@@ -59,12 +64,27 @@ export class OpensearchStack extends cdk.Stack {
       encryptionAtRestOptions: {
         enabled: true,
       },
+      // Enable fine-grained access control with master user
+      advancedSecurityOptions: {
+        enabled: true,
+        internalUserDatabaseEnabled: true,
+        masterUserOptions: {
+          masterUserName: "admin",
+          masterUserPassword: "TempPassword123!", // Change this in production
+        },
+      },
+      // More restrictive access policy for fine-grained access control
       accessPolicies: {
         Version: "2012-10-17",
         Statement: [
           {
             Effect: "Allow",
-            Principal: "*",
+            Principal: {
+              AWS: [
+                `arn:aws:iam::${this.account}:root`,
+                this.firehoseRole.roleArn, // Add Firehose role
+              ],
+            },
             Action: "es:*",
             Resource: `arn:aws:es:${this.region}:${this.account}:domain/logs-domain/*`,
           },
@@ -78,15 +98,10 @@ export class OpensearchStack extends cdk.Stack {
       domainEndpoint: cfnDomain.attrDomainEndpoint,
     });
 
-    // Create IAM role for Firehose
-    this.firehoseRole = new iam.Role(this, "FirehoseRole", {
-      assumedBy: new iam.ServicePrincipal("firehose.amazonaws.com"),
-    });
-
     // Add permissions to Firehose role for OpenSearch
     this.firehoseRole.addToPolicy(
       new iam.PolicyStatement({
-        resources: [this.domain.domainArn, `${this.domain.domainArn}/*`],
+        resources: [cfnDomain.attrArn, `${cfnDomain.attrArn}/*`],
         actions: [
           "es:DescribeDomain",
           "es:DescribeDomains",
@@ -128,7 +143,7 @@ export class OpensearchStack extends cdk.Stack {
         deliveryStreamType: "DirectPut",
         deliveryStreamName: "opensearch-logs-stream",
         amazonopensearchserviceDestinationConfiguration: {
-          domainArn: this.domain.domainArn,
+          domainArn: cfnDomain.attrArn,
           indexName: "logs",
           roleArn: this.firehoseRole.roleArn,
           s3BackupMode: "AllDocuments",
@@ -302,8 +317,19 @@ def handler(event, context):
 
     // Output domain endpoint
     new cdk.CfnOutput(this, "OpenSearchDomainEndpoint", {
-      value: `https://${this.domain.domainEndpoint}`,
+      value: `https://${cfnDomain.attrDomainEndpoint}`,
       description: "OpenSearch Domain Endpoint",
+    });
+
+    // Output master user credentials
+    new cdk.CfnOutput(this, "OpenSearchMasterUser", {
+      value: "admin",
+      description: "OpenSearch Master Username",
+    });
+
+    new cdk.CfnOutput(this, "OpenSearchMasterPassword", {
+      value: "TempPassword123!",
+      description: "OpenSearch Master Password (CHANGE IN PRODUCTION!)",
     });
 
     // Output Firehose delivery stream ARN
