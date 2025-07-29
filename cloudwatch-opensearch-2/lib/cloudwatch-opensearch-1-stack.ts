@@ -4,15 +4,15 @@ import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { Construct } from 'constructs';
 
-export class CloudwatchOpensearch2Stack extends Stack {
+export class CloudwatchOpensearch1Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, 'CloudwatchOpensearch2Queue', {
+    const queue = new sqs.Queue(this, 'CloudwatchOpensearch1Queue', {
       visibilityTimeout: Duration.seconds(300)
     });
 
-    const topic = new sns.Topic(this, 'CloudwatchOpensearch2Topic');
+    const topic = new sns.Topic(this, 'CloudwatchOpensearch1Topic');
 
     topic.addSubscription(new subs.SqsSubscription(queue));
   }
