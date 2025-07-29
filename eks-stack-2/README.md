@@ -52,6 +52,8 @@ kubectl delete -f k8s/kafka-zk-kafkaUI-deployment.yaml
 
 kubectl delete -f k8s/java-maze-app-deployment.yaml
 
+kubectl delete -f k8s/airflow/airflow-deployment.yaml
+
 # 3. Check the status of your deployments
 kubectl get deployments
 
@@ -119,7 +121,7 @@ kubectl get services -n monitoring
 
 kubectl port-forward service/grafana-service 4000:3000 -n monitoring
 # account: admin
-# pwd: admin
+# pwd: admin (Admin_123)
 ```
 
 
