@@ -155,10 +155,11 @@ export class StackComposer {
 
         // Add Kinesis Firehose Stack
         const firehoseStack = new KinesisFirehoseStack(scope, 'firehoseStack', {
-            stage: props.stage,
             opensearchDomain: opensearchStack.domain,
             opensearchIndex: 'cloudwatch-logs',
-            firehoseRole: opensearchStack.firehoseRole,
+            stackName: `Firehose-${stage}-${region}`,
+            description: "This stack contains resources to create/manage Kinesis Firehose for OpenSearch",
+            ...props,
         });
 
         // Add dependency to ensure OpenSearch is created first
@@ -168,6 +169,7 @@ export class StackComposer {
             opensearchStack.addDependency(networkStack)
         }
         this.stacks.push(opensearchStack)
+        this.stacks.push(firehoseStack)
 
         function getContextForType(optionName: string, expectedType: string): any {
             const option = scope.node.tryGetContext(optionName)

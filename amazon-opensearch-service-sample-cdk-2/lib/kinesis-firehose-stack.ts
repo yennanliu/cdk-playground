@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
-import { Stack, StackProps, RemovalPolicy, Duration } from 'aws-cdk-lib';
+import { Stack, StackProps, RemovalPolicy, Duration, PhysicalName } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as firehose from 'aws-cdk-lib/aws-kinesisfirehose';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -14,21 +14,26 @@ import { StackPropsExt } from './stack-composer';
 export interface KinesisFirehoseStackProps extends StackPropsExt {
   readonly opensearchDomain: opensearch.Domain;
   readonly opensearchIndex: string;
-  readonly firehoseRole: iam.Role;
 }
 
 export class KinesisFirehoseStack extends Stack {
+  public readonly firehoseRole: iam.Role;
+
   constructor(scope: Construct, id: string, props: KinesisFirehoseStackProps) {
     super(scope, id, props);
 
     // Create S3 bucket for Firehose backup
     const backupBucket = new s3.Bucket(this, 'FirehoseBackupBucket', {
+      bucketName: PhysicalName.GENERATE_IF_NEEDED,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
 
-    // Use Firehose role from OpenSearch stack
-    const firehoseRole = props.firehoseRole;
+    // Create IAM role for Firehose
+    const firehoseRole = new iam.Role(this, 'FirehoseRole', {
+      assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
+    });
+    this.firehoseRole = firehoseRole;
 
     // Grant permissions to access OpenSearch
     firehoseRole.addToPolicy(new iam.PolicyStatement({
@@ -53,23 +58,6 @@ export class KinesisFirehoseStack extends Stack {
       ],
     }));
 
-    // Grant permissions to write to S3
-    firehoseRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        's3:AbortMultipartUpload',
-        's3:GetBucketLocation',
-        's3:GetObject',
-        's3:ListBucket',
-        's3:ListBucketMultipartUploads',
-        's3:PutObject',
-      ],
-      resources: [
-        backupBucket.bucketArn,
-        `${backupBucket.bucketArn}/*`,
-      ],
-    }));
-
     // Grant permissions to write to CloudWatch Logs
     firehoseRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
@@ -82,6 +70,10 @@ export class KinesisFirehoseStack extends Stack {
       ],
       resources: ['*'],
     }));
+
+    // Grant permissions to write to S3 bucket
+    backupBucket.grantReadWrite(firehoseRole);
+
 
     // Create Kinesis Firehose
     const deliveryStream = new firehose.CfnDeliveryStream(this, 'OpenSearchDeliveryStream', {

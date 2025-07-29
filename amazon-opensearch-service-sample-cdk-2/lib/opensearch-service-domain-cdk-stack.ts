@@ -51,16 +51,9 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
 export class OpensearchServiceDomainCdkStack extends Stack {
   public readonly domainEndpoint: string;
   public readonly domain: Domain;
-  public readonly firehoseRole: iam.Role;
 
   constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
     super(scope, id, props);
-
-    // Create Firehose role first
-    const firehoseRole = new Role(this, 'FirehoseRole', {
-      assumedBy: new ServicePrincipal('firehose.amazonaws.com'),
-    });
-    this.firehoseRole = firehoseRole;
 
     // Create base access policies array if not provided
     const accessPolicies = props.accessPolicies || [];
@@ -83,27 +76,18 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       resources: ['*'] // This allows access to all log groups
     });
 
-    // Add Firehose access policy using the created role
-    const firehosePolicy = new PolicyStatement({
+    // Add broader access policy for development (allows account root)
+    // In production, this should be more restrictive
+    const accountRootPolicy = new PolicyStatement({
       effect: Effect.ALLOW,
-      principals: [new ArnPrincipal(firehoseRole.roleArn)],
+      principals: [new ArnPrincipal(`arn:aws:iam::${Stack.of(this).account}:root`)],
       actions: [
-        'es:DescribeElasticsearchDomain',
-        'es:DescribeElasticsearchDomains',
-        'es:DescribeElasticsearchDomainConfig',
-        'es:ESHttpPost',
-        'es:ESHttpPut',
-        'es:ESHttpGet',
-        'opensearch:DescribeDomain',
-        'opensearch:DescribeDomains',
-        'opensearch:DescribeDomainConfig',
-        'opensearch:ESHttpPost',
-        'opensearch:ESHttpPut',
-        'opensearch:ESHttpGet',
+        'es:*',
+        'opensearch:*',
       ],
       resources: [`arn:aws:es:${Stack.of(this).region}:${Stack.of(this).account}:domain/${props.domainName}/*`]
     });
-    accessPolicies.push(firehosePolicy);
+    accessPolicies.push(accountRootPolicy);
 
     // Add the policies to the access policies array
     accessPolicies.push(cloudwatchLogsPolicy);
