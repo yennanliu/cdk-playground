@@ -86,6 +86,9 @@ cdk deploy --all
 cdk deploy --hotswap
 
 
+# Force deploy (NO need to wait `UPDATE_ROLLBACK_COMPLETE``)
+cdk deploy --force
+
 
 # NOTE !!! if want to deploy a new stack while the other stack (same CDK) is being destroyed on time same
 cdk deploy --output cdk.out2.deploy
