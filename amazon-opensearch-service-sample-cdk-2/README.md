@@ -12,7 +12,7 @@ export CDK_DEPLOYMENT_STAGE=dev
 cdk bootstrap
 
 # OPENSEARCH_2_15
-cdk deploy "*" --c domainName="os-service-domain-2" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-3" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 ```
 
 ### Getting Started
