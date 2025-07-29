@@ -25,5 +25,4 @@ const opensearchStack = new OpensearchStack(app, 'OpensearchStack', {
         region: process.env.CDK_DEFAULT_REGION || 'ap-northeast-1',
     },
     vpc: loggingStack.vpc,
-    logGroup: loggingStack.logGroup,
 });

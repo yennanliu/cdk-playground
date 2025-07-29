@@ -5,12 +5,13 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as firehose from "aws-cdk-lib/aws-kinesisfirehose";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as cr from "aws-cdk-lib/custom-resources";
 import { Construct } from "constructs";
 import { RemovalPolicy } from "aws-cdk-lib";
 
 export interface OpensearchStackProps extends cdk.StackProps {
   vpc: ec2.IVpc;
-  logGroup: logs.LogGroup;
 }
 
 export class OpensearchStack extends cdk.Stack {
@@ -162,13 +163,144 @@ export class OpensearchStack extends cdk.Stack {
       })
     );
 
-    // Create subscription filter to send logs to Firehose
-    new logs.CfnSubscriptionFilter(this, "LogsSubscriptionFilter", {
-      logGroupName: props.logGroup.logGroupName,
-      filterPattern: "",
-      destinationArn: this.deliveryStream.attrArn,
-      roleArn: logsRole.roleArn,
+    // Create Lambda function to discover and manage log group subscriptions
+    const logGroupDiscoveryFunction = new lambda.Function(this, "LogGroupDiscovery", {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: "index.handler",
+      timeout: cdk.Duration.minutes(5),
+      code: lambda.Code.fromInline(`
+import boto3
+import json
+import cfnresponse
+
+def handler(event, context):
+    try:
+        logs_client = boto3.client('logs')
+        
+        # Get request properties
+        request_type = event['RequestType']
+        firehose_arn = event['ResourceProperties']['FirehoseArn']
+        logs_role_arn = event['ResourceProperties']['LogsRoleArn']
+        
+        if request_type == 'Create' or request_type == 'Update':
+            # Get all log groups
+            paginator = logs_client.get_paginator('describe_log_groups')
+            log_groups = []
+            
+            for page in paginator.paginate():
+                log_groups.extend(page['logGroups'])
+            
+            # Create subscription filters for all log groups
+            created_filters = []
+            for log_group in log_groups:
+                log_group_name = log_group['logGroupName']
+                filter_name = f"opensearch-subscription-{log_group_name.replace('/', '-').replace('_', '-')}"
+                
+                try:
+                    # Check if subscription filter already exists
+                    existing_filters = logs_client.describe_subscription_filters(
+                        logGroupName=log_group_name
+                    )
+                    
+                    # Remove existing filters to avoid conflicts
+                    for existing_filter in existing_filters['subscriptionFilters']:
+                        logs_client.delete_subscription_filter(
+                            logGroupName=log_group_name,
+                            filterName=existing_filter['filterName']
+                        )
+                    
+                    # Create new subscription filter
+                    logs_client.put_subscription_filter(
+                        logGroupName=log_group_name,
+                        filterName=filter_name,
+                        filterPattern='',
+                        destinationArn=firehose_arn,
+                        roleArn=logs_role_arn
+                    )
+                    created_filters.append(log_group_name)
+                    print(f"Created subscription filter for {log_group_name}")
+                except Exception as e:
+                    print(f"Failed to create subscription filter for {log_group_name}: {e}")
+                    continue
+            
+            response_data = {
+                'LogGroupsProcessed': len(log_groups),
+                'FiltersCreated': len(created_filters),
+                'LogGroups': [lg['logGroupName'] for lg in log_groups]
+            }
+            
+        elif request_type == 'Delete':
+            # Clean up - remove all subscription filters we created
+            paginator = logs_client.get_paginator('describe_log_groups')
+            
+            for page in paginator.paginate():
+                for log_group in page['logGroups']:
+                    log_group_name = log_group['logGroupName']
+                    try:
+                        existing_filters = logs_client.describe_subscription_filters(
+                            logGroupName=log_group_name
+                        )
+                        
+                        for existing_filter in existing_filters['subscriptionFilters']:
+                            if existing_filter['filterName'].startswith('opensearch-subscription-'):
+                                logs_client.delete_subscription_filter(
+                                    logGroupName=log_group_name,
+                                    filterName=existing_filter['filterName']
+                                )
+                                print(f"Deleted subscription filter for {log_group_name}")
+                    except Exception as e:
+                        print(f"Failed to delete subscription filter for {log_group_name}: {e}")
+                        continue
+            
+            response_data = {'Status': 'Cleanup completed'}
+        
+        cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+      `),
     });
+
+    // Add permissions to the Lambda function
+    logGroupDiscoveryFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "logs:DescribeLogGroups",
+          "logs:DescribeSubscriptionFilters",
+          "logs:PutSubscriptionFilter",
+          "logs:DeleteSubscriptionFilter",
+        ],
+        resources: ["*"],
+      })
+    );
+
+    // Add permission to pass the logs role
+    logGroupDiscoveryFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["iam:PassRole"],
+        resources: [logsRole.roleArn],
+      })
+    );
+
+    // Create custom resource to trigger the log group discovery
+    const logGroupDiscoveryProvider = new cr.Provider(this, "LogGroupDiscoveryProvider", {
+      onEventHandler: logGroupDiscoveryFunction,
+    });
+
+    const logGroupDiscoveryResource = new cdk.CustomResource(this, "LogGroupDiscoveryResource", {
+      serviceToken: logGroupDiscoveryProvider.serviceToken,
+      properties: {
+        FirehoseArn: this.deliveryStream.attrArn,
+        LogsRoleArn: logsRole.roleArn,
+        // Add a timestamp to force updates when stack is updated
+        Timestamp: Date.now().toString(),
+      },
+    });
+
+    // Ensure the custom resource runs after the delivery stream is created
+    logGroupDiscoveryResource.node.addDependency(this.deliveryStream);
+    logGroupDiscoveryResource.node.addDependency(logsRole);
 
     // Output domain endpoint
     new cdk.CfnOutput(this, "OpenSearchDomainEndpoint", {
@@ -180,6 +312,12 @@ export class OpensearchStack extends cdk.Stack {
     new cdk.CfnOutput(this, "FirehoseDeliveryStreamArn", {
       value: this.deliveryStream.attrArn,
       description: "Firehose Delivery Stream ARN",
+    });
+
+    // Output number of log groups processed
+    new cdk.CfnOutput(this, "LogGroupsProcessed", {
+      value: logGroupDiscoveryResource.getAtt("LogGroupsProcessed").toString(),
+      description: "Number of CloudWatch Log Groups Processed",
     });
 
     // Add tags
