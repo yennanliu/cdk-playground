@@ -17,6 +17,8 @@ export interface KinesisFirehoseStackProps extends StackPropsExt {
 }
 
 export class KinesisFirehoseStack extends Stack {
+  public readonly firehoseRole: iam.Role;
+
   constructor(scope: Construct, id: string, props: KinesisFirehoseStackProps) {
     super(scope, id, props);
 
@@ -30,6 +32,9 @@ export class KinesisFirehoseStack extends Stack {
     const firehoseRole = new iam.Role(this, 'FirehoseRole', {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
     });
+
+    // Expose the role for other stacks to use
+    this.firehoseRole = firehoseRole;
 
     // Grant permissions to access OpenSearch
     firehoseRole.addToPolicy(new iam.PolicyStatement({
@@ -102,14 +107,7 @@ export class KinesisFirehoseStack extends Stack {
           logStreamName: 'OpenSearchDelivery'
         },
         processingConfiguration: {
-          enabled: true,
-          processors: [{
-            type: 'AppendDelimiterToRecord',
-            parameters: [{
-              parameterName: 'Delimiter',
-              parameterValue: '\\n'
-            }]
-          }]
+          enabled: false
         },
         s3BackupMode: 'AllDocuments',
         s3Configuration: {
