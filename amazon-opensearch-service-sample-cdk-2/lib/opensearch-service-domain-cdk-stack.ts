@@ -71,16 +71,20 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         'es:ESHttpPost',
         'es:ESHttpPut',
         'es:ESHttpGet',
+        'es:ESHttpBulk',
         'opensearch:DescribeDomain',
         'opensearch:DescribeDomains', 
         'opensearch:DescribeDomainConfig',
         'opensearch:ESHttpPost',
         'opensearch:ESHttpPut',
         'opensearch:ESHttpGet',
+        'opensearch:ESHttpBulk',
       ],
       resources: [
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`,
       ],
     }));
 
@@ -108,9 +112,11 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         'es:ESHttpPost',
         'es:ESHttpPut',
         'es:ESHttpGet',
+        'es:ESHttpBulk',
         'opensearch:ESHttpPost',
         'opensearch:ESHttpPut', 
-        'opensearch:ESHttpGet'
+        'opensearch:ESHttpGet',
+        'opensearch:ESHttpBulk'
       ],
       resources: [`arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`]
     });
