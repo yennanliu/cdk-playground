@@ -69,7 +69,7 @@ export class KinesisFirehoseStack extends Stack {
                     bucketArn: backupBucket.bucketArn,
                     roleArn: firehoseRole.roleArn,
                     bufferingHints: {
-                        intervalInSeconds: 3,  // Reduced from 60 to 3 seconds for faster debugging
+                        intervalInSeconds: 60,  // S3 backup requires minimum 60 seconds
                         sizeInMBs: 1
                     },
                     compressionFormat: 'UNCOMPRESSED'

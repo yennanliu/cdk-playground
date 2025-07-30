@@ -109,14 +109,14 @@ export class StackComposer {
                 vpcSubnetIds: vpcSubnetIds,
                 vpcSecurityGroupIds: vpcSecurityGroupIds,
                 availabilityZoneCount: availabilityZoneCount,
-                stackName: `OSServiceNetworkCDKStack-${stage}-${region}`,
+                stackName: `OSServiceNetworkCDKStack-${stage}-${region}-2`,
                 description: "This stack contains resources to create/manage networking for an OpenSearch Service domain",
                 ...props,
             })
             this.stacks.push(networkStack)
         }
 
-        const opensearchStack = new OpensearchServiceDomainCdkStack(scope, 'opensearchDomainStack', {
+        const opensearchStack = new OpensearchServiceDomainCdkStack(scope, 'opensearchDomainStack-1', {
             version: version,
             domainName: domainName,
             dataNodeInstanceType: dataNodeType,
@@ -148,7 +148,7 @@ export class StackComposer {
             vpcSecurityGroups: networkStack ? networkStack.domainSecurityGroups : undefined,
             availabilityZoneCount: availabilityZoneCount,
             domainRemovalPolicy: domainRemovalPolicy,
-            stackName: `Opensearch-${stage}-${region}`,
+            stackName: `Opensearch-${stage}-${region}-2`,
             description: "This stack contains resources to create/manage an OpenSearch Service domain",
             ...props,
         });
@@ -158,7 +158,7 @@ export class StackComposer {
             opensearchDomain: opensearchStack.domain,
             opensearchIndex: 'cloudwatch-logs',
             opensearchStackName: opensearchStack.stackName,
-            stackName: `Firehose-${stage}-${region}`,
+            stackName: `Firehose-${stage}-${region}-2`,
             description: "This stack contains resources to create/manage Kinesis Firehose for OpenSearch",
             ...props,
         });

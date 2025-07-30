@@ -16,7 +16,7 @@ cdk bootstrap
 # OPENSEARCH_2_15
 # NOTE !! use the new `domainName` in every CDK deploy
 # TODO: fix above since we should ONLY update the same domain if one is existed 
-cdk deploy "*" --c domainName="os-service-domain-6" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-8" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 ```
 
 -  Test opensearch
@@ -25,6 +25,7 @@ cdk deploy "*" --c domainName="os-service-domain-6" --c dataNodeType="r6g.large.
 
 curl -XGET -u 'master-user:master-user-password' 'domain-endpoint/movies/_search?q=mars&pretty=true'
 
+curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-service-domain-5-zixlxqr2g42cvlyn5ca7c22ltu.ap-northeast-1.es.amazonaws.com/cloudwatch-logs/_search?q=mars&pretty=true'
 ```
 
 ### Getting Started
