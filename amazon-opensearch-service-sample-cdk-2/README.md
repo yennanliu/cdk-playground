@@ -4,6 +4,8 @@ This repo contains an IaC CDK solution for deploying an OpenSearch Service Domai
 
 ### Run
 
+- Deploy
+
 ```bash
 npm install
 
@@ -13,6 +15,14 @@ cdk bootstrap
 
 # OPENSEARCH_2_15
 cdk deploy "*" --c domainName="os-service-domain-5" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+```
+
+-  Test opensearch
+
+```bash
+
+curl -XGET -u 'master-user:master-user-password' 'domain-endpoint/movies/_search?q=mars&pretty=true'
+
 ```
 
 ### Getting Started

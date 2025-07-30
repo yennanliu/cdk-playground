@@ -86,6 +86,8 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/cloudwatch-logs*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/cloudwatch-logs*`,
       ],
     }));
 
@@ -119,7 +121,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         'opensearch:ESHttpGet',
         'opensearch:ESHttpBulk'
       ],
-      resources: [`arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`]
+      resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/cloudwatch-logs*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/cloudwatch-logs*`
+      ]
     });
     accessPolicies.push(firehosePolicy);
 

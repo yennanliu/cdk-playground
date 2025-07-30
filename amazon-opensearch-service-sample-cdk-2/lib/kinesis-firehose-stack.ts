@@ -43,7 +43,7 @@ export class KinesisFirehoseStack extends Stack {
                 domainArn: props.opensearchDomain.domainArn,
                 roleArn: firehoseRole.roleArn,
                 bufferingHints: {
-                    intervalInSeconds: 60,
+                    intervalInSeconds: 3,  // Reduced from 60 to 3 seconds for faster debugging
                     sizeInMBs: 1
                 },
                 cloudWatchLoggingOptions: {
@@ -69,7 +69,7 @@ export class KinesisFirehoseStack extends Stack {
                     bucketArn: backupBucket.bucketArn,
                     roleArn: firehoseRole.roleArn,
                     bufferingHints: {
-                        intervalInSeconds: 60,
+                        intervalInSeconds: 3,  // Reduced from 60 to 3 seconds for faster debugging
                         sizeInMBs: 1
                     },
                     compressionFormat: 'UNCOMPRESSED'
