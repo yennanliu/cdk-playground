@@ -14,7 +14,9 @@ export CDK_DEPLOYMENT_STAGE=dev
 cdk bootstrap
 
 # OPENSEARCH_2_15
-cdk deploy "*" --c domainName="os-service-domain-5" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+# NOTE !! use the new `domainName` in every CDK deploy
+# TODO: fix above since we should ONLY update the same domain if one is existed 
+cdk deploy "*" --c domainName="os-service-domain-6" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 ```
 
 -  Test opensearch
