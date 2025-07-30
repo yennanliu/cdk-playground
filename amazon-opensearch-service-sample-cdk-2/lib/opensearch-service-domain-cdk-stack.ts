@@ -3,8 +3,9 @@
 
 import {Construct} from "constructs";
 import {EbsDeviceVolumeType, ISecurityGroup, IVpc, SubnetSelection} from "aws-cdk-lib/aws-ec2";
-import {Domain, EngineVersion, TLSSecurityPolicy, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
-import {RemovalPolicy, SecretValue, Stack, StackProps, CfnOutput} from "aws-cdk-lib";
+import {CfnDomain, Domain, EngineVersion, TLSSecurityPolicy, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
+import { PolicyDocument } from "aws-cdk-lib/aws-iam";
+import {CfnDeletionPolicy, RemovalPolicy, SecretValue, Stack, StackProps, CfnOutput} from "aws-cdk-lib";
 import {IKey, Key} from "aws-cdk-lib/aws-kms";
 import * as iam from "aws-cdk-lib/aws-iam";
 import {PolicyStatement, Effect, ArnPrincipal, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
@@ -144,6 +145,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     const zoneAwarenessConfig: ZoneAwarenessConfig|undefined = props.availabilityZoneCount ?
         {enabled: true, availabilityZoneCount: props.availabilityZoneCount} : undefined
 
+    // Create new domain with imported name
     const domain = new Domain(this, 'Domain', {
       version: props.version,
       domainName: props.domainName,
@@ -185,8 +187,19 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       vpcSubnets: props.vpcSubnets,
       securityGroups: props.vpcSecurityGroups,
       zoneAwareness: zoneAwarenessConfig,
-      removalPolicy: props.domainRemovalPolicy
+      removalPolicy: RemovalPolicy.RETAIN  // Important: Set to RETAIN to prevent accidental deletion
     });
+
+    // Get the underlying CfnDomain to customize its behavior
+    const cfnDomain = domain.node.defaultChild as CfnDomain;
+    
+    // Set UpdateReplacePolicy to Retain to prevent replacement of existing domain
+    cfnDomain.cfnOptions.updateReplacePolicy = CfnDeletionPolicy.RETAIN;
+    
+    // Add DeletionPolicy to prevent accidental deletion
+    cfnDomain.cfnOptions.deletionPolicy = CfnDeletionPolicy.RETAIN;
+
+
 
     this.domainEndpoint = domain.domainEndpoint;
     this.domain = domain;
