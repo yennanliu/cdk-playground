@@ -41,22 +41,37 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
     });
 
-    // Add OpenSearch permissions to the Firehose role
+    // Add comprehensive OpenSearch permissions for FGAC-enabled domain
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
         'es:ESHttpPost',
         'es:ESHttpPut',
-        'es:ESHttpGet',
+        'es:ESHttpGet', 
         'es:ESHttpHead',
         'es:ESHttpDelete',
-        'es:ESDescribeDomain'
+        'es:ESDescribeDomain',
+        'es:DescribeDomain',
+        'es:DescribeDomainConfig',
+        'es:ESGetConfiguration',
+        'es:ESListDomainNames'
       ],
       resources: [
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+      ]
+    }));
+
+    // Add IAM pass role permission for Firehose service
+    this.firehoseRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'iam:PassRole'
+      ],
+      resources: [
+        this.firehoseRole.roleArn
       ]
     }));
 
@@ -127,17 +142,19 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Get the underlying CfnDomain to customize its behavior
     const cfnDomain = domain.node.defaultChild as CfnDomain;
     
-    // Enable Fine-grained access control with internal user database
+    // Enable Fine-grained access control with both internal users and IAM role support
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
       Enabled: true,
       InternalUserDatabaseEnabled: true,
       MasterUserOptions: {
         MasterUserName: 'admin',
         MasterUserPassword: 'AdminPassword123!'
-      }
+      },
+      // Configure for IAM role access
+      AnonymousAuthEnabled: false
     });
 
-    // Simple access policy when FGAC is enabled
+    // Minimal access policy for FGAC - authentication handled by OpenSearch Security
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [

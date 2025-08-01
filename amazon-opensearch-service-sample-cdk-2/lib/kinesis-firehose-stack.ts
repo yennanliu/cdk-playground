@@ -34,7 +34,7 @@ export class KinesisFirehoseStack extends Stack {
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
 
-        // Create Kinesis Firehose
+        // Create Kinesis Firehose optimized for FGAC-enabled OpenSearch
         const deliveryStream = new firehose.CfnDeliveryStream(this, 'OpenSearchDeliveryStream', {
             deliveryStreamName: `${props.opensearchIndex}-stream`,
             deliveryStreamType: 'DirectPut',
@@ -43,7 +43,7 @@ export class KinesisFirehoseStack extends Stack {
                 domainArn: props.opensearchDomain.domainArn,
                 roleArn: firehoseRole.roleArn,
                 bufferingHints: {
-                    intervalInSeconds: 3,  // Reduced from 60 to 3 seconds for faster debugging
+                    intervalInSeconds: 60,
                     sizeInMBs: 1
                 },
                 cloudWatchLoggingOptions: {
@@ -52,24 +52,14 @@ export class KinesisFirehoseStack extends Stack {
                     logStreamName: 'OpenSearchDelivery'
                 },
                 processingConfiguration: {
-                    enabled: true,
-                    processors: [{
-                        type: 'MetadataExtraction',
-                        parameters: [{
-                            parameterName: 'MetadataExtractionQuery',
-                            parameterValue: '{timestamp:.time, message:.message}'
-                        }, {
-                            parameterName: 'JsonParsingEngine',
-                            parameterValue: 'JQ-1.6'
-                        }]
-                    }]
+                    enabled: false
                 },
-                s3BackupMode: 'AllDocuments',
+                s3BackupMode: 'FailedDocumentsOnly',
                 s3Configuration: {
                     bucketArn: backupBucket.bucketArn,
                     roleArn: firehoseRole.roleArn,
                     bufferingHints: {
-                        intervalInSeconds: 60,  // S3 backup requires minimum 60 seconds
+                        intervalInSeconds: 60,
                         sizeInMBs: 1
                     },
                     compressionFormat: 'UNCOMPRESSED'
