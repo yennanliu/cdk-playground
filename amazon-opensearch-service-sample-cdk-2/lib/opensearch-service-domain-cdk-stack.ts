@@ -45,13 +45,49 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
-        'es:*',
-        'opensearch:*'
+        'es:ESHttpPost',
+        'es:ESHttpPut',
+        'es:ESHttpGet',
+        'es:ESHttpHead',
+        'es:ESHttpDelete',
+        'es:ESDescribeDomain'
       ],
       resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
       ]
+    }));
+
+    // Add CloudWatch Logs permissions to the Firehose role
+    this.firehoseRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents',
+        'logs:DescribeLogGroups',
+        'logs:DescribeLogStreams'
+      ],
+      resources: [
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*`,
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/firehose/*`
+      ]
+    }));
+
+    // Add S3 permissions to the Firehose role (will be used by Firehose stack)
+    this.firehoseRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        's3:AbortMultipartUpload',
+        's3:GetBucketLocation',
+        's3:GetObject',
+        's3:ListBucket',
+        's3:ListBucketMultipartUploads',
+        's3:PutObject'
+      ],
+      resources: ['*'] // Will be restricted by the Firehose stack when bucket is created
     }));
 
     // Map objects from props
@@ -116,7 +152,10 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             'es:ESHttpHead',
             'es:ESHttpDelete'
           ],
-          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
         },
         {
           Effect: 'Allow',
@@ -127,7 +166,10 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             'es:ESHttpPost',
             'es:ESHttpPut'
           ],
-          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
         }
       ]
     });
