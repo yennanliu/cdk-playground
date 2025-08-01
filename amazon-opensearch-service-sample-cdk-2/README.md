@@ -26,7 +26,7 @@ cdk deploy "*" --c domainName="os-service-domain-17" --c dataNodeType="r6g.large
 
 -  Test opensearch
 
-- Create index
+- Create index (`cloudwatch-logs`)
 
 ```bash
 # create `cloudwatch-logs` idnex
@@ -47,7 +47,7 @@ PUT /cloudwatch-logs
 # query data under `cloudwatch-logs` index
 GET /cloudwatch-logs/_search
 {
-  "size": 1000,  // Max per request
+  "size": 1000,
   "query": {
     "match_all": {}
   }
