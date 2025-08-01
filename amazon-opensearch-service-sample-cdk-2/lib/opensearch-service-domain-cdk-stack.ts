@@ -97,16 +97,36 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       InternalUserDatabaseEnabled: false,
     });
 
-    // Add a simple access policy directly to the CfnDomain
+    // Add a restrictive access policy that allows Firehose and specific principals
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
         {
           Effect: 'Allow',
           Principal: {
-            AWS: `arn:aws:iam::${this.account}:root`
+            AWS: [
+              this.firehoseRole.roleArn,
+              `arn:aws:iam::${this.account}:root`
+            ]
           },
-          Action: 'es:*',
+          Action: [
+            'es:ESHttpPost',
+            'es:ESHttpPut',
+            'es:ESHttpGet',
+            'es:ESHttpHead',
+            'es:ESHttpDelete'
+          ],
+          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+        },
+        {
+          Effect: 'Allow',
+          Principal: {
+            Service: 'firehose.amazonaws.com'
+          },
+          Action: [
+            'es:ESHttpPost',
+            'es:ESHttpPut'
+          ],
           Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
         }
       ]
