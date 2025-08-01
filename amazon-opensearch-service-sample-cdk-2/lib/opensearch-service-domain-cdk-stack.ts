@@ -94,14 +94,14 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     const zoneAwarenessConfig: ZoneAwarenessConfig|undefined = props.availabilityZoneCount ?
         {enabled: true, availabilityZoneCount: props.availabilityZoneCount} : undefined;
 
-    // Create new domain without access policies - let OpenSearch use default restrictive policy
+    // Create domain with security settings required for FGAC
     const domain = new Domain(this, 'Domain', {
       version: props.version,
       domainName: props.domainName,
-      enforceHttps: false,
-      nodeToNodeEncryption: false,
+      enforceHttps: true,
+      nodeToNodeEncryption: true,
       encryptionAtRest: {
-        enabled: false
+        enabled: true
       },
       capacity: {
         dataNodeInstanceType: props.dataNodeInstanceType,
@@ -127,28 +127,27 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Get the underlying CfnDomain to customize its behavior
     const cfnDomain = domain.node.defaultChild as CfnDomain;
     
-    // Create domain with minimal security that AWS accepts
+    // Enable Fine-grained access control with internal user database
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
-      Enabled: false,
-      InternalUserDatabaseEnabled: false
+      Enabled: true,
+      InternalUserDatabaseEnabled: true,
+      MasterUserOptions: {
+        MasterUserName: 'admin',
+        MasterUserPassword: 'AdminPassword123!'
+      }
     });
 
-    // Use restrictive but functional access policy (account-based with IP condition)
+    // Simple access policy when FGAC is enabled
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
         {
           Effect: 'Allow',
           Principal: {
-            AWS: `arn:aws:iam::${this.account}:root`
+            AWS: '*'
           },
           Action: 'es:*',
-          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-          Condition: {
-            IpAddress: {
-              'aws:SourceIp': '0.0.0.0/0'
-            }
-          }
+          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
         }
       ]
     });
