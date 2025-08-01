@@ -107,6 +107,18 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Create base access policies array if not provided
     const accessPolicies = props.accessPolicies || [];
 
+    // Add policy to allow any AWS principal to access the domain
+    const openAccessPolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      principals: [new ArnPrincipal("*")],
+      actions: ["es:*"],
+      resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+      ]
+    });
+    accessPolicies.push(openAccessPolicy);
+
     // Add policy to allow the specific Firehose role to write to OpenSearch
     const firehosePolicy = new PolicyStatement({
       effect: Effect.ALLOW,
