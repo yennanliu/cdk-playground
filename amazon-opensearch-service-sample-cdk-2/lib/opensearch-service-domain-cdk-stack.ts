@@ -6,7 +6,7 @@ import {EbsDeviceVolumeType, ISecurityGroup, IVpc, SubnetSelection} from "aws-cd
 import {CfnDomain, Domain, EngineVersion, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
 import {CfnDeletionPolicy, RemovalPolicy, Stack, CfnOutput} from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
-import {PolicyStatement, Effect, ArnPrincipal} from "aws-cdk-lib/aws-iam";
+import {PolicyStatement, Effect} from "aws-cdk-lib/aws-iam";
 import {StackPropsExt} from "./stack-composer";
 
 export interface opensearchServiceDomainCdkProps extends StackPropsExt {
@@ -41,7 +41,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
     });
 
-    // Add OpenSearch permissions to the Firehose role
+    // Add comprehensive OpenSearch permissions to the Firehose role
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
@@ -49,7 +49,9 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         'opensearch:*'
       ],
       resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
       ]
     }));
@@ -58,7 +60,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     const zoneAwarenessConfig: ZoneAwarenessConfig|undefined = props.availabilityZoneCount ?
         {enabled: true, availabilityZoneCount: props.availabilityZoneCount} : undefined;
 
-    // Create new domain without access policies - let OpenSearch use default restrictive policy
+    // Create domain with security disabled
     const domain = new Domain(this, 'Domain', {
       version: props.version,
       domainName: props.domainName,
@@ -91,23 +93,80 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Get the underlying CfnDomain to customize its behavior
     const cfnDomain = domain.node.defaultChild as CfnDomain;
     
-    // Disable advanced security options via CloudFormation properties
+    // Disable advanced security options (FGAC)
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
       Enabled: false,
       InternalUserDatabaseEnabled: false,
     });
 
-    // Add a simple access policy directly to the CfnDomain
+    // Add comprehensive access policy for Firehose and account access
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
         {
+          Sid: 'AllowAccountRootAccess',
           Effect: 'Allow',
           Principal: {
             AWS: `arn:aws:iam::${this.account}:root`
           },
-          Action: 'es:*',
-          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+          Action: [
+            'es:*',
+            'opensearch:*'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
+        },
+        {
+          Sid: 'AllowFirehoseRoleAccess',
+          Effect: 'Allow',
+          Principal: {
+            AWS: this.firehoseRole.roleArn
+          },
+          Action: [
+            'es:ESHttpPost',
+            'es:ESHttpPut',
+            'es:ESHttpGet',
+            'es:ESHttpHead',
+            'es:ESHttpDelete',
+            'es:ESHttpBulk',
+            'opensearch:ESHttpPost',
+            'opensearch:ESHttpPut',
+            'opensearch:ESHttpGet',
+            'opensearch:ESHttpHead',
+            'opensearch:ESHttpDelete',
+            'opensearch:ESHttpBulk'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
+        },
+        {
+          Sid: 'AllowFirehoseServiceAccess',
+          Effect: 'Allow',
+          Principal: {
+            Service: 'firehose.amazonaws.com'
+          },
+          Action: [
+            'es:ESHttpPost',
+            'es:ESHttpPut',
+            'es:ESHttpBulk',
+            'opensearch:ESHttpPost',
+            'opensearch:ESHttpPut',
+            'opensearch:ESHttpBulk'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
         }
       ]
     });
