@@ -133,13 +133,18 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       InternalUserDatabaseEnabled: false,
     });
 
+<<<<<<< Updated upstream
     // Add a restrictive access policy that allows Firehose and specific principals
+=======
+    // Add simple access policy allowing account root access (keeps FGAC disabled)
+>>>>>>> Stashed changes
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
         {
           Effect: 'Allow',
           Principal: {
+<<<<<<< Updated upstream
             AWS: [
               this.firehoseRole.roleArn,
               `arn:aws:iam::${this.account}:root`
@@ -170,6 +175,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
             `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
           ]
+=======
+            AWS: `arn:aws:iam::${this.account}:root`
+          },
+          Action: 'es:*',
+          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+>>>>>>> Stashed changes
         }
       ]
     });
