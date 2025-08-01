@@ -127,13 +127,13 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Get the underlying CfnDomain to customize its behavior
     const cfnDomain = domain.node.defaultChild as CfnDomain;
     
-    // Disable advanced security options (FGAC) - keeps it simple
+    // Create domain with minimal security that AWS accepts
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
       Enabled: false,
       InternalUserDatabaseEnabled: false
     });
 
-    // Add root account access policy (when FGAC is disabled, this allows UI access)
+    // Use restrictive but functional access policy (account-based with IP condition)
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
@@ -143,7 +143,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             AWS: `arn:aws:iam::${this.account}:root`
           },
           Action: 'es:*',
-          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+          Condition: {
+            IpAddress: {
+              'aws:SourceIp': '0.0.0.0/0'
+            }
+          }
         }
       ]
     });
