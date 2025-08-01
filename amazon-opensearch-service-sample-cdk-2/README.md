@@ -16,10 +16,38 @@ cdk bootstrap
 # OPENSEARCH_2_15
 # NOTE !! use the new `domainName` in every CDK deploy
 # TODO: fix above since we should ONLY update the same domain if one is existed 
-cdk deploy "*" --c domainName="os-service-domain-10" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-12" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 ```
 
 -  Test opensearch
+
+- Create index
+
+```bash
+# create `cloudwatch-logs` idnex
+PUT /cloudwatch-logs
+{
+  "mappings": {
+    "properties": {
+      "timestamp": {
+        "type": "date"
+      },
+      "message": {
+        "type": "text"
+      }
+    }
+  }
+}
+
+# query data under `cloudwatch-logs` index
+GET /cloudwatch-logs/_search
+{
+  "size": 1000,  // Max per request
+  "query": {
+    "match_all": {}
+  }
+}
+```
 
 ```bash
 

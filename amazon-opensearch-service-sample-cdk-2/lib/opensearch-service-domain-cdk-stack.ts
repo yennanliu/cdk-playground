@@ -62,30 +62,52 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
     });
 
-    // Add OpenSearch permissions to the Firehose role
+    // Add full OpenSearch permissions to the Firehose role
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
-        'es:DescribeElasticsearchDomain',
-        'es:DescribeElasticsearchDomains',
-        'es:DescribeElasticsearchDomainConfig',
+        // Domain level permissions
+        'es:*',
+        'opensearch:*',
+        // HTTP API permissions
+        'es:ESHttp*',
+        'opensearch:ESHttp*',
+        // Specific index operations
+        'es:ESHttpGet',
+        'es:ESHttpHead',
         'es:ESHttpPost',
         'es:ESHttpPut',
-        'es:ESHttpGet',
+        'es:ESHttpDelete',
+        'es:ESHttpPatch',
         'es:ESHttpBulk',
-        'opensearch:DescribeDomain',
-        'opensearch:DescribeDomains', 
-        'opensearch:DescribeDomainConfig',
+        'opensearch:ESHttpGet',
+        'opensearch:ESHttpHead',
         'opensearch:ESHttpPost',
         'opensearch:ESHttpPut',
-        'opensearch:ESHttpGet',
+        'opensearch:ESHttpDelete',
+        'opensearch:ESHttpPatch',
         'opensearch:ESHttpBulk',
+        // Index management
+        'es:CreateIndex',
+        'es:DeleteIndex',
+        'es:UpdateSettings',
+        'es:PutMapping',
+        'opensearch:CreateIndex',
+        'opensearch:DeleteIndex',
+        'opensearch:UpdateSettings',
+        'opensearch:PutMapping'
       ],
       resources: [
+        // Domain level access
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        // Specific index patterns
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/_all`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/_all`,
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*/_bulk`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*/_bulk`,
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/cloudwatch-logs*`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/cloudwatch-logs*`,
       ],
@@ -111,13 +133,47 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     const openAccessPolicy = new PolicyStatement({
       effect: Effect.ALLOW,
       principals: [new ArnPrincipal("*")],
-      actions: ["es:*"],
+      actions: [
+        "es:*",
+        "es:ESHttp*",
+        "es:ESHttpBulk",
+        "es:ESHttpPost",
+        "es:ESHttpPut",
+        "opensearch:*",
+        "opensearch:ESHttp*",
+        "opensearch:ESHttpBulk",
+        "opensearch:ESHttpPost",
+        "opensearch:ESHttpPut"
+      ],
       resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
       ]
     });
     accessPolicies.push(openAccessPolicy);
+
+    // Add specific policy for the Firehose role with bulk write permissions
+    const firehoseBulkWritePolicy = new PolicyStatement({
+      effect: Effect.ALLOW,
+      principals: [new ArnPrincipal(this.firehoseRole.roleArn)],
+      actions: [
+        "es:ESHttpBulk",
+        "es:ESHttpPost",
+        "es:ESHttpPut",
+        "opensearch:ESHttpBulk",
+        "opensearch:ESHttpPost",
+        "opensearch:ESHttpPut"
+      ],
+      resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/cloudwatch-logs*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/cloudwatch-logs*`
+      ]
+    });
+    accessPolicies.push(firehoseBulkWritePolicy);
 
     // Add policy to allow the specific Firehose role to write to OpenSearch
     const firehosePolicy = new PolicyStatement({
@@ -178,17 +234,13 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         warmInstanceType: props.warmInstanceType,
         warmNodes: props.warmNodes
       },
-      fineGrainedAccessControl: {
-        masterUserArn: props.fineGrainedManagerUserARN,
-        masterUserName: props.fineGrainedManagerUserName,
-        masterUserPassword: managerUserSecret
-      },
-      nodeToNodeEncryption: props.nodeToNodeEncryptionEnabled,
+      // Basic security settings without FGAC
+      enforceHttps: true,
+      nodeToNodeEncryption: true,
       encryptionAtRest: {
-        enabled: props.encryptionAtRestEnabled,
+        enabled: true,
         kmsKey: earKmsKey
       },
-      enforceHttps: props.enforceHTTPS,
       tlsSecurityPolicy: props.tlsSecurityPolicy,
       ebs: {
         enabled: props.ebsEnabled,
