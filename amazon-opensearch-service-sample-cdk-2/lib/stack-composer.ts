@@ -6,7 +6,6 @@ import {RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
 import {OpensearchServiceDomainCdkStack} from "./opensearch-service-domain-cdk-stack";
 import {EngineVersion} from "aws-cdk-lib/aws-opensearchservice";
 import {EbsDeviceVolumeType} from "aws-cdk-lib/aws-ec2";
-import {AnyPrincipal, Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
 import * as defaultValuesJson from "../default-values.json"
 import {NetworkStack} from "./network-stack";
 import {KinesisFirehoseStack} from "./kinesis-firehose-stack";
@@ -25,7 +24,6 @@ export class StackComposer {
         const region = props.env?.region
 
         let version: EngineVersion
-        let accessPolicies: PolicyStatement[]|undefined
         const defaultValues: { [x: string]: (any); } = defaultValuesJson
         const domainName = getContextForType('domainName', 'string')
         const dataNodeType = getContextForType('dataNodeType', 'string')
@@ -56,18 +54,6 @@ export class StackComposer {
             throw new Error("Engine version is not present or does not match the expected format, i.e. OS_1.3 or ES_7.9")
         }
 
-        // Always set open access policy for the domain
-        const openPolicy = new PolicyStatement({
-            effect: Effect.ALLOW,
-            principals: [new AnyPrincipal()],
-            actions: ["es:*", "opensearch:*"],
-            resources: [
-                `arn:aws:es:${region}:${account}:domain/${domainName}/*`,
-                `arn:aws:opensearch:${region}:${account}:domain/${domainName}/*`
-            ]
-        })
-        accessPolicies = [openPolicy]
-
         const ebsVolumeTypeName = getContextForType('ebsVolumeType', 'string')
         const ebsVolumeType: EbsDeviceVolumeType|undefined = ebsVolumeTypeName ? EbsDeviceVolumeType[ebsVolumeTypeName as keyof typeof EbsDeviceVolumeType] : undefined
         if (ebsVolumeTypeName && !ebsVolumeType) {
@@ -97,7 +83,6 @@ export class StackComposer {
             dedicatedManagerNodeCount: dedicatedManagerNodeCount,
             warmInstanceType: warmNodeType,
             warmNodes: warmNodeCount,
-            accessPolicies: accessPolicies,
             ebsEnabled: ebsEnabled,
             ebsIops: ebsIops,
             ebsVolumeSize: ebsVolumeSize,
