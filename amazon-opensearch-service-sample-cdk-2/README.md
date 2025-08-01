@@ -15,15 +15,13 @@ cdk bootstrap
 
 # OPENSEARCH_2_15
 # NOTE !! use the new `domainName` in every CDK deploy
-# TODO: fix above since we should ONLY update the same domain if one is existed 
-<<<<<<< Updated upstream
+
 cdk deploy "*" --c domainName="os-service-domain-17" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
-=======
 
-export CDK_DEPLOYMENT_STAGE=dev
 
-cdk deploy "*" --c domainName="os-service-domain-20" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
->>>>>>> Stashed changes
+  # Login Credentials:
+  # - Username: admin
+  # - Password: AdminPassword123!
 ```
 
 -  Test opensearch
