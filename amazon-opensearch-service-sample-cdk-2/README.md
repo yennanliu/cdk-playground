@@ -43,10 +43,14 @@ PUT /cloudwatch-logs
   }
 }
 
+# get all exising indices
+GET /_cat/indices?v
+
+
 # query data under `cloudwatch-logs` index
 GET /cloudwatch-logs/_search
 {
-  "size": 1000,  // Max per request
+  "size": 1000,
   "query": {
     "match_all": {}
   }
