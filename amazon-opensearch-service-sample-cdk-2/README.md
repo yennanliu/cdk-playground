@@ -20,7 +20,7 @@ cdk bootstrap
 export CDK_DEPLOYMENT_STAGE=dev
 
 
-cdk deploy "*" --c domainName="os-service-domain-29" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-30" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 ```
 
 -  Test opensearch
@@ -55,7 +55,6 @@ PUT /cloudwatch-logs/_doc/1
 
 # get all exising indices
 GET /_cat/indices?v
-
 
 # query data under `cloudwatch-logs` index
 GET /cloudwatch-logs/_search

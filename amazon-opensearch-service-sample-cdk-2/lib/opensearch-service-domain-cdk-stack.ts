@@ -45,14 +45,11 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
-        'es:*',
-        'opensearch:*'
+        '*'
       ],
       resources: [
-        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
-        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+        `arn:aws:es:${this.region}:*:domain/*`,
+        `arn:aws:opensearch:${this.region}:*:domain/*`
       ]
     }));
 
@@ -118,8 +115,8 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             'opensearch:ESHttp*'
           ],
           Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+            `arn:aws:es:${this.region}:*:domain/*`,
+            `arn:aws:opensearch:${this.region}:*:domain/*`
           ]
         },
         {
@@ -133,10 +130,8 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             'opensearch:*'
           ],
           Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+            `arn:aws:es:${this.region}:*:domain/*`,
+            `arn:aws:opensearch:${this.region}:*:domain/*`
           ]
         },
         {
@@ -146,24 +141,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             AWS: this.firehoseRole.roleArn
           },
           Action: [
-            'es:ESHttpPost',
-            'es:ESHttpPut',
-            'es:ESHttpGet',
-            'es:ESHttpHead',
-            'es:ESHttpDelete',
-            'es:ESHttpBulk',
-            'opensearch:ESHttpPost',
-            'opensearch:ESHttpPut',
-            'opensearch:ESHttpGet',
-            'opensearch:ESHttpHead',
-            'opensearch:ESHttpDelete',
-            'opensearch:ESHttpBulk'
+            'es:*',
+            'opensearch:*'
           ],
           Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+            `arn:aws:es:${this.region}:*:domain/*`,
+            `arn:aws:opensearch:${this.region}:*:domain/*`
           ]
         },
         {
@@ -173,18 +156,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             Service: 'firehose.amazonaws.com'
           },
           Action: [
-            'es:ESHttpPost',
-            'es:ESHttpPut',
-            'es:ESHttpBulk',
-            'opensearch:ESHttpPost',
-            'opensearch:ESHttpPut',
-            'opensearch:ESHttpBulk'
+            'es:*',
+            'opensearch:*'
           ],
           Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+            `arn:aws:es:${this.region}:*:domain/*`,
+            `arn:aws:openssearch:${this.region}:*:domain/*`
           ]
         }
       ]
