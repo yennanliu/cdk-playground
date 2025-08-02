@@ -16,7 +16,7 @@ cdk bootstrap
 # OPENSEARCH_2_15
 # NOTE !! use the new `domainName` in every CDK deploy
 
-cdk deploy "*" --c domainName="os-service-domain-23" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-24" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 
 
   # Login Credentials:

@@ -178,7 +178,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Get the underlying CfnDomain to customize its behavior
     const cfnDomain = domain.node.defaultChild as CfnDomain;
     
-    // Enable Fine-grained access control with both internal users and IAM role support
+    // Enable Fine-grained access control with anonymous access for public accessibility
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
       Enabled: true,
       InternalUserDatabaseEnabled: true,
@@ -186,49 +186,20 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         MasterUserName: 'admin',
         MasterUserPassword: 'AdminPassword123!'
       },
-      // Configure for IAM role access
-      AnonymousAuthEnabled: false
+      // Configure for public access with anonymous authentication
+      AnonymousAuthEnabled: true
     });
 
-    // Access policy for FGAC with explicit Firehose role permissions
+    // Access policy for public access with anonymous users and Firehose role permissions
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
         {
           Effect: 'Allow',
           Principal: {
-            AWS: [
-              `arn:aws:iam::${this.account}:root`,
-              this.firehoseRole.roleArn
-            ]
+            AWS: '*'
           },
           Action: 'es:*',
-          Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
-          ]
-        },
-        {
-          Effect: 'Allow',
-          Principal: {
-            AWS: this.firehoseRole.roleArn
-          },
-          Action: [
-            'es:ESHttpPost',
-            'es:ESHttpPut',
-            'es:ESHttpGet',
-            'es:ESHttpHead',
-            'es:ESHttpDelete',
-            'es:ESHttpPatch',
-            'es:BulkRequest',
-            'es:IndexDocument',
-            'es:UpdateDocument',
-            'es:DeleteDocument',
-            'es:Search',
-            'es:CreateIndex',
-            'es:PutMapping',
-            'es:GetMapping'
-          ],
           Resource: [
             `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
             `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
