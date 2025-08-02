@@ -56,7 +56,6 @@ PUT /cloudwatch-logs/_doc/1
 # get all exising indices
 GET /_cat/indices?v
 
-
 # query data under `cloudwatch-logs` index
 GET /cloudwatch-logs/_search
 {
