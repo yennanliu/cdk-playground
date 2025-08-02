@@ -22,7 +22,7 @@ export class KinesisFirehoseStack extends Stack {
         super(scope, id, props);
 
         // Create S3 bucket for Firehose backup
-        const backupBucket = new s3.Bucket(this, 'FirehoseBackupBucket', {
+        const backupBucket = new s3.Bucket(this, `${this.stackName}-FirehoseBackupBucket`, {
             removalPolicy: RemovalPolicy.DESTROY,
             autoDeleteObjects: true,
         });
@@ -35,21 +35,21 @@ export class KinesisFirehoseStack extends Stack {
         backupBucket.grantReadWrite(firehoseRole);
 
         // Create Kinesis Firehose
-        const deliveryStream = new firehose.CfnDeliveryStream(this, 'OpenSearchDeliveryStream', {
-            deliveryStreamName: `${props.opensearchIndex}-stream`,
+        const deliveryStream = new firehose.CfnDeliveryStream(this, `${this.stackName}-OpenSearchDeliveryStream`, {
+            deliveryStreamName: `${this.stackName}-${props.opensearchIndex}-stream`,
             deliveryStreamType: 'DirectPut',
             amazonopensearchserviceDestinationConfiguration: {
                 indexName: props.opensearchIndex,
                 domainArn: props.opensearchDomain.domainArn,
                 roleArn: firehoseRole.roleArn,
                 bufferingHints: {
-                    intervalInSeconds: 60,
+                    intervalInSeconds: 3,  // Reduced from 60 to 3 seconds for faster debugging
                     sizeInMBs: 1
                 },
                 cloudWatchLoggingOptions: {
                     enabled: true,
-                    logGroupName: `/aws/kinesisfirehose/${props.opensearchIndex}`,
-                    logStreamName: 'OpenSearchDelivery'
+                    logGroupName: `/aws/kinesisfirehose/${this.stackName}-${props.opensearchIndex}`,
+                    logStreamName: `${this.stackName}-OpenSearchDelivery`
                 },
                 processingConfiguration: {
                     enabled: true,
@@ -69,7 +69,7 @@ export class KinesisFirehoseStack extends Stack {
                     bucketArn: backupBucket.bucketArn,
                     roleArn: firehoseRole.roleArn,
                     bufferingHints: {
-                        intervalInSeconds: 60,
+                        intervalInSeconds: 60,  // S3 backup requires minimum 60 seconds
                         sizeInMBs: 1
                     },
                     compressionFormat: 'UNCOMPRESSED'
@@ -81,8 +81,8 @@ export class KinesisFirehoseStack extends Stack {
         });
 
         // Create CloudWatch Logs for Firehose operations (not for subscription)
-        const logGroup = new LogGroup(this, 'FirehoseLogGroup', {
-            logGroupName: `/aws/firehose/${props.opensearchIndex}`,
+        const logGroup = new LogGroup(this, `${this.stackName}-FirehoseLogGroup`, {
+            logGroupName: `/aws/firehose/${this.stackName}-${props.opensearchIndex}`,
             removalPolicy: RemovalPolicy.DESTROY,
             retention: logs.RetentionDays.ONE_WEEK,
         });

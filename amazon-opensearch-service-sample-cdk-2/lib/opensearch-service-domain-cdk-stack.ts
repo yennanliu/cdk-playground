@@ -3,15 +3,11 @@
 
 import {Construct} from "constructs";
 import {EbsDeviceVolumeType, ISecurityGroup, IVpc, SubnetSelection} from "aws-cdk-lib/aws-ec2";
-import {Domain, EngineVersion, TLSSecurityPolicy, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
-import {RemovalPolicy, SecretValue, Stack, StackProps, CfnOutput} from "aws-cdk-lib";
-import {IKey, Key} from "aws-cdk-lib/aws-kms";
+import {CfnDomain, Domain, EngineVersion, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
+import {CfnDeletionPolicy, RemovalPolicy, Stack, CfnOutput} from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
-import {PolicyStatement, Effect, ArnPrincipal, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
-import {ILogGroup, LogGroup} from "aws-cdk-lib/aws-logs";
-import {Secret} from "aws-cdk-lib/aws-secretsmanager";
+import {PolicyStatement, Effect} from "aws-cdk-lib/aws-iam";
 import {StackPropsExt} from "./stack-composer";
-
 
 export interface opensearchServiceDomainCdkProps extends StackPropsExt {
   readonly version: EngineVersion,
@@ -22,31 +18,15 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
   readonly dedicatedManagerNodeCount?: number,
   readonly warmInstanceType?: string,
   readonly warmNodes?: number
-  readonly accessPolicies?: PolicyStatement[],
-  readonly useUnsignedBasicAuth?: boolean,
-  readonly fineGrainedManagerUserARN?: string,
-  readonly fineGrainedManagerUserName?: string,
-  readonly fineGrainedManagerUserSecretManagerKeyARN?: string,
-  readonly enforceHTTPS?: boolean,
-  readonly tlsSecurityPolicy?: TLSSecurityPolicy,
   readonly ebsEnabled?: boolean,
   readonly ebsIops?: number,
   readonly ebsVolumeSize?: number,
   readonly ebsVolumeType?: EbsDeviceVolumeType,
-  readonly encryptionAtRestEnabled?: boolean,
-  readonly encryptionAtRestKmsKeyARN?: string,
-  readonly loggingAppLogEnabled?: boolean,
-  readonly loggingAppLogGroupARN?: string,
-  readonly loggingAuditLogEnabled?: boolean,
-  readonly loggingAuditLogGroupARN?: string,
-  readonly nodeToNodeEncryptionEnabled?: boolean,
   readonly vpc?: IVpc,
   readonly vpcSubnets?: SubnetSelection[],
   readonly vpcSecurityGroups?: ISecurityGroup[],
-  readonly availabilityZoneCount?: number,
-  readonly domainRemovalPolicy?: RemovalPolicy
+  readonly availabilityZoneCount?: number
 }
-
 
 export class OpensearchServiceDomainCdkStack extends Stack {
   public readonly domainEndpoint: string;
@@ -61,88 +41,34 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
     });
 
-    // Add OpenSearch permissions to the Firehose role
+    // Add comprehensive OpenSearch permissions to the Firehose role
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
-        'es:DescribeElasticsearchDomain',
-        'es:DescribeElasticsearchDomains',
-        'es:DescribeElasticsearchDomainConfig',
-        'es:ESHttpPost',
-        'es:ESHttpPut',
-        'es:ESHttpGet',
-        'opensearch:DescribeDomain',
-        'opensearch:DescribeDomains', 
-        'opensearch:DescribeDomainConfig',
-        'opensearch:ESHttpPost',
-        'opensearch:ESHttpPut',
-        'opensearch:ESHttpGet',
+        'es:*',
+        'opensearch:*'
       ],
       resources: [
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-      ],
-    }));
-
-    // Add CloudWatch Logs permissions
-    this.firehoseRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'logs:PutLogEvents',
-        'logs:CreateLogStream',
-        'logs:CreateLogGroup'
-      ],
-      resources: [
-        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*:*`
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
       ]
     }));
 
-    // Create base access policies array if not provided
-    const accessPolicies = props.accessPolicies || [];
-
-    // Add policy to allow the specific Firehose role to write to OpenSearch
-    const firehosePolicy = new PolicyStatement({
-      effect: Effect.ALLOW,
-      principals: [new ArnPrincipal(this.firehoseRole.roleArn)],
-      actions: [
-        'es:ESHttpPost',
-        'es:ESHttpPut',
-        'es:ESHttpGet',
-        'opensearch:ESHttpPost',
-        'opensearch:ESHttpPut', 
-        'opensearch:ESHttpGet'
-      ],
-      resources: [`arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`]
-    });
-    accessPolicies.push(firehosePolicy);
-
-    // Only add policies if not using open access policy
-    // The open access policy from context will override these anyway
-
-    // The code that defines your stack goes here
-
-    // Retrieve existing account resources if defined
-    const earKmsKey: IKey|undefined = props.encryptionAtRestKmsKeyARN && props.encryptionAtRestEnabled ?
-        Key.fromKeyArn(this, "earKey", props.encryptionAtRestKmsKeyARN) : undefined
-
-    const managerUserSecret: SecretValue|undefined = props.fineGrainedManagerUserSecretManagerKeyARN ?
-        Secret.fromSecretCompleteArn(this, "managerSecret", props.fineGrainedManagerUserSecretManagerKeyARN).secretValue : undefined
-
-    const appLG: ILogGroup|undefined = props.loggingAppLogGroupARN && props.loggingAppLogEnabled ?
-        LogGroup.fromLogGroupArn(this, "appLogGroup", props.loggingAppLogGroupARN) : undefined
-
-    const auditLG: ILogGroup|undefined = props.loggingAuditLogGroupARN && props.loggingAuditLogEnabled ?
-        LogGroup.fromLogGroupArn(this, "auditLogGroup", props.loggingAuditLogGroupARN) : undefined
-
     // Map objects from props
     const zoneAwarenessConfig: ZoneAwarenessConfig|undefined = props.availabilityZoneCount ?
-        {enabled: true, availabilityZoneCount: props.availabilityZoneCount} : undefined
+        {enabled: true, availabilityZoneCount: props.availabilityZoneCount} : undefined;
 
+    // Create domain with security disabled
     const domain = new Domain(this, 'Domain', {
       version: props.version,
       domainName: props.domainName,
-      accessPolicies: accessPolicies,
-      useUnsignedBasicAuth: props.useUnsignedBasicAuth,
+      enforceHttps: true,
+      nodeToNodeEncryption: true,
+      encryptionAtRest: {
+        enabled: true
+      },
       capacity: {
         dataNodeInstanceType: props.dataNodeInstanceType,
         dataNodes: props.dataNodes,
@@ -151,36 +77,121 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         warmInstanceType: props.warmInstanceType,
         warmNodes: props.warmNodes
       },
-      fineGrainedAccessControl: {
-        masterUserArn: props.fineGrainedManagerUserARN,
-        masterUserName: props.fineGrainedManagerUserName,
-        masterUserPassword: managerUserSecret
-      },
-      nodeToNodeEncryption: props.nodeToNodeEncryptionEnabled,
-      encryptionAtRest: {
-        enabled: props.encryptionAtRestEnabled,
-        kmsKey: earKmsKey
-      },
-      enforceHttps: props.enforceHTTPS,
-      tlsSecurityPolicy: props.tlsSecurityPolicy,
       ebs: {
         enabled: props.ebsEnabled,
         iops: props.ebsIops,
         volumeSize: props.ebsVolumeSize,
         volumeType: props.ebsVolumeType
       },
-      logging: {
-        appLogEnabled: props.loggingAppLogEnabled,
-        appLogGroup: appLG,
-        auditLogEnabled: props.loggingAuditLogEnabled,
-        auditLogGroup: auditLG
-      },
       vpc: props.vpc,
       vpcSubnets: props.vpcSubnets,
       securityGroups: props.vpcSecurityGroups,
       zoneAwareness: zoneAwarenessConfig,
-      removalPolicy: props.domainRemovalPolicy
+      removalPolicy: RemovalPolicy.DESTROY
     });
+
+    // Get the underlying CfnDomain to customize its behavior
+    const cfnDomain = domain.node.defaultChild as CfnDomain;
+    
+    // Enable advanced security options (FGAC) with master user
+    cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
+      Enabled: true,
+      InternalUserDatabaseEnabled: true,
+      MasterUserOptions: {
+        MasterUserName: 'admin',
+        MasterUserPassword: 'Admin@OpenSearch123!' // You should change this password
+      }
+    });
+
+    // Add comprehensive access policy for Firehose, account access, and public access
+    cfnDomain.addPropertyOverride('AccessPolicies', {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Sid: 'AllowPublicAccess',
+          Effect: 'Allow',
+          Principal: {
+            AWS: '*'
+          },
+          Action: [
+            'es:ESHttp*',
+            'opensearch:ESHttp*'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
+        },
+        {
+          Sid: 'AllowAccountRootAccess',
+          Effect: 'Allow',
+          Principal: {
+            AWS: `arn:aws:iam::${this.account}:root`
+          },
+          Action: [
+            'es:*',
+            'opensearch:*'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
+        },
+        {
+          Sid: 'AllowFirehoseRoleAccess',
+          Effect: 'Allow',
+          Principal: {
+            AWS: this.firehoseRole.roleArn
+          },
+          Action: [
+            'es:ESHttpPost',
+            'es:ESHttpPut',
+            'es:ESHttpGet',
+            'es:ESHttpHead',
+            'es:ESHttpDelete',
+            'es:ESHttpBulk',
+            'opensearch:ESHttpPost',
+            'opensearch:ESHttpPut',
+            'opensearch:ESHttpGet',
+            'opensearch:ESHttpHead',
+            'opensearch:ESHttpDelete',
+            'opensearch:ESHttpBulk'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
+        },
+        {
+          Sid: 'AllowFirehoseServiceAccess',
+          Effect: 'Allow',
+          Principal: {
+            Service: 'firehose.amazonaws.com'
+          },
+          Action: [
+            'es:ESHttpPost',
+            'es:ESHttpPut',
+            'es:ESHttpBulk',
+            'opensearch:ESHttpPost',
+            'opensearch:ESHttpPut',
+            'opensearch:ESHttpBulk'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
+        }
+      ]
+    });
+    
+    cfnDomain.cfnOptions.updateReplacePolicy = CfnDeletionPolicy.DELETE;
+    cfnDomain.cfnOptions.deletionPolicy = CfnDeletionPolicy.DELETE;
 
     this.domainEndpoint = domain.domainEndpoint;
     this.domain = domain;

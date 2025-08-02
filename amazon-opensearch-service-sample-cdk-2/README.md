@@ -4,6 +4,8 @@ This repo contains an IaC CDK solution for deploying an OpenSearch Service Domai
 
 ### Run
 
+- Deploy
+
 ```bash
 npm install
 
@@ -12,7 +14,64 @@ export CDK_DEPLOYMENT_STAGE=dev
 cdk bootstrap
 
 # OPENSEARCH_2_15
-cdk deploy "*" --c domainName="os-service-domain-4" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+# NOTE !! use the new `domainName` in every CDK deploy
+# TODO: fix above since we should ONLY update the same domain if one is existed 
+
+export CDK_DEPLOYMENT_STAGE=dev
+
+
+cdk deploy "*" --c domainName="os-service-domain-29" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+```
+
+-  Test opensearch
+
+- Create index
+
+```bash
+# create `cloudwatch-logs` idnex
+PUT /cloudwatch-logs
+{
+  "mappings": {
+    "properties": {
+      "timestamp": {
+        "type": "date"
+      },
+      "message": {
+        "type": "text"
+      }
+    }
+  }
+}
+
+# insert fake data
+PUT /cloudwatch-logs/_doc/1
+{
+  "timestamp": "2025-08-02",
+  "message": "Sample log: Application started successfully",
+  "logStream": "app-logs",
+  "logGroup": "/aws/application"
+}
+
+
+# get all exising indices
+GET /_cat/indices?v
+
+
+# query data under `cloudwatch-logs` index
+GET /cloudwatch-logs/_search
+{
+  "size": 1000,
+  "query": {
+    "match_all": {}
+  }
+}
+```
+
+```bash
+
+curl -XGET -u 'master-user:master-user-password' 'domain-endpoint/movies/_search?q=mars&pretty=true'
+
+curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-service-domain-5-zixlxqr2g42cvlyn5ca7c22ltu.ap-northeast-1.es.amazonaws.com/cloudwatch-logs/_search?q=mars&pretty=true'
 ```
 
 ### Getting Started
