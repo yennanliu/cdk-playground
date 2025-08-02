@@ -43,6 +43,16 @@ PUT /cloudwatch-logs
   }
 }
 
+# insert fake data
+PUT /cloudwatch-logs/_doc/1
+{
+  "timestamp": "2025-08-02",
+  "message": "Sample log: Application started successfully",
+  "logStream": "app-logs",
+  "logGroup": "/aws/application"
+}
+
+
 # get all exising indices
 GET /_cat/indices?v
 
