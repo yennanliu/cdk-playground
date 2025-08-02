@@ -64,10 +64,10 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     const domain = new Domain(this, 'Domain', {
       version: props.version,
       domainName: props.domainName,
-      enforceHttps: false,
-      nodeToNodeEncryption: false,
+      enforceHttps: true,
+      nodeToNodeEncryption: true,
       encryptionAtRest: {
-        enabled: false
+        enabled: true
       },
       capacity: {
         dataNodeInstanceType: props.dataNodeInstanceType,
@@ -93,16 +93,35 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Get the underlying CfnDomain to customize its behavior
     const cfnDomain = domain.node.defaultChild as CfnDomain;
     
-    // Disable advanced security options (FGAC)
+    // Enable advanced security options (FGAC) with master user
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
-      Enabled: false,
-      InternalUserDatabaseEnabled: false,
+      Enabled: true,
+      InternalUserDatabaseEnabled: true,
+      MasterUserOptions: {
+        MasterUserName: 'admin',
+        MasterUserPassword: 'Admin@OpenSearch123!' // You should change this password
+      }
     });
 
-    // Add comprehensive access policy for Firehose and account access
+    // Add comprehensive access policy for Firehose, account access, and public access
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
+        {
+          Sid: 'AllowPublicAccess',
+          Effect: 'Allow',
+          Principal: {
+            AWS: '*'
+          },
+          Action: [
+            'es:ESHttp*',
+            'opensearch:ESHttp*'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
+        },
         {
           Sid: 'AllowAccountRootAccess',
           Effect: 'Allow',
