@@ -41,20 +41,56 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
     });
 
-    // Add comprehensive OpenSearch permissions for FGAC-enabled domain
+    // Add comprehensive OpenSearch permissions for FGAC-enabled domain with full write access
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
+        // Core HTTP operations
         'es:ESHttpPost',
         'es:ESHttpPut',
         'es:ESHttpGet', 
         'es:ESHttpHead',
         'es:ESHttpDelete',
+        'es:ESHttpPatch',
+        
+        // Domain operations
         'es:ESDescribeDomain',
         'es:DescribeDomain',
         'es:DescribeDomainConfig',
         'es:ESGetConfiguration',
-        'es:ESListDomainNames'
+        'es:ESListDomainNames',
+        
+        // Index operations
+        'es:CreateIndex',
+        'es:DeleteIndex',
+        'es:UpdateIndex',
+        'es:ListIndices',
+        'es:DescribeIndex',
+        
+        // Document operations (including bulk)
+        'es:IndexDocument',
+        'es:UpdateDocument',
+        'es:DeleteDocument',
+        'es:BulkRequest',
+        
+        // Search and query operations
+        'es:Search',
+        'es:Suggest',
+        'es:GetSource',
+        
+        // Mapping operations
+        'es:PutMapping',
+        'es:GetMapping',
+        'es:DeleteMapping',
+        
+        // Template operations
+        'es:PutTemplate',
+        'es:GetTemplate',
+        'es:DeleteTemplate',
+        
+        // Cluster operations
+        'es:ESCrossClusterGet',
+        'es:ESCrossClusterSearch'
       ],
       resources: [
         `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
@@ -154,17 +190,49 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       AnonymousAuthEnabled: false
     });
 
-    // Minimal access policy for FGAC - authentication handled by OpenSearch Security
+    // Access policy for FGAC with explicit Firehose role permissions
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
         {
           Effect: 'Allow',
           Principal: {
-            AWS: '*'
+            AWS: [
+              `arn:aws:iam::${this.account}:root`,
+              this.firehoseRole.roleArn
+            ]
           },
           Action: 'es:*',
-          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
+        },
+        {
+          Effect: 'Allow',
+          Principal: {
+            AWS: this.firehoseRole.roleArn
+          },
+          Action: [
+            'es:ESHttpPost',
+            'es:ESHttpPut',
+            'es:ESHttpGet',
+            'es:ESHttpHead',
+            'es:ESHttpDelete',
+            'es:ESHttpPatch',
+            'es:BulkRequest',
+            'es:IndexDocument',
+            'es:UpdateDocument',
+            'es:DeleteDocument',
+            'es:Search',
+            'es:CreateIndex',
+            'es:PutMapping',
+            'es:GetMapping'
+          ],
+          Resource: [
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+          ]
         }
       ]
     });
