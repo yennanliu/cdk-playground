@@ -23,15 +23,16 @@ echo "Data sent to Firehose. Please wait a few moments for it to appear in OpenS
 # Set the OpenSearch domain endpoint
 DOMAIN_ENDPOINT="search-os-service-domain-35-ktp3gklfumornsvrewuv6bc6rm.ap-northeast-1.es.amazonaws.com"
 
-# Wait a few seconds for the data to be processed
-echo "Waiting 10 seconds for data to be processed..."
-sleep 10
+# Wait for the data to be processed
+echo "Waiting 30 seconds for data to be processed..."
+sleep 30
 
 # Search for the data in OpenSearch
 echo "Searching for the data in OpenSearch..."
-curl -X GET "https://${DOMAIN_ENDPOINT}/_search" \
+curl -X GET "https://${DOMAIN_ENDPOINT}/cloudwatch-logs/_search" \
     -H 'Content-Type: application/json' \
-    -u 'admin:Admin@OpenSearch123!' \
+    -u "admin:Admin@OpenSearch123!" \
+    --insecure \
     -d '{
   "query": {
     "match": {
