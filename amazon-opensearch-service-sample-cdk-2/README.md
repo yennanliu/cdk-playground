@@ -20,7 +20,7 @@ cdk bootstrap
 export CDK_DEPLOYMENT_STAGE=dev
 
 
-cdk deploy "*" --c domainName="os-service-domain-30" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-31" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 ```
 
 -  Test opensearch
