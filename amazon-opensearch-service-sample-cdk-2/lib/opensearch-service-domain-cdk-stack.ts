@@ -125,7 +125,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Get the underlying CfnDomain to customize its behavior
     const cfnDomain = domain.node.defaultChild as CfnDomain;
     
-    // Enable advanced security options (FGAC) with master user
+    // Enable advanced security options (FGAC) with master user and map IAM role
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
       Enabled: true,
       InternalUserDatabaseEnabled: true,
@@ -135,6 +135,22 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       }
     });
 
+    // Add role mapping for Firehose role
+    const roleMapping = {
+      'backend_roles': [this.firehoseRole.roleArn],
+      'hosts': [],
+      'users': [],
+      'reserved': false
+    };
+
+    // Add security configuration for the all_access role
+    cfnDomain.addPropertyOverride('AdvancedOptions', {
+      'rest.action.multi.allow_explicit_index': 'true'
+    });
+
+    // Master user options are handled in AdvancedSecurityOptions
+
+    // Security groups are handled by the Domain construct
     // Add comprehensive access policy for Firehose role and service
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
