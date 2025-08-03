@@ -1,10 +1,8 @@
 # OpenSearch Service Domain CDK
 
-This repo contains an IaC CDK solution for deploying an OpenSearch Service Domain. Users have the ability to easily deploy their Domain using default values or provide [configuration options](#Configuration-Options) for a more customized setup. The goal of this repo is not to become a one-size-fits-all solution for users. Supporting this would be unrealistic, and likely conflicting at times, when considering the needs of many users. Rather this code base should be viewed as a starting point for users to use and add to individually as their custom use case requires.
-
 ### Run
 
-- Deploy
+- Deploy stack
 
 ```bash
 npm install
@@ -20,10 +18,18 @@ cdk bootstrap
 export CDK_DEPLOYMENT_STAGE=dev
 
 
-cdk deploy "*" --c domainName="os-service-domain-31" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-33" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 ```
 
--  Test opensearch
+
+- Debug
+
+```bash
+# 1.  list roles with `Opensearch-os-service-domain` prefix
+aws iam list-roles --query 'Roles[?starts_with(RoleName, `Opensearch-os-service-domain`)].RoleName' --output text
+```
+
+- Test opensearch
 
 - Create index
 
@@ -72,6 +78,21 @@ curl -XGET -u 'master-user:master-user-password' 'domain-endpoint/movies/_search
 
 curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-service-domain-5-zixlxqr2g42cvlyn5ca7c22ltu.ap-northeast-1.es.amazonaws.com/cloudwatch-logs/_search?q=mars&pretty=true'
 ```
+
+
+
+
+
+#---------------------------------------
+
+
+
+
+
+
+
+
+
 
 ### Getting Started
 

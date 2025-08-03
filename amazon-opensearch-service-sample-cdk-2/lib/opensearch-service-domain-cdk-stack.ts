@@ -40,6 +40,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     this.firehoseRole = new iam.Role(this, 'FirehoseRole', {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
       description: 'Role for Firehose to access OpenSearch and S3',
+      roleName: `${this.stackName}-FirehoseRole`, // <-- assign a specific role name here
     });
 
     // Add full OpenSearch permissions
