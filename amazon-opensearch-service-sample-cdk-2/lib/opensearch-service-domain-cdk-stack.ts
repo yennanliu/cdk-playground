@@ -4,9 +4,11 @@
 import {Construct} from "constructs";
 import {EbsDeviceVolumeType, ISecurityGroup, IVpc, SubnetSelection} from "aws-cdk-lib/aws-ec2";
 import {CfnDomain, Domain, EngineVersion, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
-import {CfnDeletionPolicy, RemovalPolicy, Stack, CfnOutput} from "aws-cdk-lib";
+import {CfnDeletionPolicy, RemovalPolicy, Stack, CfnOutput, CustomResource, Duration} from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
 import {PolicyStatement, Effect} from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as cr from "aws-cdk-lib/custom-resources";
 import {StackPropsExt} from "./stack-composer";
 
 export interface opensearchServiceDomainCdkProps extends StackPropsExt {
@@ -135,13 +137,9 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       }
     });
 
-    // Add role mapping for Firehose role
-    const roleMapping = {
-      'backend_roles': [this.firehoseRole.roleArn],
-      'hosts': [],
-      'users': [],
-      'reserved': false
-    };
+    // Note: Role mappings cannot be configured via CloudFormation
+    // They must be configured after domain creation via OpenSearch API
+    // The access policy below provides the necessary permissions for Firehose
 
     // Add security configuration for the all_access role
     cfnDomain.addPropertyOverride('AdvancedOptions', {
@@ -201,10 +199,101 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       description: 'ARN of the Firehose role for OpenSearch access'
     });
 
+    // Create Lambda function to configure OpenSearch role mappings
+    const roleMappingLambda = new lambda.Function(this, 'RoleMappingLambda', {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: 'index.handler',
+      timeout: Duration.minutes(5),
+      code: lambda.Code.fromInline(`
+import json
+import boto3
+import requests
+from requests.auth import HTTPBasicAuth
+import cfnresponse
+
+def handler(event, context):
+    try:
+        domain_endpoint = event['ResourceProperties']['DomainEndpoint']
+        master_username = event['ResourceProperties']['MasterUsername']
+        master_password = event['ResourceProperties']['MasterPassword']
+        firehose_role_arn = event['ResourceProperties']['FirehoseRoleArn']
+        
+        if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+            # Configure role mapping for all_access role
+            url = f"https://{domain_endpoint}/_plugins/_security/api/rolesmapping/all_access"
+            
+            role_mapping = {
+                "backend_roles": [firehose_role_arn],
+                "hosts": [],
+                "users": [],
+                "reserved": False
+            }
+            
+            response = requests.put(
+                url,
+                json=role_mapping,
+                auth=HTTPBasicAuth(master_username, master_password),
+                headers={'Content-Type': 'application/json'},
+                verify=True,
+                timeout=30
+            )
+            
+            if response.status_code in [200, 201]:
+                print(f"Role mapping configured successfully: {response.text}")
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Message": "Role mapping configured"})
+            else:
+                print(f"Failed to configure role mapping: {response.status_code} - {response.text}")
+                cfnresponse.send(event, context, cfnresponse.FAILED, {"Message": f"Failed: {response.text}"})
+        
+        elif event['RequestType'] == 'Delete':
+            # On delete, we don't need to remove the role mapping as the domain will be deleted
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, {"Message": "Delete completed"})
+            
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        cfnresponse.send(event, context, cfnresponse.FAILED, {"Message": str(e)})
+`),
+      environment: {
+        'PYTHONPATH': '/var/runtime'
+      }
+    });
+
+    // Add permissions for Lambda to access OpenSearch
+    roleMappingLambda.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'es:ESHttpPost',
+        'es:ESHttpPut',
+        'es:ESHttpGet'
+      ],
+      resources: [domain.domainArn + '/*']
+    }));
+
+    // Create custom resource to trigger role mapping configuration
+    const roleMappingResource = new CustomResource(this, 'RoleMappingResource', {
+      serviceToken: roleMappingLambda.functionArn,
+      properties: {
+        DomainEndpoint: domain.domainEndpoint,
+        MasterUsername: 'admin',
+        MasterPassword: 'Admin@OpenSearch123!',
+        FirehoseRoleArn: this.firehoseRole.roleArn,
+        // Add a timestamp to force update when needed
+        Timestamp: Date.now().toString()
+      }
+    });
+
+    // Ensure the custom resource runs after the domain is ready
+    roleMappingResource.node.addDependency(domain);
+
     new CfnOutput(this, 'FirehoseRoleName', {
       value: this.firehoseRole.roleName,
       exportName: `${this.stackName}-FirehoseRoleName`,
       description: 'Name of the Firehose role for OpenSearch access'
+    });
+
+    new CfnOutput(this, 'RoleMappingStatus', {
+      value: roleMappingResource.getAttString('Message'),
+      description: 'Status of role mapping configuration'
     });
   }
 }
