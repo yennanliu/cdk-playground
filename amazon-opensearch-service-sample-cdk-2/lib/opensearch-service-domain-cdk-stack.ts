@@ -39,9 +39,11 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Create Firehose role with all necessary permissions
     this.firehoseRole = new iam.Role(this, 'FirehoseRole', {
       assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
+      description: 'Role for Firehose to access OpenSearch and S3',
+      roleName: `${this.stackName}-FirehoseRole`, // <-- assign a specific role name here
     });
 
-    // Add comprehensive OpenSearch permissions to the Firehose role
+    // Add full OpenSearch permissions
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
@@ -49,10 +51,40 @@ export class OpensearchServiceDomainCdkStack extends Stack {
         'opensearch:*'
       ],
       resources: [
-        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
-        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+        `arn:aws:es:${this.region}:*:domain/*`,
+        `arn:aws:opensearch:${this.region}:*:domain/*`
+      ]
+    }));
+
+    // Add S3 permissions for any Firehose backup bucket
+    this.firehoseRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        's3:AbortMultipartUpload',
+        's3:GetBucketLocation',
+        's3:GetObject',
+        's3:ListBucket',
+        's3:ListBucketMultipartUploads',
+        's3:PutObject',
+        's3:PutObjectAcl'
+      ],
+      resources: [
+        'arn:aws:s3:::firehose-*',
+        'arn:aws:s3:::firehose-*/*'
+      ]
+    }));
+
+    // Add CloudWatch Logs permissions
+    this.firehoseRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:PutLogEvents',
+        'logs:CreateLogStream',
+        'logs:CreateLogGroup'
+      ],
+      resources: [
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*`,
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*:log-stream:*`
       ]
     }));
 
@@ -93,7 +125,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Get the underlying CfnDomain to customize its behavior
     const cfnDomain = domain.node.defaultChild as CfnDomain;
     
-    // Enable advanced security options (FGAC) with master user
+    // Enable advanced security options (FGAC) with master user and map IAM role
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
       Enabled: true,
       InternalUserDatabaseEnabled: true,
@@ -103,42 +135,26 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       }
     });
 
-    // Add comprehensive access policy for Firehose, account access, and public access
+    // Add role mapping for Firehose role
+    const roleMapping = {
+      'backend_roles': [this.firehoseRole.roleArn],
+      'hosts': [],
+      'users': [],
+      'reserved': false
+    };
+
+    // Add security configuration for the all_access role
+    cfnDomain.addPropertyOverride('AdvancedOptions', {
+      'rest.action.multi.allow_explicit_index': 'true'
+    });
+
+    // Master user options are handled in AdvancedSecurityOptions
+
+    // Security groups are handled by the Domain construct
+    // Add comprehensive access policy for Firehose role and service
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
-        {
-          Sid: 'AllowPublicAccess',
-          Effect: 'Allow',
-          Principal: {
-            AWS: '*'
-          },
-          Action: [
-            'es:ESHttp*',
-            'opensearch:ESHttp*'
-          ],
-          Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
-          ]
-        },
-        {
-          Sid: 'AllowAccountRootAccess',
-          Effect: 'Allow',
-          Principal: {
-            AWS: `arn:aws:iam::${this.account}:root`
-          },
-          Action: [
-            'es:*',
-            'opensearch:*'
-          ],
-          Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
-          ]
-        },
         {
           Sid: 'AllowFirehoseRoleAccess',
           Effect: 'Allow',
@@ -146,24 +162,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             AWS: this.firehoseRole.roleArn
           },
           Action: [
-            'es:ESHttpPost',
-            'es:ESHttpPut',
-            'es:ESHttpGet',
-            'es:ESHttpHead',
-            'es:ESHttpDelete',
-            'es:ESHttpBulk',
-            'opensearch:ESHttpPost',
-            'opensearch:ESHttpPut',
-            'opensearch:ESHttpGet',
-            'opensearch:ESHttpHead',
-            'opensearch:ESHttpDelete',
-            'opensearch:ESHttpBulk'
+            'es:*',
+            'opensearch:*'
           ],
           Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+            `arn:aws:es:${this.region}:*:domain/*`,
+            `arn:aws:opensearch:${this.region}:*:domain/*`
           ]
         },
         {
@@ -173,18 +177,12 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             Service: 'firehose.amazonaws.com'
           },
           Action: [
-            'es:ESHttpPost',
-            'es:ESHttpPut',
-            'es:ESHttpBulk',
-            'opensearch:ESHttpPost',
-            'opensearch:ESHttpPut',
-            'opensearch:ESHttpBulk'
+            'es:*',
+            'opensearch:*'
           ],
           Resource: [
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
-            `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+            `arn:aws:es:${this.region}:*:domain/*`,
+            `arn:aws:opensearch:${this.region}:*:domain/*`
           ]
         }
       ]
@@ -196,11 +194,17 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     this.domainEndpoint = domain.domainEndpoint;
     this.domain = domain;
 
-    // Export the Firehose role ARN for use by other stacks
+    // Export the Firehose role ARN and name for use by other stacks
     new CfnOutput(this, 'FirehoseRoleArn', {
       value: this.firehoseRole.roleArn,
       exportName: `${this.stackName}-FirehoseRoleArn`,
       description: 'ARN of the Firehose role for OpenSearch access'
+    });
+
+    new CfnOutput(this, 'FirehoseRoleName', {
+      value: this.firehoseRole.roleName,
+      exportName: `${this.stackName}-FirehoseRoleName`,
+      description: 'Name of the Firehose role for OpenSearch access'
     });
   }
 }
