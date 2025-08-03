@@ -42,9 +42,10 @@ export class KinesisFirehoseStack extends Stack {
                 indexName: props.opensearchIndex,
                 domainArn: props.opensearchDomain.domainArn,
                 roleArn: firehoseRole.roleArn,
+                indexRotationPeriod: 'NoRotation',  // Prevent date-based indices
                 bufferingHints: {
-                    intervalInSeconds: 3,  // Reduced from 60 to 3 seconds for faster debugging
-                    sizeInMBs: 1
+                    intervalInSeconds: 60,  // Standard buffering interval
+                    sizeInMBs: 5  // Increased buffer size for better performance
                 },
                 cloudWatchLoggingOptions: {
                     enabled: true,
@@ -53,18 +54,23 @@ export class KinesisFirehoseStack extends Stack {
                 },
                 processingConfiguration: {
                     enabled: true,
-                    processors: [{
-                        type: 'MetadataExtraction',
-                        parameters: [{
-                            parameterName: 'MetadataExtractionQuery',
-                            parameterValue: '{timestamp:.time, message:.message}'
-                        }, {
-                            parameterName: 'JsonParsingEngine',
-                            parameterValue: 'JQ-1.6'
-                        }]
-                    }]
+                    processors: [
+                        {
+                            type: 'MetadataExtraction',
+                            parameters: [
+                                {
+                                    parameterName: 'MetadataExtractionQuery',
+                                    parameterValue: '{symbol: .TICKER_SYMBOL, sector: .SECTOR, price_change: .CHANGE, current_price: .PRICE, timestamp: now}'
+                                },
+                                {
+                                    parameterName: 'JsonParsingEngine',
+                                    parameterValue: 'JQ-1.6'
+                                }
+                            ]
+                        }
+                    ]
                 },
-                s3BackupMode: 'AllDocuments',
+                s3BackupMode: 'FailedDocumentsOnly',  // Only backup failed deliveries
                 s3Configuration: {
                     bucketArn: backupBucket.bucketArn,
                     roleArn: firehoseRole.roleArn,
