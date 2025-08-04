@@ -151,7 +151,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Master user options are handled in AdvancedSecurityOptions
 
     // Security groups are handled by the Domain construct
-    // Add comprehensive access policy for Firehose role and service
+    // Add comprehensive access policy for Firehose role, service, and authenticated users
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
@@ -165,10 +165,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             'es:*',
             'opensearch:*'
           ],
-          Resource: [
-            `arn:aws:es:${this.region}:*:domain/*`,
-            `arn:aws:opensearch:${this.region}:*:domain/*`
-          ]
+          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
         },
         {
           Sid: 'AllowFirehoseServiceAccess',
@@ -180,10 +177,21 @@ export class OpensearchServiceDomainCdkStack extends Stack {
             'es:*',
             'opensearch:*'
           ],
-          Resource: [
-            `arn:aws:es:${this.region}:*:domain/*`,
-            `arn:aws:opensearch:${this.region}:*:domain/*`
-          ]
+          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
+        },
+        {
+          Sid: 'AllowAuthenticatedUserAccess',
+          Effect: 'Allow',
+          Principal: {
+            AWS: `arn:aws:iam::${this.account}:root`
+          },
+          Action: [
+            'es:ESHttpGet',
+            'es:ESHttpPost',
+            'es:ESHttpPut',
+            'es:ESHttpDelete'
+          ],
+          Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
         }
       ]
     });
