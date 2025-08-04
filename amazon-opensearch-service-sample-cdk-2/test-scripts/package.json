@@ -1,0 +1,8 @@
+{
+  "name": "test-scripts",
+  "version": "1.0.0",
+  "description": "Test scripts for CloudWatch logs generation",
+  "dependencies": {
+    "aws-sdk": "^2.1000.0"
+  }
+}

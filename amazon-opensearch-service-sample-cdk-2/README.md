@@ -18,10 +18,10 @@ cdk bootstrap
 export CDK_DEPLOYMENT_STAGE=dev
 
 
-cdk deploy "*" --c domainName="os-service-domain-37" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-40" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 
-# deploy firehose stack ONLY
-export CDK_DEPLOYMENT_STAGE=dev && cdk deploy "firehoseStack" --c domainName="os-service-domain-34" --c engineVersion="OS_2.5"
+# deploy lambda logs processor stack ONLY
+export CDK_DEPLOYMENT_STAGE=dev && cdk deploy "lambdaLogsProcessorStack" --c domainName="os-service-domain-34" --c engineVersion="OS_2.5"
 ```
 
 
@@ -77,9 +77,11 @@ GET /cloudwatch-logs/_search
 
 ```bash
 
-curl -XGET -u 'master-user:master-user-password' 'domain-endpoint/movies/_search?q=mars&pretty=true'
+curl -XGET -u 'admin:Admin@OpenSearch123!' 'domain-endpoint/cloudwatch-logs/_search?q=*&pretty=true'
 
-curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-service-domain-5-zixlxqr2g42cvlyn5ca7c22ltu.ap-northeast-1.es.amazonaws.com/cloudwatch-logs/_search?q=mars&pretty=true'
+# Test log generation (after deployment)
+export LOG_GROUP_NAME=/aws/lambda/your-domain-name-test-logs
+node test-scripts/generate-test-logs.js
 ```
 
 

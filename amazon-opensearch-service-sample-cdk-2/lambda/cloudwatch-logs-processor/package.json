@@ -1,0 +1,9 @@
+{
+  "name": "cloudwatch-logs-processor",
+  "version": "1.0.0",
+  "description": "Lambda function to process CloudWatch logs and send to OpenSearch",
+  "main": "index.js",
+  "dependencies": {
+    "aws4": "^1.12.0"
+  }
+}

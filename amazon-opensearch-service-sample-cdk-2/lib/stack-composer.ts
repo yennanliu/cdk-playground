@@ -8,7 +8,7 @@ import {EngineVersion} from "aws-cdk-lib/aws-opensearchservice";
 import {EbsDeviceVolumeType} from "aws-cdk-lib/aws-ec2";
 import * as defaultValuesJson from "../default-values.json"
 import {NetworkStack} from "./network-stack";
-import {KinesisFirehoseStack} from "./kinesis-firehose-stack";
+import {LambdaLogsProcessorStack} from "./lambda-logs-processor-stack";
 
 export interface StackPropsExt extends StackProps {
     readonly stage: string
@@ -96,24 +96,24 @@ export class StackComposer {
             ...props,
         });
 
-        // Add Kinesis Firehose Stack
-        const firehoseStack = new KinesisFirehoseStack(scope, 'firehoseStack', {
+        // Add Lambda Logs Processor Stack
+        const lambdaStack = new LambdaLogsProcessorStack(scope, 'lambdaLogsProcessorStack', {
             opensearchDomain: opensearchStack.domain,
             opensearchIndex: 'cloudwatch-logs',
-            opensearchStackName: opensearchStack.stackName,
-            stackName: `Firehose-${domainName}`,
-            description: "This stack contains resources to create/manage Kinesis Firehose for OpenSearch",
+            logGroupName: `/aws/lambda/${domainName}-test-logs`,
+            stackName: `Lambda-${domainName}`,
+            description: "This stack contains resources to process CloudWatch logs with Lambda and send to OpenSearch",
             ...props,
         });
 
         // Add dependency to ensure OpenSearch is created first
-        firehoseStack.addDependency(opensearchStack);
+        lambdaStack.addDependency(opensearchStack);
 
         if (networkStack) {
             opensearchStack.addDependency(networkStack)
         }
         this.stacks.push(opensearchStack)
-        this.stacks.push(firehoseStack)
+        this.stacks.push(lambdaStack)
 
         function getContextForType(optionName: string, expectedType: string): any {
             const option = scope.node.tryGetContext(optionName)

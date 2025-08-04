@@ -31,62 +31,10 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
 export class OpensearchServiceDomainCdkStack extends Stack {
   public readonly domainEndpoint: string;
   public readonly domain: Domain;
-  public readonly firehoseRole: iam.Role;
 
   constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
     super(scope, id, props);
 
-    // Create Firehose role with all necessary permissions
-    this.firehoseRole = new iam.Role(this, 'FirehoseRole', {
-      assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
-      description: 'Role for Firehose to access OpenSearch and S3',
-      roleName: `${this.stackName}-FirehoseRole`, // <-- assign a specific role name here
-    });
-
-    // Add full OpenSearch permissions
-    this.firehoseRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'es:*',
-        'opensearch:*'
-      ],
-      resources: [
-        `arn:aws:es:${this.region}:*:domain/*`,
-        `arn:aws:opensearch:${this.region}:*:domain/*`
-      ]
-    }));
-
-    // Add S3 permissions for any Firehose backup bucket
-    this.firehoseRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        's3:AbortMultipartUpload',
-        's3:GetBucketLocation',
-        's3:GetObject',
-        's3:ListBucket',
-        's3:ListBucketMultipartUploads',
-        's3:PutObject',
-        's3:PutObjectAcl'
-      ],
-      resources: [
-        'arn:aws:s3:::firehose-*',
-        'arn:aws:s3:::firehose-*/*'
-      ]
-    }));
-
-    // Add CloudWatch Logs permissions
-    this.firehoseRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'logs:PutLogEvents',
-        'logs:CreateLogStream',
-        'logs:CreateLogGroup'
-      ],
-      resources: [
-        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*`,
-        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*:log-stream:*`
-      ]
-    }));
 
     // Map objects from props
     const zoneAwarenessConfig: ZoneAwarenessConfig|undefined = props.availabilityZoneCount ?
@@ -135,13 +83,6 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       }
     });
 
-    // Add role mapping for Firehose role
-    const roleMapping = {
-      'backend_roles': [this.firehoseRole.roleArn],
-      'hosts': [],
-      'users': [],
-      'reserved': false
-    };
 
     // Add security configuration for the all_access role
     cfnDomain.addPropertyOverride('AdvancedOptions', {
@@ -151,30 +92,14 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     // Master user options are handled in AdvancedSecurityOptions
 
     // Security groups are handled by the Domain construct
-    // Add comprehensive access policy for Firehose role and service
+    // Add open access policy for Lambda functions
     cfnDomain.addPropertyOverride('AccessPolicies', {
       Version: '2012-10-17',
       Statement: [
         {
-          Sid: 'AllowFirehoseRoleAccess',
           Effect: 'Allow',
           Principal: {
-            AWS: this.firehoseRole.roleArn
-          },
-          Action: [
-            'es:*',
-            'opensearch:*'
-          ],
-          Resource: [
-            `arn:aws:es:${this.region}:*:domain/*`,
-            `arn:aws:opensearch:${this.region}:*:domain/*`
-          ]
-        },
-        {
-          Sid: 'AllowFirehoseServiceAccess',
-          Effect: 'Allow',
-          Principal: {
-            Service: 'firehose.amazonaws.com'
+            AWS: '*'
           },
           Action: [
             'es:*',
@@ -194,17 +119,17 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     this.domainEndpoint = domain.domainEndpoint;
     this.domain = domain;
 
-    // Export the Firehose role ARN and name for use by other stacks
-    new CfnOutput(this, 'FirehoseRoleArn', {
-      value: this.firehoseRole.roleArn,
-      exportName: `${this.stackName}-FirehoseRoleArn`,
-      description: 'ARN of the Firehose role for OpenSearch access'
+    // Export domain information for other stacks
+    new CfnOutput(this, 'DomainEndpoint', {
+      value: this.domainEndpoint,
+      exportName: `${this.stackName}-DomainEndpoint`,
+      description: 'OpenSearch domain endpoint'
     });
 
-    new CfnOutput(this, 'FirehoseRoleName', {
-      value: this.firehoseRole.roleName,
-      exportName: `${this.stackName}-FirehoseRoleName`,
-      description: 'Name of the Firehose role for OpenSearch access'
+    new CfnOutput(this, 'DomainArn', {
+      value: domain.domainArn,
+      exportName: `${this.stackName}-DomainArn`,
+      description: 'OpenSearch domain ARN'
     });
   }
 }
