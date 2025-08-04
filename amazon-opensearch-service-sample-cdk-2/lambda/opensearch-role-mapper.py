@@ -22,44 +22,11 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         "firehoseRoleArn": "arn:aws:iam::account:role/FirehoseRole",
         "masterUser": "admin",
         "masterPassword": "password",
-        "RequestType": "Create|Update|Delete",
-        "ResponseURL": "...",
-        "StackId": "...",
-        "RequestId": "...",
-        "LogicalResourceId": "..."
+        "RequestType": "Create|Update|Delete"
     }
     """
     
     logger.info(f"Received event: {json.dumps(event, indent=2)}")
-    
-    # CloudFormation Custom Resource response helper
-    def send_response(response_status: str, response_data: Dict[str, Any] = None, reason: str = None):
-        response_body = {
-            'Status': response_status,
-            'Reason': reason or f'See CloudWatch Log Stream: {context.log_stream_name}',
-            'PhysicalResourceId': event.get('LogicalResourceId', 'opensearch-role-mapper'),
-            'StackId': event['StackId'],
-            'RequestId': event['RequestId'],
-            'LogicalResourceId': event['LogicalResourceId'],
-            'Data': response_data or {}
-        }
-        
-        json_response_body = json.dumps(response_body)
-        logger.info(f"Response body: {json_response_body}")
-        
-        headers = {
-            'content-type': '',
-            'content-length': str(len(json_response_body))
-        }
-        
-        try:
-            http = urllib3.PoolManager()
-            response = http.request('PUT', event['ResponseURL'], 
-                                  body=json_response_body, 
-                                  headers=headers)
-            logger.info(f"CloudFormation response status: {response.status}")
-        except Exception as e:
-            logger.error(f"Failed to send response to CloudFormation: {str(e)}")
     
     try:
         request_type = event.get('RequestType')
@@ -68,8 +35,10 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             # For delete operations, we'll just return success
             # Role mappings don't need to be cleaned up
             logger.info("Delete operation - no cleanup needed for role mappings")
-            send_response('SUCCESS', {'Message': 'Delete completed'})
-            return {'statusCode': 200}
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'Message': 'Delete completed successfully'})
+            }
         
         # Extract parameters
         domain_endpoint = event['domainEndpoint']
@@ -172,21 +141,27 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 updated_mapping = json.loads(verify_response.data.decode('utf-8'))
                 logger.info(f"Verified role mapping: {json.dumps(updated_mapping, indent=2)}")
             
-            send_response('SUCCESS', {
-                'Message': 'Role mapping configured successfully',
-                'FirehoseRoleArn': firehose_role_arn,
-                'BackendRoles': backend_roles
-            })
+            return {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'Message': 'Role mapping configured successfully',
+                    'FirehoseRoleArn': firehose_role_arn,
+                    'BackendRoles': backend_roles
+                })
+            }
             
         else:
             error_msg = f"Failed to update role mapping: HTTP {response.status} - {response.data.decode('utf-8')}"
             logger.error(error_msg)
-            send_response('FAILED', reason=error_msg)
+            return {
+                'statusCode': 500,
+                'body': json.dumps({'Error': error_msg})
+            }
             
     except Exception as e:
         error_msg = f"Error configuring OpenSearch role mapping: {str(e)}"
         logger.error(error_msg, exc_info=True)
-        send_response('FAILED', reason=error_msg)
-        return {'statusCode': 500, 'body': error_msg}
-    
-    return {'statusCode': 200}
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'Error': error_msg})
+        }

@@ -9,6 +9,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import {PolicyStatement, Effect} from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as cr from "aws-cdk-lib/custom-resources";
+import {AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId} from "aws-cdk-lib/custom-resources";
 import {StackPropsExt} from "./stack-composer";
 import * as path from "path";
 
@@ -215,25 +216,59 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       }
     });
 
-    // Grant the Lambda permission to make HTTP requests (no specific AWS permissions needed for OpenSearch API calls)
-    // The Lambda will use basic auth with master user credentials
-
-    // Create Custom Resource to invoke the Lambda
-    const roleMappingProvider = new cr.Provider(this, 'OpenSearchRoleMappingProvider', {
-      onEventHandler: roleMappingLambda,
-      logRetention: 30 // Keep logs for 30 days
+    // Grant the Lambda permission to be invoked by CloudFormation custom resources
+    roleMappingLambda.addPermission('AllowCustomResourceInvoke', {
+      principal: new iam.ServicePrincipal('cloudformation.amazonaws.com'),
+      action: 'lambda:InvokeFunction'
     });
 
-    // Create the Custom Resource that will configure role mapping
-    const roleMappingResource = new CustomResource(this, 'OpenSearchRoleMapping', {
-      serviceToken: roleMappingProvider.serviceToken,
-      properties: {
-        domainEndpoint: domain.domainEndpoint,
-        firehoseRoleArn: this.firehoseRole.roleArn,
-        masterUser: 'admin',
-        masterPassword: 'Admin@OpenSearch123!', // In production, use Secrets Manager
-        timestamp: Date.now() // Force update on each deployment
-      }
+    // Create AwsCustomResource to invoke the Lambda
+    const roleMappingResource = new AwsCustomResource(this, 'OpenSearchRoleMapping', {
+      onCreate: {
+        service: 'Lambda',
+        action: 'invoke',
+        physicalResourceId: PhysicalResourceId.of('opensearch-role-mapping'),
+        parameters: {
+          FunctionName: roleMappingLambda.functionName,
+          Payload: JSON.stringify({
+            RequestType: 'Create',
+            domainEndpoint: domain.domainEndpoint,
+            firehoseRoleArn: this.firehoseRole.roleArn,
+            masterUser: 'admin',
+            masterPassword: 'Admin@OpenSearch123!', // In production, use Secrets Manager
+            ResponseURL: 'dummy', // Will be overridden by AwsCustomResource
+            StackId: 'dummy',
+            RequestId: 'dummy',
+            LogicalResourceId: 'OpenSearchRoleMapping'
+          })
+        }
+      },
+      onUpdate: {
+        service: 'Lambda',
+        action: 'invoke',
+        physicalResourceId: PhysicalResourceId.of('opensearch-role-mapping'),
+        parameters: {
+          FunctionName: roleMappingLambda.functionName,
+          Payload: JSON.stringify({
+            RequestType: 'Update',
+            domainEndpoint: domain.domainEndpoint,
+            firehoseRoleArn: this.firehoseRole.roleArn,
+            masterUser: 'admin',
+            masterPassword: 'Admin@OpenSearch123!',
+            ResponseURL: 'dummy',
+            StackId: 'dummy',
+            RequestId: 'dummy',
+            LogicalResourceId: 'OpenSearchRoleMapping'
+          })
+        }
+      },
+      policy: AwsCustomResourcePolicy.fromStatements([
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['lambda:InvokeFunction'],
+          resources: [roleMappingLambda.functionArn]
+        })
+      ])
     });
 
     // Ensure the custom resource runs after the domain is created
@@ -253,7 +288,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     });
 
     new CfnOutput(this, 'OpenSearchRoleMappingStatus', {
-      value: roleMappingResource.getAtt('Message').toString(),
+      value: roleMappingResource.getResponseField('Payload'),
       description: 'Status of OpenSearch role mapping configuration'
     });
   }
