@@ -4,10 +4,13 @@
 import {Construct} from "constructs";
 import {EbsDeviceVolumeType, ISecurityGroup, IVpc, SubnetSelection} from "aws-cdk-lib/aws-ec2";
 import {CfnDomain, Domain, EngineVersion, ZoneAwarenessConfig} from "aws-cdk-lib/aws-opensearchservice";
-import {CfnDeletionPolicy, RemovalPolicy, Stack, CfnOutput} from "aws-cdk-lib";
+import {CfnDeletionPolicy, RemovalPolicy, Stack, CfnOutput, Duration, CustomResource} from "aws-cdk-lib";
 import * as iam from "aws-cdk-lib/aws-iam";
 import {PolicyStatement, Effect} from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as cr from "aws-cdk-lib/custom-resources";
 import {StackPropsExt} from "./stack-composer";
+import * as path from "path";
 
 export interface opensearchServiceDomainCdkProps extends StackPropsExt {
   readonly version: EngineVersion,
@@ -200,6 +203,42 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     this.domainEndpoint = domain.domainEndpoint;
     this.domain = domain;
 
+    // Create Lambda function for OpenSearch role mapping
+    const roleMappingLambda = new lambda.Function(this, 'OpenSearchRoleMappingLambda', {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: 'opensearch-role-mapper.lambda_handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+      timeout: Duration.minutes(10),
+      description: 'Configures OpenSearch role mapping for Firehose integration',
+      environment: {
+        LOG_LEVEL: 'INFO'
+      }
+    });
+
+    // Grant the Lambda permission to make HTTP requests (no specific AWS permissions needed for OpenSearch API calls)
+    // The Lambda will use basic auth with master user credentials
+
+    // Create Custom Resource to invoke the Lambda
+    const roleMappingProvider = new cr.Provider(this, 'OpenSearchRoleMappingProvider', {
+      onEventHandler: roleMappingLambda,
+      logRetention: 30 // Keep logs for 30 days
+    });
+
+    // Create the Custom Resource that will configure role mapping
+    const roleMappingResource = new CustomResource(this, 'OpenSearchRoleMapping', {
+      serviceToken: roleMappingProvider.serviceToken,
+      properties: {
+        domainEndpoint: domain.domainEndpoint,
+        firehoseRoleArn: this.firehoseRole.roleArn,
+        masterUser: 'admin',
+        masterPassword: 'Admin@OpenSearch123!', // In production, use Secrets Manager
+        timestamp: Date.now() // Force update on each deployment
+      }
+    });
+
+    // Ensure the custom resource runs after the domain is created
+    roleMappingResource.node.addDependency(domain);
+
     // Export the Firehose role ARN and name for use by other stacks
     new CfnOutput(this, 'FirehoseRoleArn', {
       value: this.firehoseRole.roleArn,
@@ -211,6 +250,11 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       value: this.firehoseRole.roleName,
       exportName: `${this.stackName}-FirehoseRoleName`,
       description: 'Name of the Firehose role for OpenSearch access'
+    });
+
+    new CfnOutput(this, 'OpenSearchRoleMappingStatus', {
+      value: roleMappingResource.getAtt('Message').toString(),
+      description: 'Status of OpenSearch role mapping configuration'
     });
   }
 }
