@@ -22,7 +22,7 @@ cdk deploy "*" --c domainName="os-service-domain-37" --c dataNodeType="r6g.large
 
 
 # deploy firehose stack ONLY
-export CDK_DEPLOYMENT_STAGE=dev && cdk deploy "firehoseStack" --c domainName="os-service-domain-41" --c engineVersion="OS_2.5"
+export CDK_DEPLOYMENT_STAGE=dev && cdk deploy "firehoseStack" --c domainName="os-service-domain-42" --c engineVersion="OS_2.5"
 ```
 
 
@@ -82,6 +82,7 @@ curl -XGET -u 'master-user:master-user-password' 'domain-endpoint/movies/_search
 
 curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-service-domain-5-zixlxqr2g42cvlyn5ca7c22ltu.ap-northeast-1.es.amazonaws.com/cloudwatch-logs/_search?q=mars&pretty=true'
 ```
+
 
 
 
