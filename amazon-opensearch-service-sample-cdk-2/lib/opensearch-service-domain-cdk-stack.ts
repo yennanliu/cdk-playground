@@ -129,7 +129,6 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
       Enabled: true,
       InternalUserDatabaseEnabled: true,
-      AnonymousAuthEnabled: true,
       MasterUserOptions: {
         MasterUserName: 'admin',
         MasterUserPassword: 'Admin@OpenSearch123!' // You should change this password
