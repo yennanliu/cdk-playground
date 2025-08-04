@@ -129,6 +129,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     cfnDomain.addPropertyOverride('AdvancedSecurityOptions', {
       Enabled: true,
       InternalUserDatabaseEnabled: true,
+      AnonymousAuthEnabled: true,
       MasterUserOptions: {
         MasterUserName: 'admin',
         MasterUserPassword: 'Admin@OpenSearch123!' // You should change this password
@@ -180,16 +181,14 @@ export class OpensearchServiceDomainCdkStack extends Stack {
           Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
         },
         {
-          Sid: 'AllowAuthenticatedUserAccess',
+          Sid: 'AllowAllAccess',
           Effect: 'Allow',
           Principal: {
-            AWS: `arn:aws:iam::${this.account}:root`
+            AWS: '*'
           },
           Action: [
-            'es:ESHttpGet',
-            'es:ESHttpPost',
-            'es:ESHttpPut',
-            'es:ESHttpDelete'
+            'es:*',
+            'opensearch:*'
           ],
           Resource: `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`
         }

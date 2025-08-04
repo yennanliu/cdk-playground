@@ -20,8 +20,9 @@ export CDK_DEPLOYMENT_STAGE=dev
 
 cdk deploy "*" --c domainName="os-service-domain-37" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 
+
 # deploy firehose stack ONLY
-export CDK_DEPLOYMENT_STAGE=dev && cdk deploy "firehoseStack" --c domainName="os-service-domain-34" --c engineVersion="OS_2.5"
+export CDK_DEPLOYMENT_STAGE=dev && cdk deploy "firehoseStack" --c domainName="os-service-domain-41" --c engineVersion="OS_2.5"
 ```
 
 
