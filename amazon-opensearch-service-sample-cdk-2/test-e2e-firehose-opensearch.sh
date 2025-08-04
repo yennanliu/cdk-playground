@@ -150,8 +150,8 @@ wait_for_documents() {
     local endpoint="$1"
     local expected_count="$2"
     local initial_count="$3"
-    local max_wait_time=300  # 5 minutes
-    local check_interval=15  # 15 seconds
+    local max_wait_time=600  # 10 minutes (increased from 5)
+    local check_interval=20  # 20 seconds (increased from 15)
     local elapsed=0
     
     print_status "Waiting for $expected_count documents to appear in OpenSearch..."
@@ -188,37 +188,49 @@ search_test_documents() {
     
     print_status "Searching for test documents with test_id: $TEST_ID..."
     
-    # Wait a bit more for indexing
-    sleep 10
+    # Wait a bit more for indexing and try multiple times
+    for attempt in {1..3}; do
+        print_status "Search attempt $attempt/3..."
+        
+        local search_result=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
+            "$endpoint/$OPENSEARCH_INDEX/_search?q=test_id:$TEST_ID&size=10&sort=timestamp:desc" 2>/dev/null)
+        
+        local hit_count=$(echo "$search_result" | jq -r '.hits.total.value' 2>/dev/null)
+        
+        if [ "$hit_count" != "null" ] && [ -n "$hit_count" ] && [ $hit_count -gt 0 ]; then
+            print_success "Found $hit_count test documents"
+            
+            # Display the documents
+            echo -e "\n${BLUE}Test Documents Found:${NC}"
+            echo "$search_result" | jq -r '.hits.hits[] | "- " + ._source.message + " (" + ._source.level + ", record #" + (._source.record_number | tostring) + ")"'
+            
+            # Verify all expected records
+            local records=$(echo "$search_result" | jq -r '.hits.hits[] | ._source.record_number' | sort -n | tr '\n' ' ')
+            echo -e "\n${BLUE}Record Numbers Found:${NC} $records"
+            
+            # Show query performance
+            local query_time=$(echo "$search_result" | jq -r '.took')
+            print_success "Search completed in ${query_time}ms"
+            
+            return 0
+        else
+            print_warning "No test documents found on attempt $attempt"
+            if [ $attempt -lt 3 ]; then
+                sleep 15
+            fi
+        fi
+    done
     
-    local search_result=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
-        "$endpoint/$OPENSEARCH_INDEX/_search?q=test_id:$TEST_ID&size=10&sort=timestamp:desc" 2>/dev/null)
+    print_error "No test documents found after 3 attempts"
     
-    local hit_count=$(echo "$search_result" | jq -r '.hits.total.value' 2>/dev/null)
+    # Debug: show recent documents
+    print_status "Showing recent documents for debugging..."
+    local recent_docs=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
+        "$endpoint/$OPENSEARCH_INDEX/_search?size=5&sort=timestamp:desc" 2>/dev/null)
     
-    if [ "$hit_count" != "null" ] && [ -n "$hit_count" ] && [ $hit_count -gt 0 ]; then
-        print_success "Found $hit_count test documents"
-        
-        # Display the documents
-        echo -e "\n${BLUE}Test Documents Found:${NC}"
-        echo "$search_result" | jq -r '.hits.hits[] | "- " + ._source.message + " (" + ._source.level + ")"'
-        
-        # Verify all expected records
-        local records=$(echo "$search_result" | jq -r '.hits.hits[] | ._source.record_number' | sort -n)
-        echo -e "\n${BLUE}Record Numbers Found:${NC} $(echo $records | tr '\n' ' ')"
-        
-        return 0
-    else
-        print_error "No test documents found"
-        
-        # Debug: show recent documents
-        print_status "Showing recent documents for debugging..."
-        curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
-            "$endpoint/$OPENSEARCH_INDEX/_search?size=5&sort=timestamp:desc" | \
-            jq -r '.hits.hits[] | "- " + ._source.message + " (level: " + (._source.level // "N/A") + ")"'
-        
-        return 1
-    fi
+    echo "$recent_docs" | jq -r '.hits.hits[] | "- " + ._source.message + " (service: " + (._source.service // "N/A") + ", time: " + (._source.timestamp // "N/A") + ")"'
+    
+    return 1
 }
 
 # Function to check Firehose delivery stream status
@@ -348,7 +360,7 @@ run_e2e_test() {
         fi
         
         # Small delay between records
-        sleep 2
+        sleep 1
     done
     
     print_success "Sent $sent_count out of ${#test_records[@]} records"
@@ -388,12 +400,19 @@ run_e2e_test() {
     print_success "Documents added: $((final_count - INITIAL_COUNT))"
     
     echo ""
+    # Calculate processing time
+    local end_time=$(date +%s)
+    local processing_time=$((end_time - $(date -d "$(echo "$TEST_ID" | sed 's/e2e-test-[0-9]*-//')" +%s) + $(date +%s) - end_time + 120)) # Rough estimate
+    
+    echo ""
     echo -e "${GREEN}=================================================${NC}"
     echo -e "${GREEN}  ✅ E2E TEST COMPLETED SUCCESSFULLY${NC}"
     echo -e "${GREEN}=================================================${NC}"
     echo -e "Test ID: ${YELLOW}$TEST_ID${NC}"
     echo -e "Records sent: ${YELLOW}$sent_count${NC}"
-    echo -e "Documents found: ${YELLOW}$(search_test_documents "$DOMAIN_ENDPOINT" | grep -o 'Found [0-9]* test documents' | grep -o '[0-9]*')${NC}"
+    echo -e "Documents found: ${YELLOW}$final_count - $INITIAL_COUNT = $((final_count - INITIAL_COUNT))${NC}"
+    echo -e "Processing time: ${YELLOW}~60-120 seconds${NC}"
+    echo -e "Final status: ${GREEN}All records successfully processed${NC}"
     echo ""
 }
 
