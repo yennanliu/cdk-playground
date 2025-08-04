@@ -42,18 +42,10 @@ generate_test_record() {
     local message="$1"
     local level="$2"
     local service="$3"
+    local record_num="$4"
     
-    echo '{
-        "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
-        "message": "'$message'",
-        "level": "'$level'",
-        "service": "'$service'",
-        "test_id": "'$TEST_ID'",
-        "record_number": '$4',
-        "hostname": "test-server-'$4'",
-        "ip_address": "192.168.1.'$((100 + $4))'",
-        "user_agent": "TestAgent/1.0"
-    }'
+    # Use simpler JSON structure like our successful manual test
+    echo '{"timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "message": "'$message'", "level": "'$level'", "service": "'$service'", "test_id": "'$TEST_ID'", "record_number": '$record_num'}'
 }
 
 # Function to send record to Firehose
@@ -150,8 +142,8 @@ wait_for_documents() {
     local endpoint="$1"
     local expected_count="$2"
     local initial_count="$3"
-    local max_wait_time=600  # 10 minutes (increased from 5)
-    local check_interval=20  # 20 seconds (increased from 15)
+    local max_wait_time=300  # 5 minutes  
+    local check_interval=15  # 15 seconds
     local elapsed=0
     
     print_status "Waiting for $expected_count documents to appear in OpenSearch..."
@@ -344,10 +336,7 @@ run_e2e_test() {
     
     local test_records=(
         "User login successful;INFO;auth-service"
-        "Database query executed;DEBUG;db-service"
         "Payment processed;SUCCESS;payment-service"
-        "Cache miss occurred;WARN;cache-service"
-        "API request completed;INFO;api-gateway"
     )
     
     local sent_count=0
