@@ -87,7 +87,7 @@ curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-servic
 
 ```bash
 
-
+# V1
 PUT /eks-logs
 ###   --aws-sigv4 "aws:amz:ap-northeast-1:es" \
 ###   -H "Content-Type: application/json" \
@@ -107,6 +107,26 @@ PUT /eks-logs
 ###       }
 ###     }
 ###   }'
+
+
+# V2
+PUT /eks-logs
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": { "type": "date" },
+      "timestamp": { "type": "date" },
+      "message": { "type": "text" },
+      "logStream": { "type": "keyword" },
+      "cluster": { "type": "keyword" },
+      "component": { "type": "keyword" }
+    }
+  }
+}
 ```
 
 
