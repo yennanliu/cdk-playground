@@ -133,7 +133,7 @@ export class KinesisFirehoseStack extends Stack {
             
             // Create CloudWatch Logs destination
             const logsDestination = new logs.CfnDestination(this, `${this.stackName}-LogsDestination`, {
-                destinationName: `${this.stackName}-firehose-destination`,
+                destinationName: `${this.stackName}-${props.opensearchIndex}-firehose-destination`,
                 targetArn: deliveryStream.attrArn,
                 roleArn: cloudwatchLogsRoleArn,
                 destinationPolicy: JSON.stringify({
@@ -141,10 +141,10 @@ export class KinesisFirehoseStack extends Stack {
                     Statement: [{
                         Effect: 'Allow',
                         Principal: {
-                            AWS: `arn:aws:iam::${this.account}:root`
+                            AWS: this.account
                         },
                         Action: 'logs:PutSubscriptionFilter',
-                        Resource: `arn:aws:logs:${this.region}:${this.account}:destination:${this.stackName}-firehose-destination`
+                        Resource: `arn:aws:logs:${this.region}:${this.account}:destination:${this.stackName}-${props.opensearchIndex}-firehose-destination`
                     }]
                 })
             });
