@@ -36,6 +36,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
   public readonly domainEndpoint: string;
   public readonly domain: Domain;
   public readonly firehoseRole: iam.Role;
+  public readonly cloudwatchLogsRole: iam.Role;
 
   constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
     super(scope, id, props);
@@ -78,7 +79,7 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       ]
     }));
 
-    // Add CloudWatch Logs permissions
+    // Add CloudWatch Logs permissions for Firehose operations
     this.firehoseRole.addToPolicy(new PolicyStatement({
       effect: Effect.ALLOW,
       actions: [
@@ -89,6 +90,25 @@ export class OpensearchServiceDomainCdkStack extends Stack {
       resources: [
         `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*`,
         `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*:log-stream:*`
+      ]
+    }));
+
+    // Create CloudWatch Logs destination role for sending logs to Firehose
+    this.cloudwatchLogsRole = new iam.Role(this, 'CloudWatchLogsRole', {
+      assumedBy: new iam.ServicePrincipal(`logs.${this.region}.amazonaws.com`),
+      description: 'Role for CloudWatch Logs to send data to Firehose',
+      roleName: `${this.stackName}-CloudWatchLogsRole`,
+    });
+
+    // Add Firehose permissions to CloudWatch Logs role
+    this.cloudwatchLogsRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'firehose:PutRecord',
+        'firehose:PutRecordBatch'
+      ],
+      resources: [
+        `arn:aws:firehose:${this.region}:${this.account}:deliverystream/*`
       ]
     }));
 
@@ -290,6 +310,19 @@ export class OpensearchServiceDomainCdkStack extends Stack {
     new CfnOutput(this, 'OpenSearchRoleMappingStatus', {
       value: roleMappingResource.getResponseField('Payload'),
       description: 'Status of OpenSearch role mapping configuration'
+    });
+
+    // Export the CloudWatch Logs role ARN and name for use by other stacks
+    new CfnOutput(this, 'CloudWatchLogsRoleArn', {
+      value: this.cloudwatchLogsRole.roleArn,
+      exportName: `${this.stackName}-CloudWatchLogsRoleArn`,
+      description: 'ARN of the CloudWatch Logs role for Firehose access'
+    });
+
+    new CfnOutput(this, 'CloudWatchLogsRoleName', {
+      value: this.cloudwatchLogsRole.roleName,
+      exportName: `${this.stackName}-CloudWatchLogsRoleName`,
+      description: 'Name of the CloudWatch Logs role for Firehose access'
     });
   }
 }
