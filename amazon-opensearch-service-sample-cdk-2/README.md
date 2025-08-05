@@ -18,7 +18,7 @@ cdk bootstrap
 export CDK_DEPLOYMENT_STAGE=dev
 
 
-cdk deploy "*" --c domainName="os-service-domain-43" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-44" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 
 
 # deploy firehose stack ONLY
