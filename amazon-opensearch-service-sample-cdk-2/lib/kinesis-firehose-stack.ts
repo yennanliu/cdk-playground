@@ -60,7 +60,7 @@ export class KinesisFirehoseStack extends Stack {
                             parameters: [
                                 {
                                     parameterName: 'MetadataExtractionQuery',
-                                    parameterValue: '{timestamp: .timestamp // now, message: .message, logStream: .logStream, cluster: (.logStream | split("/") | .[2] | split("-") | .[0:2] | join("-")), component: (.logStream | split("/") | .[3] // "cluster"), "@timestamp": (.timestamp // now | strftime("%Y-%m-%dT%H:%M:%S.%fZ"))}'
+                                    parameterValue: '{"@timestamp": (.requestReceivedTimestamp // .stageTimestamp // now), "timestamp": (.requestReceivedTimestamp // .stageTimestamp // now), "audit_id": .auditID, "kind": .kind, "api_version": .apiVersion, "level": .level, "stage": .stage, "request_uri": .requestURI, "verb": .verb, "user": {"username": .user.username, "groups": .user.groups}, "source_ips": .sourceIPs, "user_agent": .userAgent, "object_ref": .objectRef, "response_status": .responseStatus, "annotations": .annotations, "cluster": "eks-cluster", "log_type": "k8s-audit"}'
                                 },
                                 {
                                     parameterName: 'JsonParsingEngine',
