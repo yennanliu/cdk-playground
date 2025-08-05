@@ -11,27 +11,15 @@ const env = {
 };
 
 // Create the main stack with configuration
-const stack = new FirehoseOpensearch1Stack(app, 'FirehoseOpensearch1Stack', {
+new FirehoseOpensearch1Stack(app, 'FirehoseOpensearch1Stack', {
   env,
-  description: 'Kinesis Firehose to OpenSearch pipeline with modular constructs',
+  description: 'Kinesis Firehose to OpenSearch Serverless with vector search capabilities',
   
-  // Stack configuration - these can be overridden via CDK context
-  domainName: app.node.tryGetContext('domainName') || 'firehose-opensearch-domain',
-  deliveryStreamName: app.node.tryGetContext('deliveryStreamName') || 'firehose-opensearch-stream',
-  indexName: app.node.tryGetContext('indexName') || 'logs',
-  enableVpc: app.node.tryGetContext('enableVpc') || false,
-  removalPolicy: app.node.tryGetContext('removalPolicy') === 'RETAIN' 
-    ? cdk.RemovalPolicy.RETAIN 
-    : cdk.RemovalPolicy.DESTROY,
-  
-  // Tags for all resources
-  tags: {
-    Project: 'FirehoseOpenSearch',
-    Environment: app.node.tryGetContext('environment') || 'dev',
-    Owner: app.node.tryGetContext('owner') || 'cdk-team',
-  },
+  // Stack configuration
+  collectionName: 'vector-search-collection',
+  indexName: 'embeddings-index',
+  vectorFieldName: 'text_embedding',
+  vectorDimension: 1536,
+  deliveryStreamName: 'text-embeddings-stream',
+  removalPolicy: cdk.RemovalPolicy.DESTROY,
 });
-
-// Add tags to the app
-cdk.Tags.of(app).add('Project', 'FirehoseOpenSearch');
-cdk.Tags.of(app).add('ManagedBy', 'AWS-CDK');
