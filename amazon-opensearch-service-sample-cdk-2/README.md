@@ -17,8 +17,12 @@ cdk bootstrap
 
 export CDK_DEPLOYMENT_STAGE=dev
 
+cdk deploy "*" \
+    -c domainName="os-service-domain-44" \
+    -c dataNodeType="r6g.large.search" \
+    -c dataNodeCount=1 \
+    -c eksLogGroupName="/aws/eks/EksCluster3394B24C-4f7775fc64f74561829323399625fcbc/cluster"
 
-cdk deploy "*" --c domainName="os-service-domain-44" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 
 
 # deploy firehose stack ONLY
