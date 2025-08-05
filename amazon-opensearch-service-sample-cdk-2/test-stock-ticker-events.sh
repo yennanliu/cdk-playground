@@ -174,49 +174,55 @@ wait_for_documents() {
     return 1
 }
 
-# Function to search for stock ticker test documents
+# Function to search for our specific stock ticker test documents
 search_stock_ticker_documents() {
     local endpoint="$1"
     
-    print_status "Searching for stock ticker documents..."
+    print_status "Searching for our specific stock ticker test documents..."
     
-    # Search for documents with TICKER_SYMBOL field (stock ticker format)
+    # Define the specific prices we sent to verify they were stored
+    local test_prices=("84.51" "175.25" "142.80" "158.45" "162.33" "245.67" "128.90" "415.32" "112.45" "28.95")
+    local found_count=0
+    
     for attempt in {1..3}; do
         print_status "Search attempt $attempt/3..."
+        found_count=0
         
-        local search_result=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
-            "$endpoint/$OPENSEARCH_INDEX/_search?q=TICKER_SYMBOL:*&size=20&sort=_score:desc" 2>/dev/null)
+        # Check each test price we sent
+        for price in "${test_prices[@]}"; do
+            local search_result=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
+                "$endpoint/$OPENSEARCH_INDEX/_search?q=PRICE:$price&size=1" 2>/dev/null)
+            
+            local hit_count=$(echo "$search_result" | jq -r '.hits.total.value' 2>/dev/null)
+            
+            if [ "$hit_count" != "null" ] && [ -n "$hit_count" ] && [ $hit_count -gt 0 ]; then
+                found_count=$((found_count + 1))
+                local ticker=$(echo "$search_result" | jq -r '.hits.hits[0]._source.TICKER_SYMBOL' 2>/dev/null)
+                local sector=$(echo "$search_result" | jq -r '.hits.hits[0]._source.SECTOR' 2>/dev/null)
+                local change=$(echo "$search_result" | jq -r '.hits.hits[0]._source.CHANGE' 2>/dev/null)
+                print_success "✓ Found $ticker ($sector) Price: \$$price Change: $change"
+            fi
+        done
         
-        local hit_count=$(echo "$search_result" | jq -r '.hits.total.value' 2>/dev/null)
-        
-        if [ "$hit_count" != "null" ] && [ -n "$hit_count" ] && [ $hit_count -gt 0 ]; then
-            print_success "Found $hit_count stock ticker documents"
-            
-            # Display the documents
-            echo -e "\n${BLUE}Stock Ticker Documents Found:${NC}"
-            echo "$search_result" | jq -r '.hits.hits[] | "- " + ._source.TICKER_SYMBOL + " (" + ._source.SECTOR + ") Price: $" + (._source.PRICE | tostring) + " Change: " + (._source.CHANGE | tostring)'
-            
-            # Show query performance
-            local query_time=$(echo "$search_result" | jq -r '.took')
-            print_success "Search completed in ${query_time}ms"
-            
+        if [ $found_count -ge 8 ]; then  # Allow for some tolerance
+            print_success "Found $found_count out of ${#test_prices[@]} test stock ticker documents"
             return 0
         else
-            print_warning "No stock ticker documents found on attempt $attempt"
+            print_warning "Only found $found_count out of ${#test_prices[@]} test documents on attempt $attempt"
             if [ $attempt -lt 3 ]; then
                 sleep 15
             fi
         fi
     done
     
-    print_error "No stock ticker documents found after 3 attempts"
+    print_error "Only found $found_count out of ${#test_prices[@]} test documents after 3 attempts"
     
-    # Debug: show recent documents
-    print_status "Showing recent documents for debugging..."
+    # Debug: show some stock ticker documents
+    print_status "Showing recent stock ticker documents for debugging..."
     local recent_docs=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
-        "$endpoint/$OPENSEARCH_INDEX/_search?size=5&sort=@timestamp:desc" 2>/dev/null)
+        "$endpoint/$OPENSEARCH_INDEX/_search?q=TICKER_SYMBOL:*&size=5" 2>/dev/null)
     
-    echo "$recent_docs" | jq -r '.hits.hits[] | "- " + (._source.message // ._source.TICKER_SYMBOL // "Unknown") + " (time: " + (._source.timestamp // ._source["@timestamp"] // "N/A") + ")"'
+    echo "$recent_docs" | jq -r '.hits.hits[] | "- " + (._source.TICKER_SYMBOL // "Unknown") + " (" + (._source.SECTOR // "N/A") + ") Price: $" + (._source.PRICE | tostring) + " Change: " + (._source.CHANGE | tostring)' 2>/dev/null || echo "Could not parse recent documents"
     
     return 1
 }
