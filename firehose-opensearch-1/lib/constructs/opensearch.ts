@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import * as opensearch from 'aws-cdk-lib/aws-opensearch';
+import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
@@ -61,7 +61,7 @@ export class OpenSearchConstruct extends Construct {
         kmsKey: key,
       },
       enforceHttps: props.enforceHttps !== false,
-      tlsSecurityPolicy: opensearch.TlsSecurityPolicy.TLS_1_2,
+      tlsSecurityPolicy: opensearch.TLSSecurityPolicy.TLS_1_2,
 
       // Fine-grained access control
       fineGrainedAccessControl: props.fineGrainedAccess !== false ? {
@@ -107,42 +107,47 @@ export class OpenSearchConstruct extends Construct {
   }
 
   /**
-   * Grant read access to the OpenSearch collection
+   * Grant read access to the OpenSearch domain
    */
   public grantRead(grantee: iam.IGrantable): iam.Grant {
     return iam.Grant.addToPrincipal({
       grantee,
       actions: [
-        'aoss:ReadDocument',
-        'aoss:DescribeIndex',
+        'es:ESHttpGet',
+        'es:ESHttpPost',
+        'opensearch:*'
       ],
-      resourceArns: [this.collectionArn, `${this.collectionArn}/*`],
+      resourceArns: [this.domainArn, `${this.domainArn}/*`],
     });
   }
 
   /**
-   * Grant write access to the OpenSearch collection
+   * Grant write access to the OpenSearch domain
    */
   public grantWrite(grantee: iam.IGrantable): iam.Grant {
     return iam.Grant.addToPrincipal({
       grantee,
       actions: [
-        'aoss:WriteDocument',
-        'aoss:CreateIndex',
-        'aoss:UpdateIndex',
+        'es:ESHttpPost',
+        'es:ESHttpPut',
+        'es:ESHttpDelete',
+        'opensearch:*'
       ],
-      resourceArns: [this.collectionArn, `${this.collectionArn}/*`],
+      resourceArns: [this.domainArn, `${this.domainArn}/*`],
     });
   }
 
   /**
-   * Grant full access to the OpenSearch collection
+   * Grant full access to the OpenSearch domain
    */
   public grantFullAccess(grantee: iam.IGrantable): iam.Grant {
     return iam.Grant.addToPrincipal({
       grantee,
-      actions: ['aoss:*'],
-      resourceArns: [this.collectionArn, `${this.collectionArn}/*`],
+      actions: [
+        'es:*',
+        'opensearch:*'
+      ],
+      resourceArns: [this.domainArn, `${this.domainArn}/*`],
     });
   }
 }

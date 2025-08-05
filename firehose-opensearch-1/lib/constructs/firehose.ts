@@ -21,7 +21,7 @@ export interface FirehoseConstructProps {
 }
 
 export class FirehoseConstruct extends Construct {
-  public readonly deliveryStream: kinesisfirehose.CfnDeliveryStream;
+  public readonly deliveryStream: firehose.CfnDeliveryStream;
   public readonly backupBucket: s3.Bucket;
   public readonly deliveryRole: iam.Role;
 
@@ -87,13 +87,13 @@ export class FirehoseConstruct extends Construct {
     props.bedrockEmbeddings.embedFunction.grantInvoke(processor);
 
     // Create Firehose delivery stream
-    this.deliveryStream = new kinesisfirehose.CfnDeliveryStream(this, 'DeliveryStream', {
+    this.deliveryStream = new firehose.CfnDeliveryStream(this, 'DeliveryStream', {
       deliveryStreamName: props.deliveryStreamName,
       deliveryStreamType: 'DirectPut',
       
       amazonopensearchserviceDestinationConfiguration: {
         indexName: props.indexName,
-        domainArn: props.openSearchConstruct.collectionArn,
+        domainArn: props.openSearchConstruct.domainArn,
         roleArn: this.deliveryRole.roleArn,
         
         bufferingHints: {

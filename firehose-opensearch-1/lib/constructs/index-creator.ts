@@ -3,10 +3,10 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cr from 'aws-cdk-lib/custom-resources';
 import { Duration, CustomResource } from 'aws-cdk-lib';
-import { OpenSearchServerlessConstruct } from './opensearch-serverless';
+import { OpenSearchConstruct } from './opensearch';
 
 export interface IndexCreatorConstructProps {
-  readonly openSearchConstruct: OpenSearchServerlessConstruct;
+  readonly openSearchConstruct: OpenSearchConstruct;
   readonly indexName: string;
   readonly vectorFieldName: string;
   readonly vectorDimension?: number;
@@ -45,7 +45,7 @@ export class IndexCreatorConstruct extends Construct {
       role: executionRole,
       timeout: Duration.minutes(5),
       environment: {
-        COLLECTION_ENDPOINT: props.openSearchConstruct.collectionEndpoint,
+        DOMAIN_ENDPOINT: props.openSearchConstruct.domainEndpoint,
         INDEX_NAME: props.indexName,
         VECTOR_FIELD_NAME: props.vectorFieldName,
         VECTOR_DIMENSION: (props.vectorDimension || 1536).toString(),

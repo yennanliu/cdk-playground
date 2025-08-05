@@ -13,13 +13,12 @@ const env = {
 // Create the main stack with configuration
 new FirehoseOpensearch1Stack(app, 'FirehoseOpensearch1Stack', {
   env,
-  description: 'Kinesis Firehose to OpenSearch Serverless with vector search capabilities',
+  description: 'Kinesis Firehose to OpenSearch with log processing capabilities',
   
   // Stack configuration
-  collectionName: 'vector-search-collection',
-  indexName: 'embeddings-index',
-  vectorFieldName: 'text_embedding',
-  vectorDimension: 1536,
-  deliveryStreamName: 'text-embeddings-stream',
+  domainName: 'firehose-opensearch-domain',
+  indexName: 'logs',
+  deliveryStreamName: 'firehose-opensearch-stream',
+  enableVpc: false,
   removalPolicy: cdk.RemovalPolicy.DESTROY,
 });
