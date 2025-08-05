@@ -40,6 +40,7 @@ export class StackComposer {
         const vpcSecurityGroupIds = getContextForType('vpcSecurityGroupIds', 'object')
         const vpcSubnetIds = getContextForType('vpcSubnetIds', 'object')
         const availabilityZoneCount = getContextForType('availabilityZoneCount', 'number')
+        const eksLogGroupName = getContextForType('eksLogGroupName', 'string')
 
         if (!domainName) {
             throw new Error("Domain name is not present and is a required field")
@@ -111,6 +112,7 @@ export class StackComposer {
             opensearchDomain: opensearchStack.domain,
             opensearchIndex: 'eks-logs',
             opensearchStackName: opensearchStack.stackName,
+            eksLogGroupName: eksLogGroupName,  // Pass the EKS log group name for subscription filter
             stackName: `EKSFirehose-${domainName}`,
             description: "This stack contains resources to create/manage Kinesis Firehose for EKS CloudWatch logs to OpenSearch",
             ...props,
