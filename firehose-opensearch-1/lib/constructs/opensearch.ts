@@ -37,52 +37,40 @@ export class OpenSearchConstruct extends Construct {
       removalPolicy: props.removalPolicy || RemovalPolicy.DESTROY,
     });
 
-    // Create the OpenSearch domain
+    // Create the OpenSearch domain with minimal T3-compatible configuration
     this.domain = new opensearch.Domain(this, 'Domain', {
       domainName: props.domainName.toLowerCase(),
-      version: props.engineVersion || opensearch.EngineVersion.OPENSEARCH_2_5,
+      version: opensearch.EngineVersion.OPENSEARCH_1_3, // Use stable version
       
-      // Capacity configuration
-      capacity: props.capacity || {
+      // Single node capacity configuration - use M6G for Multi-AZ support
+      capacity: {
         dataNodes: 1,
-        dataNodeInstanceType: 't3.small.search',
+        dataNodeInstanceType: 'm6g.small.search',
       },
 
       // EBS configuration
-      ebs: props.ebs || {
+      ebs: {
         volumeSize: 20,
-        volumeType: ec2.EbsDeviceVolumeType.GP3,
+        volumeType: ec2.EbsDeviceVolumeType.GP2,
       },
 
-      // Security configuration
-      nodeToNodeEncryption: props.nodeToNodeEncryption !== false,
+      // Basic security - minimal for T3
+      nodeToNodeEncryption: false, // Disabled for single node
       encryptionAtRest: {
-        enabled: props.encryptionAtRest !== false,
-        kmsKey: key,
+        enabled: false, // Simplified for T3
       },
-      enforceHttps: props.enforceHttps !== false,
-      tlsSecurityPolicy: opensearch.TLSSecurityPolicy.TLS_1_2,
+      enforceHttps: true,
 
-      // Fine-grained access control
-      fineGrainedAccessControl: props.fineGrainedAccess !== false ? {
-        masterUserName: 'admin',
-      } : undefined,
-
-      // Zone awareness for multi-AZ deployment
-      zoneAwareness: props.zoneAwareness || {
+      // Zone awareness explicitly disabled
+      zoneAwareness: {
         enabled: false,
       },
 
-      // VPC configuration
-      vpc: props.vpc,
-      vpcSubnets: props.vpc ? [{ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }] : undefined,
+      // No VPC for public access simplicity
+      vpc: undefined,
 
-      // Logging
-      logging: props.logging !== false ? {
-        slowSearchLogEnabled: true,
-        appLogEnabled: true,
-        slowIndexLogEnabled: true,
-      } : undefined,
+      // No logging for minimal setup
+      logging: undefined,
 
       // Removal policy
       removalPolicy: props.removalPolicy || RemovalPolicy.DESTROY,

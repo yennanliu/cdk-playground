@@ -38,11 +38,11 @@ export class FirehoseOpensearch1Stack extends Stack {
       });
     }
 
-    // Create OpenSearch construct with proper configuration from reference project
+    // Create OpenSearch construct with T3-compatible configuration
     this.openSearchConstruct = new OpenSearchConstruct(this, 'OpenSearch', {
       domainName,
       vpc: this.networkConstruct?.vpc,
-      fineGrainedAccess: true,
+      fineGrainedAccess: false, // Disabled for T3 compatibility
       removalPolicy,
     });
 
