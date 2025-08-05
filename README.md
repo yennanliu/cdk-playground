@@ -150,4 +150,3 @@ cdk destroy CdkWorkshopStack
 - https://github.com/aws-samples/aws-cdk-examples
 - https://github.com/yennanliu/CDKPoc
 - https://constructs.dev/
-
