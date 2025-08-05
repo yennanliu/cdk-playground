@@ -52,7 +52,24 @@ export class KinesisFirehoseStack extends Stack {
                     logGroupName: `/aws/kinesisfirehose/${this.stackName}-${props.opensearchIndex}`,
                     logStreamName: `${this.stackName}-OpenSearchDelivery`
                 },
-                processingConfiguration: {
+                processingConfiguration: props.opensearchIndex === 'eks-logs' ? {
+                    enabled: true,
+                    processors: [
+                        {
+                            type: 'MetadataExtraction',
+                            parameters: [
+                                {
+                                    parameterName: 'MetadataExtractionQuery',
+                                    parameterValue: '{timestamp: .timestamp // now, message: .message, logStream: .logStream, cluster: (.logStream | split("/") | .[2] | split("-") | .[0:2] | join("-")), component: (.logStream | split("/") | .[3] // "cluster"), "@timestamp": (.timestamp // now | strftime("%Y-%m-%dT%H:%M:%S.%fZ"))}'
+                                },
+                                {
+                                    parameterName: 'JsonParsingEngine',
+                                    parameterValue: 'JQ-1.6'
+                                }
+                            ]
+                        }
+                    ]
+                } : {
                     enabled: true,
                     processors: [
                         {

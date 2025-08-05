@@ -106,14 +106,26 @@ export class StackComposer {
             ...props,
         });
 
+        // Add EKS-specific Firehose Stack
+        const eksFirehoseStack = new KinesisFirehoseStack(scope, 'eksFirehoseStack', {
+            opensearchDomain: opensearchStack.domain,
+            opensearchIndex: 'eks-logs',
+            opensearchStackName: opensearchStack.stackName,
+            stackName: `EKSFirehose-${domainName}`,
+            description: "This stack contains resources to create/manage Kinesis Firehose for EKS CloudWatch logs to OpenSearch",
+            ...props,
+        });
+
         // Add dependency to ensure OpenSearch is created first
         firehoseStack.addDependency(opensearchStack);
+        eksFirehoseStack.addDependency(opensearchStack);
 
         if (networkStack) {
             opensearchStack.addDependency(networkStack)
         }
         this.stacks.push(opensearchStack)
         this.stacks.push(firehoseStack)
+        this.stacks.push(eksFirehoseStack)
 
         function getContextForType(optionName: string, expectedType: string): any {
             const option = scope.node.tryGetContext(optionName)
