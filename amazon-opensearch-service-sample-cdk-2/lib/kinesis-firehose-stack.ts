@@ -8,6 +8,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { StackPropsExt } from './stack-composer';
 
@@ -34,6 +35,22 @@ export class KinesisFirehoseStack extends Stack {
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
 
+        // Create Lambda function for processing CloudWatch Logs data (only for eks-logs)
+        let processorLambda: lambda.Function | undefined;
+        if (props.opensearchIndex === 'eks-logs') {
+            processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
+                runtime: lambda.Runtime.NODEJS_18_X,
+                handler: 'index.handler',
+                code: lambda.Code.fromAsset('lambda/firehose-processor'),
+                timeout: Duration.minutes(5),
+                memorySize: 512,
+                description: 'Processes and decompresses CloudWatch Logs data for Firehose'
+            });
+
+            // Grant Firehose permission to invoke the Lambda function
+            processorLambda.grantInvoke(firehoseRole);
+        }
+
         // Create Kinesis Firehose
         const deliveryStream = new firehose.CfnDeliveryStream(this, `${this.stackName}-OpenSearchDeliveryStream`, {
             deliveryStreamName: `${this.stackName}-${props.opensearchIndex}-stream`,
@@ -52,23 +69,21 @@ export class KinesisFirehoseStack extends Stack {
                     logGroupName: `/aws/kinesisfirehose/${this.stackName}-${props.opensearchIndex}`,
                     logStreamName: `${this.stackName}-OpenSearchDelivery`
                 },
-                processingConfiguration: props.opensearchIndex === 'eks-logs' ? {
+                processingConfiguration: props.opensearchIndex === 'eks-logs' && processorLambda ? {
                     enabled: true,
                     processors: [
                         {
-                            type: 'MetadataExtraction',
+                            type: 'Lambda',
                             parameters: [
                                 {
-                                    parameterName: 'MetadataExtractionQuery',
-                                    parameterValue: '.logEvents[]? | ((.message | try fromjson catch .) as $msg | if ($msg | type) == "object" then {"@timestamp": ($msg.requestReceivedTimestamp // $msg.stageTimestamp // ($msg.timestamp | tostring) // now), "timestamp": ($msg.requestReceivedTimestamp // $msg.stageTimestamp // ($msg.timestamp | tostring) // now), "audit_id": $msg.auditID, "kind": $msg.kind, "api_version": $msg.apiVersion, "level": $msg.level, "stage": $msg.stage, "request_uri": $msg.requestURI, "verb": $msg.verb, "user": {"username": $msg.user.username, "groups": $msg.user.groups}, "source_ips": $msg.sourceIPs, "user_agent": $msg.userAgent, "object_ref": $msg.objectRef, "response_status": $msg.responseStatus, "annotations": $msg.annotations, "cluster": "eks-cluster", "log_type": "k8s-audit", "log_group": .logGroup, "log_stream": .logStream} else {"@timestamp": (.timestamp // now), "message": $msg, "log_group": .logGroup, "log_stream": .logStream, "cluster": "eks-cluster", "log_type": "raw"} end)'
-                                },
-                                {
-                                    parameterName: 'JsonParsingEngine',
-                                    parameterValue: 'JQ-1.6'
+                                    parameterName: 'LambdaArn',
+                                    parameterValue: processorLambda.functionArn
                                 }
                             ]
                         }
                     ]
+                } : props.opensearchIndex === 'eks-logs' ? {
+                    enabled: false  // Fallback: disable processing if Lambda not created
                 } : {
                     enabled: true,
                     processors: [
