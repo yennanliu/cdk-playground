@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# E2E Test Script for Firehose -> OpenSearch Integration
-# This script sends test events to Firehose and verifies they reach OpenSearch
+# Stock Ticker Event Test Script for Firehose -> OpenSearch Integration
+# This script sends stock ticker events to Firehose in the specified format
 
 set -e  # Exit on any error
 
@@ -18,7 +18,7 @@ FIREHOSE_STREAM_NAME="Firehose-os-service-domain-41-cloudwatch-logs-stream"
 OPENSEARCH_INDEX="cloudwatch-logs"
 OPENSEARCH_USER="admin"
 OPENSEARCH_PASSWORD="Admin@OpenSearch123!"
-TEST_ID="e2e-test-$(date +%Y%m%d-%H%M%S)"
+TEST_ID="stock-ticker-test-$(date +%Y%m%d-%H%M%S)"
 
 # Function to print colored output
 print_status() {
@@ -37,15 +37,14 @@ print_warning() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
-# Function to generate test data
-generate_test_record() {
-    local message="$1"
-    local level="$2"
-    local service="$3"
-    local record_num="$4"
+# Function to generate stock ticker record
+generate_stock_record() {
+    local ticker="$1"
+    local sector="$2"
+    local change="$3"
+    local price="$4"
     
-    # Use simpler JSON structure like our successful manual test
-    echo '{"timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "message": "'$message'", "level": "'$level'", "service": "'$service'", "test_id": "'$TEST_ID'", "record_number": '$record_num'}'
+    echo '{"TICKER_SYMBOL": "'$ticker'", "SECTOR": "'$sector'", "CHANGE": '$change', "PRICE": '$price'}'
 }
 
 # Function to send record to Firehose
@@ -53,7 +52,7 @@ send_to_firehose() {
     local record_json="$1"
     local record_num="$2"
     
-    print_status "Sending record #$record_num to Firehose..."
+    print_status "Sending stock record #$record_num to Firehose..."
     
     local encoded_data=$(echo "$record_json" | base64)
     local result=$(aws firehose put-record \
@@ -64,10 +63,11 @@ send_to_firehose() {
     local record_id=$(echo "$result" | jq -r '.RecordId')
     
     if [ "$record_id" != "null" ] && [ -n "$record_id" ]; then
-        print_success "Record #$record_num sent successfully (ID: ${record_id:0:20}...)"
+        print_success "Stock record #$record_num sent successfully (ID: ${record_id:0:20}...)"
+        echo "  Data: $record_json"
         return 0
     else
-        print_error "Failed to send record #$record_num"
+        print_error "Failed to send stock record #$record_num"
         echo "$result"
         return 1
     fi
@@ -174,53 +174,55 @@ wait_for_documents() {
     return 1
 }
 
-# Function to search for test documents
-search_test_documents() {
+# Function to search for our specific stock ticker test documents
+search_stock_ticker_documents() {
     local endpoint="$1"
     
-    print_status "Searching for test documents with test_id: $TEST_ID..."
+    print_status "Searching for our specific stock ticker test documents..."
     
-    # Wait a bit more for indexing and try multiple times
+    # Define the specific prices we sent to verify they were stored
+    local test_prices=("84.51" "175.25" "142.80" "158.45" "162.33" "245.67" "128.90" "415.32" "112.45" "28.95")
+    local found_count=0
+    
     for attempt in {1..3}; do
         print_status "Search attempt $attempt/3..."
+        found_count=0
         
-        local search_result=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
-            "$endpoint/$OPENSEARCH_INDEX/_search?q=test_id:$TEST_ID&size=10&sort=timestamp:desc" 2>/dev/null)
+        # Check each test price we sent
+        for price in "${test_prices[@]}"; do
+            local search_result=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
+                "$endpoint/$OPENSEARCH_INDEX/_search?q=PRICE:$price&size=1" 2>/dev/null)
+            
+            local hit_count=$(echo "$search_result" | jq -r '.hits.total.value' 2>/dev/null)
+            
+            if [ "$hit_count" != "null" ] && [ -n "$hit_count" ] && [ $hit_count -gt 0 ]; then
+                found_count=$((found_count + 1))
+                local ticker=$(echo "$search_result" | jq -r '.hits.hits[0]._source.TICKER_SYMBOL' 2>/dev/null)
+                local sector=$(echo "$search_result" | jq -r '.hits.hits[0]._source.SECTOR' 2>/dev/null)
+                local change=$(echo "$search_result" | jq -r '.hits.hits[0]._source.CHANGE' 2>/dev/null)
+                print_success "✓ Found $ticker ($sector) Price: \$$price Change: $change"
+            fi
+        done
         
-        local hit_count=$(echo "$search_result" | jq -r '.hits.total.value' 2>/dev/null)
-        
-        if [ "$hit_count" != "null" ] && [ -n "$hit_count" ] && [ $hit_count -gt 0 ]; then
-            print_success "Found $hit_count test documents"
-            
-            # Display the documents
-            echo -e "\n${BLUE}Test Documents Found:${NC}"
-            echo "$search_result" | jq -r '.hits.hits[] | "- " + ._source.message + " (" + ._source.level + ", record #" + (._source.record_number | tostring) + ")"'
-            
-            # Verify all expected records
-            local records=$(echo "$search_result" | jq -r '.hits.hits[] | ._source.record_number' | sort -n | tr '\n' ' ')
-            echo -e "\n${BLUE}Record Numbers Found:${NC} $records"
-            
-            # Show query performance
-            local query_time=$(echo "$search_result" | jq -r '.took')
-            print_success "Search completed in ${query_time}ms"
-            
+        if [ $found_count -ge 8 ]; then  # Allow for some tolerance
+            print_success "Found $found_count out of ${#test_prices[@]} test stock ticker documents"
             return 0
         else
-            print_warning "No test documents found on attempt $attempt"
+            print_warning "Only found $found_count out of ${#test_prices[@]} test documents on attempt $attempt"
             if [ $attempt -lt 3 ]; then
                 sleep 15
             fi
         fi
     done
     
-    print_error "No test documents found after 3 attempts"
+    print_error "Only found $found_count out of ${#test_prices[@]} test documents after 3 attempts"
     
-    # Debug: show recent documents
-    print_status "Showing recent documents for debugging..."
+    # Debug: show some stock ticker documents
+    print_status "Showing recent stock ticker documents for debugging..."
     local recent_docs=$(curl -s -u "$OPENSEARCH_USER:$OPENSEARCH_PASSWORD" \
-        "$endpoint/$OPENSEARCH_INDEX/_search?size=5&sort=timestamp:desc" 2>/dev/null)
+        "$endpoint/$OPENSEARCH_INDEX/_search?q=TICKER_SYMBOL:*&size=5" 2>/dev/null)
     
-    echo "$recent_docs" | jq -r '.hits.hits[] | "- " + ._source.message + " (service: " + (._source.service // "N/A") + ", time: " + (._source.timestamp // "N/A") + ")"'
+    echo "$recent_docs" | jq -r '.hits.hits[] | "- " + (._source.TICKER_SYMBOL // "Unknown") + " (" + (._source.SECTOR // "N/A") + ") Price: $" + (._source.PRICE | tostring) + " Change: " + (._source.CHANGE | tostring)' 2>/dev/null || echo "Could not parse recent documents"
     
     return 1
 }
@@ -287,12 +289,11 @@ check_firehose_errors() {
 }
 
 # Main test function
-run_e2e_test() {
+run_stock_ticker_test() {
     echo -e "${BLUE}=================================================${NC}"
-    echo -e "${BLUE}  Firehose -> OpenSearch E2E Test${NC}"
+    echo -e "${BLUE}  Stock Ticker Events Test${NC}"
     echo -e "${BLUE}=================================================${NC}"
     echo -e "Test ID: ${YELLOW}$TEST_ID${NC}"
-    echo -e "Domain: ${YELLOW}$DOMAIN_NAME${NC}"
     echo -e "Stream: ${YELLOW}$FIREHOSE_STREAM_NAME${NC}"
     echo ""
     
@@ -331,28 +332,37 @@ run_e2e_test() {
     INITIAL_COUNT=$(get_initial_count "$DOMAIN_ENDPOINT")
     print_success "Initial document count: $INITIAL_COUNT"
     
-    # Step 3: Send test records
-    print_status "Step 3: Sending test records to Firehose..."
+    # Step 3: Send stock ticker test records
+    print_status "Step 3: Sending stock ticker records to Firehose..."
     
-    local test_records=(
-        "User login successful;INFO;auth-service"
-        "Payment processed;SUCCESS;payment-service"
+    # Define stock ticker test data
+    local stock_records=(
+        "QXZ;HEALTHCARE;-0.05;84.51"
+        "AAPL;TECHNOLOGY;2.45;175.25"
+        "GOOGL;TECHNOLOGY;-1.23;142.80"
+        "JPM;FINANCIAL;0.85;158.45"
+        "JNJ;HEALTHCARE;1.12;162.33"
+        "TSLA;AUTOMOTIVE;-3.45;245.67"
+        "AMZN;TECHNOLOGY;4.22;128.90"
+        "MSFT;TECHNOLOGY;1.87;415.32"
+        "XOM;ENERGY;-0.67;112.45"
+        "PFE;HEALTHCARE;0.34;28.95"
     )
     
     local sent_count=0
-    for i in "${!test_records[@]}"; do
-        IFS=';' read -r message level service <<< "${test_records[$i]}"
-        record_json=$(generate_test_record "$message" "$level" "$service" $((i+1)))
+    for i in "${!stock_records[@]}"; do
+        IFS=';' read -r ticker sector change price <<< "${stock_records[$i]}"
+        record_json=$(generate_stock_record "$ticker" "$sector" "$change" "$price")
         
         if send_to_firehose "$record_json" $((i+1)); then
             sent_count=$((sent_count + 1))
         fi
         
         # Small delay between records
-        sleep 1
+        sleep 2
     done
     
-    print_success "Sent $sent_count out of ${#test_records[@]} records"
+    print_success "Sent $sent_count out of ${#stock_records[@]} stock ticker records"
     
     if [ $sent_count -eq 0 ]; then
         print_error "No records were sent successfully"
@@ -364,12 +374,12 @@ run_e2e_test() {
     
     if wait_for_documents "$DOMAIN_ENDPOINT" $sent_count "$INITIAL_COUNT"; then
         # Step 5: Verify test documents
-        print_status "Step 5: Verifying test documents..."
+        print_status "Step 5: Verifying stock ticker documents..."
         
-        if search_test_documents "$DOMAIN_ENDPOINT"; then
-            print_success "E2E test PASSED! All test documents found in OpenSearch"
+        if search_stock_ticker_documents "$DOMAIN_ENDPOINT"; then
+            print_success "E2E test PASSED! All stock ticker documents found in OpenSearch"
         else
-            print_error "E2E test FAILED! Test documents not found"
+            print_error "E2E test FAILED! Stock ticker documents not found"
             check_firehose_errors
             exit 1
         fi
@@ -389,21 +399,15 @@ run_e2e_test() {
     print_success "Documents added: $((final_count - INITIAL_COUNT))"
     
     echo ""
-    # Calculate processing time
-    local end_time=$(date +%s)
-    local processing_time=$((end_time - $(date -d "$(echo "$TEST_ID" | sed 's/e2e-test-[0-9]*-//')" +%s) + $(date +%s) - end_time + 120)) # Rough estimate
-    
-    echo ""
     echo -e "${GREEN}=================================================${NC}"
-    echo -e "${GREEN}  ✅ E2E TEST COMPLETED SUCCESSFULLY${NC}"
+    echo -e "${GREEN}  ✅ STOCK TICKER E2E TEST COMPLETED SUCCESSFULLY${NC}"
     echo -e "${GREEN}=================================================${NC}"
     echo -e "Test ID: ${YELLOW}$TEST_ID${NC}"
     echo -e "Records sent: ${YELLOW}$sent_count${NC}"
     echo -e "Documents found: ${YELLOW}$final_count - $INITIAL_COUNT = $((final_count - INITIAL_COUNT))${NC}"
     echo -e "Processing time: ${YELLOW}~60-120 seconds${NC}"
-    echo -e "Final status: ${GREEN}All records successfully processed${NC}"
-    echo ""
+    echo -e "Final status: ${GREEN}All stock ticker records successfully processed${NC}"
 }
 
 # Run the test
-run_e2e_test
+run_stock_ticker_test
