@@ -18,7 +18,7 @@ cdk bootstrap
 export CDK_DEPLOYMENT_STAGE=dev
 
 
-cdk deploy "*" --c domainName="os-service-domain-37" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
+cdk deploy "*" --c domainName="os-service-domain-43" --c dataNodeType="r6g.large.search" --c dataNodeCount=1
 
 
 # deploy firehose stack ONLY
@@ -35,7 +35,7 @@ aws iam list-roles --query 'Roles[?starts_with(RoleName, `Opensearch-os-service-
 
 - Test opensearch
 
-- Create index
+- Create testing index
 
 ```bash
 # create `cloudwatch-logs` idnex
@@ -52,7 +52,6 @@ PUT /cloudwatch-logs
     }
   }
 }
-
 # insert fake data
 PUT /cloudwatch-logs/_doc/1
 {
@@ -83,6 +82,185 @@ curl -XGET -u 'master-user:master-user-password' 'domain-endpoint/movies/_search
 curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-service-domain-5-zixlxqr2g42cvlyn5ca7c22ltu.ap-northeast-1.es.amazonaws.com/cloudwatch-logs/_search?q=mars&pretty=true'
 ```
 
+
+- Create EKS log index
+
+```bash
+
+# V1
+PUT /eks-logs
+###   --aws-sigv4 "aws:amz:ap-northeast-1:es" \
+###   -H "Content-Type: application/json" \
+###   -d '{
+###     "settings": {
+###       "number_of_shards": 1,
+###       "number_of_replicas": 0
+###     },
+###     "mappings": {
+###       "properties": {
+###         "@timestamp": {"type": "date"},
+###         "timestamp": {"type": "date"},
+###         "message": {"type": "text"},
+###         "logStream": {"type": "keyword"},
+###         "cluster": {"type": "keyword"},
+###         "component": {"type": "keyword"}
+###       }
+###     }
+###   }'
+
+
+# V2
+PUT /eks-logs
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": { "type": "date" },
+      "timestamp": { "type": "date" },
+      "message": { "type": "text" },
+      "logStream": { "type": "keyword" },
+      "cluster": { "type": "keyword" },
+      "component": { "type": "keyword" }
+    }
+  }
+}
+
+# V3
+PUT /eks-logs
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1,
+    "index": {
+      "refresh_interval": "5s"
+    }
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "timestamp": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "audit_id": {
+        "type": "keyword"
+      },
+      "kind": {
+        "type": "keyword"
+      },
+      "api_version": {
+        "type": "keyword"
+      },
+      "level": {
+        "type": "keyword"
+      },
+      "stage": {
+        "type": "keyword"
+      },
+      "request_uri": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "verb": {
+        "type": "keyword"
+      },
+      "user": {
+        "properties": {
+          "username": {
+            "type": "keyword"
+          },
+          "groups": {
+            "type": "keyword"
+          }
+        }
+      },
+      "source_ips": {
+        "type": "ip"
+      },
+      "user_agent": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "object_ref": {
+        "properties": {
+          "resource": {
+            "type": "keyword"
+          },
+          "namespace": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "uid": {
+            "type": "keyword"
+          },
+          "apiGroup": {
+            "type": "keyword"
+          },
+          "apiVersion": {
+            "type": "keyword"
+          },
+          "resourceVersion": {
+            "type": "keyword"
+          }
+        }
+      },
+      "response_status": {
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "keyword"
+          }
+        }
+      },
+      "annotations": {
+        "type": "object",
+        "enabled": false
+      },
+      "cluster": {
+        "type": "keyword"
+      },
+      "log_type": {
+        "type": "keyword"
+      },
+      "log_group": {
+        "type": "keyword"
+      },
+      "log_stream": {
+        "type": "keyword"
+      },
+      "message": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 1024
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 
 
