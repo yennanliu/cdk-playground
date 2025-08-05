@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-DOMAIN_NAME="os-service-domain-41"
+DOMAIN_NAME=""
 FIREHOSE_STREAM_NAME="Firehose-os-service-domain-41-cloudwatch-logs-stream"
 OPENSEARCH_INDEX="cloudwatch-logs"
 OPENSEARCH_USER="admin"
