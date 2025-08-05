@@ -16,6 +16,7 @@ export interface KinesisFirehoseStackProps extends StackPropsExt {
     readonly opensearchDomain: opensearch.Domain;
     readonly opensearchIndex: string;
     readonly opensearchStackName: string;
+    readonly eksLogGroupName?: string;  // Optional EKS log group name for subscription filter
 }
 
 export class KinesisFirehoseStack extends Stack {
@@ -124,5 +125,47 @@ export class KinesisFirehoseStack extends Stack {
             removalPolicy: RemovalPolicy.DESTROY,
             retention: logs.RetentionDays.ONE_WEEK,
         });
+
+        // Create CloudWatch Logs destination for easier management (for eks-logs only)
+        if (props.opensearchIndex === 'eks-logs') {
+            // Import the CloudWatch Logs role ARN from the OpenSearch stack
+            const cloudwatchLogsRoleArn = Fn.importValue(`${props.opensearchStackName}-CloudWatchLogsRoleArn`);
+            
+            // Create CloudWatch Logs destination
+            const logsDestination = new logs.CfnDestination(this, `${this.stackName}-LogsDestination`, {
+                destinationName: `${this.stackName}-firehose-destination`,
+                targetArn: deliveryStream.attrArn,
+                roleArn: cloudwatchLogsRoleArn,
+                destinationPolicy: JSON.stringify({
+                    Version: '2012-10-17',
+                    Statement: [{
+                        Effect: 'Allow',
+                        Principal: {
+                            AWS: `arn:aws:iam::${this.account}:root`
+                        },
+                        Action: 'logs:PutSubscriptionFilter',
+                        Resource: `arn:aws:logs:${this.region}:${this.account}:destination:${this.stackName}-firehose-destination`
+                    }]
+                })
+            });
+
+            // Ensure destination is created after the delivery stream
+            logsDestination.addDependency(deliveryStream);
+
+            // Add CloudWatch Logs subscription filter for EKS logs (if specified)
+            if (props.eksLogGroupName) {
+                // Create subscription filter to send EKS logs to Firehose
+                const subscriptionFilter = new logs.CfnSubscriptionFilter(this, `${this.stackName}-EKSLogsSubscriptionFilter`, {
+                    logGroupName: props.eksLogGroupName,
+                    destinationArn: deliveryStream.attrArn,
+                    roleArn: cloudwatchLogsRoleArn,
+                    filterPattern: '', // Empty filter pattern means all log events
+                    filterName: `${this.stackName}-eks-logs-to-firehose`
+                });
+
+                // Ensure the subscription filter is created after the delivery stream
+                subscriptionFilter.addDependency(deliveryStream);
+            }
+        }
     }
 } 
