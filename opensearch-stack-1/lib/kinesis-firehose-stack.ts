@@ -165,17 +165,21 @@ export class KinesisFirehoseStack extends Stack {
 
             // Add CloudWatch Logs subscription filter for EKS logs (if specified)
             if (props.eksLogGroupName) {
-                // Create subscription filter to send EKS logs to Firehose
-                const subscriptionFilter = new logs.CfnSubscriptionFilter(this, `${this.stackName}-EKSLogsSubscriptionFilter`, {
-                    logGroupName: props.eksLogGroupName,
-                    destinationArn: deliveryStream.attrArn,
-                    roleArn: cloudwatchLogsRoleArn,
-                    filterPattern: '', // Empty filter pattern means all log events
-                    filterName: `${this.stackName}-eks-logs-to-firehose`
-                });
+                try {
+                    // Create subscription filter to send EKS logs to Firehose
+                    const subscriptionFilter = new logs.CfnSubscriptionFilter(this, `${this.stackName}-LogsSubscriptionFilter`, {
+                        logGroupName: props.eksLogGroupName,
+                        destinationArn: deliveryStream.attrArn,
+                        roleArn: cloudwatchLogsRoleArn,
+                        filterPattern: '', // Empty filter pattern means all log events
+                        filterName: `${this.stackName}-logs-to-firehose`
+                    });
 
-                // Ensure the subscription filter is created after the delivery stream
-                subscriptionFilter.addDependency(deliveryStream);
+                    // Ensure the subscription filter is created after the delivery stream
+                    subscriptionFilter.addDependency(deliveryStream);
+                } catch (error) {
+                    console.warn(`Could not create subscription filter for log group ${props.eksLogGroupName}: ${error}`);
+                }
             }
         }
     }
