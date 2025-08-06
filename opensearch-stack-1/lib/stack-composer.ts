@@ -99,17 +99,32 @@ export class StackComposer {
         })
         this.stacks.push(opensearchStack)
 
-        if (eksLogGroupName && podLogGroupName) {
-            const kinesisFirehoseStack = new KinesisFirehoseStack(scope, 'kinesisFirehoseStack', {
+        // Create EKS logs Firehose stack if EKS log group is configured
+        if (eksLogGroupName) {
+            const eksFirehoseStack = new KinesisFirehoseStack(scope, 'kinesisFirehoseEksStack', {
                 opensearchDomain: opensearchStack.domain,
                 opensearchIndex: 'eks-logs',
                 opensearchStackName: opensearchStack.stackName,
                 eksLogGroupName: eksLogGroupName,
-                stackName: `KinesisFirehoseCDKStack-${domainName}`,
-                description: "This stack contains Kinesis Data Firehose delivery streams",
+                stackName: `KinesisFirehoseEKSCDKStack-${domainName}`,
+                description: "This stack contains Kinesis Data Firehose delivery streams for EKS logs",
                 ...props,
             })
-            this.stacks.push(kinesisFirehoseStack)
+            this.stacks.push(eksFirehoseStack)
+        }
+
+        // Create Pod logs Firehose stack if Pod log group is configured  
+        if (podLogGroupName) {
+            const podFirehoseStack = new KinesisFirehoseStack(scope, 'kinesisFirehosePodStack', {
+                opensearchDomain: opensearchStack.domain,
+                opensearchIndex: 'pod-logs',
+                opensearchStackName: opensearchStack.stackName,
+                eksLogGroupName: podLogGroupName, // Reuse the same parameter name but for pod logs
+                stackName: `KinesisFirehosePodCDKStack-${domainName}`,
+                description: "This stack contains Kinesis Data Firehose delivery streams for Pod logs",
+                ...props,
+            })
+            this.stacks.push(podFirehoseStack)
         }
 
         function getContextForType(optionName: string, expectedType: string): any {
