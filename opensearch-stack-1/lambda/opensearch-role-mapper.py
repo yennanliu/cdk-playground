@@ -57,7 +57,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         success = configure_role_mapping(
             domain_endpoint=domain_endpoint,
             role_arn=firehose_role_arn,
-            role_name='delivery_role',
+            role_name='all_access',
             master_user=master_user,
             master_password=master_password
         )
