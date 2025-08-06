@@ -1,0 +1,21 @@
+{
+    "domainName": "opensearch-stack-1-domain",
+    "engineVersion": "OS_2.5",
+    "dataNodeType": "t3.small.search",
+    "dataNodeCount": 1,
+    "dedicatedManagerNodeType": "",
+    "dedicatedManagerNodeCount": 0,
+    "warmNodeType": "",
+    "warmNodeCount": 0,
+    "ebsEnabled": true,
+    "ebsIops": 0,
+    "ebsVolumeSize": 10,
+    "ebsVolumeType": "GP3",
+    "vpcEnabled": false,
+    "vpcId": "",
+    "vpcSubnetIds": [],
+    "vpcSecurityGroupIds": [],
+    "availabilityZoneCount": 1,
+    "eksLogGroupName": "",
+    "podLogGroupName": ""
+}
