@@ -16,13 +16,12 @@ cdk bootstrap
 # TODO: fix above since we should ONLY update the same domain if one is existed 
 
 export CDK_DEPLOYMENT_STAGE=dev
-
 cdk deploy "*" \
     -c domainName="os-service-domain-45" \
     -c dataNodeType="r6g.large.search" \
     -c dataNodeCount=1 \
-    -c eksLogGroupName="/aws/eks/EksCluster3394B24C-4f7775fc64f74561829323399625fcbc/cluster"
-
+    -c eksLogGroupName="/aws/eks/EksCluster3394B24C-4f7775fc64f74561829323399625fcbc/cluster" \
+    -c podLogGroupName="/aws/eks/EksCluster3394B24C-ec2cbedced464f24bf3f9d1c4b112048/application"
 
 
 # deploy firehose stack ONLY
@@ -87,7 +86,7 @@ curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-servic
 ```
 
 
-- Create EKS log index
+- Create  `eks-logs` index
 
 ```bash
 
@@ -131,144 +130,32 @@ PUT /eks-logs
     }
   }
 }
-
-# V3
-PUT /eks-logs
-{
-  "settings": {
-    "number_of_shards": 1,
-    "number_of_replicas": 1,
-    "index": {
-      "refresh_interval": "5s"
-    }
-  },
-  "mappings": {
-    "properties": {
-      "@timestamp": {
-        "type": "date",
-        "format": "strict_date_optional_time||epoch_millis"
-      },
-      "timestamp": {
-        "type": "date",
-        "format": "strict_date_optional_time||epoch_millis"
-      },
-      "audit_id": {
-        "type": "keyword"
-      },
-      "kind": {
-        "type": "keyword"
-      },
-      "api_version": {
-        "type": "keyword"
-      },
-      "level": {
-        "type": "keyword"
-      },
-      "stage": {
-        "type": "keyword"
-      },
-      "request_uri": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
-      "verb": {
-        "type": "keyword"
-      },
-      "user": {
-        "properties": {
-          "username": {
-            "type": "keyword"
-          },
-          "groups": {
-            "type": "keyword"
-          }
-        }
-      },
-      "source_ips": {
-        "type": "ip"
-      },
-      "user_agent": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
-      "object_ref": {
-        "properties": {
-          "resource": {
-            "type": "keyword"
-          },
-          "namespace": {
-            "type": "keyword"
-          },
-          "name": {
-            "type": "keyword"
-          },
-          "uid": {
-            "type": "keyword"
-          },
-          "apiGroup": {
-            "type": "keyword"
-          },
-          "apiVersion": {
-            "type": "keyword"
-          },
-          "resourceVersion": {
-            "type": "keyword"
-          }
-        }
-      },
-      "response_status": {
-        "properties": {
-          "code": {
-            "type": "integer"
-          },
-          "status": {
-            "type": "keyword"
-          }
-        }
-      },
-      "annotations": {
-        "type": "object",
-        "enabled": false
-      },
-      "cluster": {
-        "type": "keyword"
-      },
-      "log_type": {
-        "type": "keyword"
-      },
-      "log_group": {
-        "type": "keyword"
-      },
-      "log_stream": {
-        "type": "keyword"
-      },
-      "message": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 1024
-          }
-        }
-      }
-    }
-  }
-}
 ```
 
 
 
+- Create `pod-logs` index
 
+```bash
+  PUT /pod-logs
+  {
+    "mappings": {
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "message": { "type": "text" },
+        "stream": { "type": "keyword" },
+        "logtag": { "type": "keyword" },
+        "pod_name": { "type": "keyword" },
+        "namespace": { "type": "keyword" },
+        "container_name": { "type": "keyword" },
+        "pod_id": { "type": "keyword" },
+        "host": { "type": "keyword" },
+        "labels": { "type": "object" },
+        "log_type": { "type": "keyword" }
+      }
+    }
+  }
+```
 
 #---------------------------------------
 

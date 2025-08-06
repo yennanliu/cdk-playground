@@ -41,6 +41,7 @@ export class StackComposer {
         const vpcSubnetIds = getContextForType('vpcSubnetIds', 'object')
         const availabilityZoneCount = getContextForType('availabilityZoneCount', 'number')
         const eksLogGroupName = getContextForType('eksLogGroupName', 'string')
+        const podLogGroupName = getContextForType('podLogGroupName', 'string')
 
         if (!domainName) {
             throw new Error("Domain name is not present and is a required field")
@@ -118,9 +119,21 @@ export class StackComposer {
             ...props,
         });
 
+        // Add Pod-logs-specific Firehose Stack
+        const podFirehoseStack = new KinesisFirehoseStack(scope, 'podFirehoseStack', {
+            opensearchDomain: opensearchStack.domain,
+            opensearchIndex: 'pod-logs',
+            opensearchStackName: opensearchStack.stackName,
+            eksLogGroupName: podLogGroupName,  // Pass the pod log group name for subscription filter
+            stackName: `PodFirehose-${domainName}`,
+            description: "This stack contains resources to create/manage Kinesis Firehose for Pod CloudWatch logs to OpenSearch",
+            ...props,
+        });
+
         // Add dependency to ensure OpenSearch is created first
         firehoseStack.addDependency(opensearchStack);
         eksFirehoseStack.addDependency(opensearchStack);
+        podFirehoseStack.addDependency(opensearchStack);
 
         if (networkStack) {
             opensearchStack.addDependency(networkStack)
@@ -128,6 +141,7 @@ export class StackComposer {
         this.stacks.push(opensearchStack)
         this.stacks.push(firehoseStack)
         this.stacks.push(eksFirehoseStack)
+        this.stacks.push(podFirehoseStack)
 
         function getContextForType(optionName: string, expectedType: string): any {
             const option = scope.node.tryGetContext(optionName)
