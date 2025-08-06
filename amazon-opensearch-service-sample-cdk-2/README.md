@@ -87,7 +87,7 @@ curl -XGET -u 'admin:i:ONo0nN9%JcdFzXe1Ga24_&ME?+7;$A' 'https://search-os-servic
 ```
 
 
-- Create EKS log index
+- Create  `eks-logs` index
 
 ```bash
 
@@ -268,7 +268,28 @@ PUT /eks-logs
 
 
 
+- Create `pod-logs` index
 
+```bash
+  PUT /pod-logs
+  {
+    "mappings": {
+      "properties": {
+        "@timestamp": { "type": "date" },
+        "message": { "type": "text" },
+        "stream": { "type": "keyword" },
+        "logtag": { "type": "keyword" },
+        "pod_name": { "type": "keyword" },
+        "namespace": { "type": "keyword" },
+        "container_name": { "type": "keyword" },
+        "pod_id": { "type": "keyword" },
+        "host": { "type": "keyword" },
+        "labels": { "type": "object" },
+        "log_type": { "type": "keyword" }
+      }
+    }
+  }
+```
 
 #---------------------------------------
 

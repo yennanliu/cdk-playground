@@ -36,7 +36,7 @@ export class KinesisFirehoseStack extends Stack {
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
 
-        // Create Lambda function for processing CloudWatch Logs data (only for eks-logs)
+        // Create Lambda function for processing CloudWatch Logs data
         let processorLambda: lambda.Function | undefined;
         if (props.opensearchIndex === 'eks-logs') {
             processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
@@ -45,7 +45,19 @@ export class KinesisFirehoseStack extends Stack {
                 code: lambda.Code.fromAsset('lambda/firehose-processor'),
                 timeout: Duration.minutes(5),
                 memorySize: 512,
-                description: 'Processes and decompresses CloudWatch Logs data for Firehose'
+                description: 'Processes and decompresses EKS CloudWatch Logs data for Firehose'
+            });
+
+            // Grant Firehose permission to invoke the Lambda function
+            processorLambda.grantInvoke(firehoseRole);
+        } else if (props.opensearchIndex === 'pod-logs') {
+            processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
+                runtime: lambda.Runtime.NODEJS_18_X,
+                handler: 'index.handler',
+                code: lambda.Code.fromAsset('lambda/pod-logs-processor'),
+                timeout: Duration.minutes(5),
+                memorySize: 512,
+                description: 'Processes and decompresses Pod CloudWatch Logs data for Firehose'
             });
 
             // Grant Firehose permission to invoke the Lambda function
@@ -70,7 +82,7 @@ export class KinesisFirehoseStack extends Stack {
                     logGroupName: `/aws/kinesisfirehose/${this.stackName}-${props.opensearchIndex}`,
                     logStreamName: `${this.stackName}-OpenSearchDelivery`
                 },
-                processingConfiguration: props.opensearchIndex === 'eks-logs' && processorLambda ? {
+                processingConfiguration: (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') && processorLambda ? {
                     enabled: true,
                     processors: [
                         {
@@ -83,7 +95,7 @@ export class KinesisFirehoseStack extends Stack {
                             ]
                         }
                     ]
-                } : props.opensearchIndex === 'eks-logs' ? {
+                } : (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') ? {
                     enabled: false  // Fallback: disable processing if Lambda not created
                 } : {
                     enabled: true,
@@ -126,8 +138,8 @@ export class KinesisFirehoseStack extends Stack {
             retention: logs.RetentionDays.ONE_WEEK,
         });
 
-        // Create CloudWatch Logs destination for easier management (for eks-logs only)
-        if (props.opensearchIndex === 'eks-logs') {
+        // Create CloudWatch Logs destination for easier management (for eks-logs and pod-logs)
+        if (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') {
             // Import the CloudWatch Logs role ARN from the OpenSearch stack
             const cloudwatchLogsRoleArn = Fn.importValue(`${props.opensearchStackName}-CloudWatchLogsRoleArn`);
             
