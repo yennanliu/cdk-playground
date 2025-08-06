@@ -1,0 +1,21 @@
+{
+  "name": "pod-logs-processor",
+  "version": "1.0.0",
+  "description": "Lambda function to process Pod CloudWatch Logs for Firehose delivery to OpenSearch",
+  "main": "index.js",
+  "keywords": [
+    "aws",
+    "lambda",
+    "firehose",
+    "opensearch",
+    "kubernetes",
+    "pod",
+    "logs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
