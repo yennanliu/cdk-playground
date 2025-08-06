@@ -66,7 +66,7 @@ export class KinesisFirehoseStack extends Stack {
 
         // Create Kinesis Firehose
         const deliveryStream = new firehose.CfnDeliveryStream(this, `${this.stackName}-OpenSearchDeliveryStream`, {
-            deliveryStreamName: `${this.stackName}-${props.opensearchIndex}-stream`,
+            deliveryStreamName: `${props.opensearchIndex}-${this.stackName.substring(0, 40)}`.substring(0, 64),
             deliveryStreamType: 'DirectPut',
             amazonopensearchserviceDestinationConfiguration: {
                 indexName: props.opensearchIndex,
