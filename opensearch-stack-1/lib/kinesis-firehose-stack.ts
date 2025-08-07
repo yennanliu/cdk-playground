@@ -33,28 +33,22 @@ export class KinesisFirehoseStack extends Stack {
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
 
-        // Create Lambda function for processing CloudWatch Logs data
+        // Create unified Lambda function for processing CloudWatch Logs data
         let processorLambda: lambda.Function | undefined;
-        if (props.opensearchIndex === 'eks-logs') {
+        if (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') {
+            // Determine processing type based on index name
+            const processingType = props.opensearchIndex === 'eks-logs' ? 'eks' : 'pod';
+            
             processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
                 runtime: lambda.Runtime.NODEJS_18_X,
                 handler: 'index.handler',
-                code: lambda.Code.fromAsset('lambda/firehose-processor'),
+                code: lambda.Code.fromAsset('lambda/unified-processor'),
                 timeout: Duration.minutes(5),
                 memorySize: 512,
-                description: 'Processes and decompresses EKS CloudWatch Logs data for Firehose'
-            });
-
-            // Grant Firehose permission to invoke the Lambda function
-            processorLambda.grantInvoke(firehoseRole);
-        } else if (props.opensearchIndex === 'pod-logs') {
-            processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
-                runtime: lambda.Runtime.NODEJS_18_X,
-                handler: 'index.handler',
-                code: lambda.Code.fromAsset('lambda/pod-logs-processor'),
-                timeout: Duration.minutes(5),
-                memorySize: 512,
-                description: 'Processes and decompresses Pod CloudWatch Logs data for Firehose'
+                description: `Unified processor for ${processingType.toUpperCase()} CloudWatch Logs data for Firehose`,
+                environment: {
+                    PROCESSING_TYPE: processingType
+                }
             });
 
             // Grant Firehose permission to invoke the Lambda function
