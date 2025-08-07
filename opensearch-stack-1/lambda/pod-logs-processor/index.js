@@ -100,6 +100,7 @@ exports.handler = async (event) => {
                     result: 'Ok',
                     data: Buffer.from(JSON.stringify(firstEvent), 'utf8').toString('base64')
                 };
+                console.log('Output record:', JSON.stringify(outputRecord, null, 2));
                 output.push(outputRecord);
             } else {
                 // No log events, pass through as-is but decompressed
