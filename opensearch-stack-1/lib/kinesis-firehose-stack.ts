@@ -65,9 +65,10 @@ export class KinesisFirehoseStack extends Stack {
                 domainArn: props.opensearchDomain.domainArn,
                 roleArn: firehoseRole.roleArn,
                 indexRotationPeriod: 'NoRotation',  // Prevent date-based indices
+                typeName: '_doc',  // Document type for OpenSearch
                 bufferingHints: {
                     intervalInSeconds: 60,  // Standard buffering interval
-                    sizeInMBs: 5  // Increased buffer size for better performance
+                    sizeInMBs: 1  // Smaller buffer for faster testing - documents will be delivered more frequently
                 },
                 cloudWatchLoggingOptions: {
                     enabled: true,

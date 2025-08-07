@@ -58,17 +58,25 @@ exports.handler = async (event) => {
  * Process EKS cluster logs
  */
 function processEKSLogs(record, logData, output) {
-    // Process each log event
+    // Process each log event and combine them into a single output record
+    const transformedRecords = [];
+    
     for (const logEvent of logData.logEvents) {
         const transformedRecord = processEKSLogEvent(logEvent, logData);
-        
-        // Add transformed record to output
-        output.push({
-            recordId: record.recordId,
-            result: 'Ok',
-            data: Buffer.from(JSON.stringify(transformedRecord) + '\n').toString('base64')
-        });
+        transformedRecords.push(transformedRecord);
     }
+    
+    // Firehose expects one output record per input record
+    // Combine all log events into newline-delimited JSON
+    const combinedData = transformedRecords
+        .map(record => JSON.stringify(record))
+        .join('\n');
+    
+    output.push({
+        recordId: record.recordId,
+        result: 'Ok',
+        data: Buffer.from(combinedData).toString('base64')
+    });
 }
 
 /**
@@ -148,24 +156,24 @@ function processPodLogs(record, logData, output) {
             processedEvents.push(processedEvent);
         }
         
-        // Take only the first processed event to maintain 1:1 record mapping
-        // OpenSearch expects exactly one JSON document per Firehose record
-        const firstEvent = processedEvents[0];
+        // Combine all log events into newline-delimited JSON for OpenSearch
+        const combinedData = processedEvents
+            .map(record => JSON.stringify(record))
+            .join('\n');
         
-        // Return single output record with original recordId and first event only
         const outputRecord = {
             recordId: record.recordId,
             result: 'Ok',
-            data: Buffer.from(JSON.stringify(firstEvent), 'utf8').toString('base64')
+            data: Buffer.from(combinedData, 'utf8').toString('base64')
         };
         console.log('Output record:', JSON.stringify(outputRecord, null, 2));
         output.push(outputRecord);
     } else {
-        // No log events, pass through as-is but decompressed
+        // No log events, return empty result
         const outputRecord = {
             recordId: record.recordId,
             result: 'Ok',
-            data: Buffer.from(decompressedData, 'utf8').toString('base64')
+            data: Buffer.from('', 'utf8').toString('base64')
         };
         output.push(outputRecord);
     }
