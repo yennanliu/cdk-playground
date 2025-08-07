@@ -1,6 +1,3 @@
-// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-// SPDX-License-Identifier: MIT-0
-
 import {Construct} from "constructs";
 import {RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
 import {OpensearchServiceDomainCdkStack} from "./opensearch-service-domain-cdk-stack";
