@@ -55,9 +55,10 @@ export class KinesisFirehoseStack extends Stack {
             processorLambda.grantInvoke(firehoseRole);
         }
 
-        // Create Kinesis Firehose
+        // Create Kinesis Firehose with unique naming based on domain
+        const domainName = props.opensearchDomain.domainName.replace(/[^a-zA-Z0-9-]/g, '');
         const deliveryStream = new firehose.CfnDeliveryStream(this, `${this.stackName}-OpenSearchDeliveryStream`, {
-            deliveryStreamName: `${props.opensearchIndex}-${this.stackName.substring(0, 40)}`.substring(0, 64),
+            deliveryStreamName: `${props.opensearchIndex}-${domainName}-${this.stackName.substring(0, 20)}`.substring(0, 64),
             deliveryStreamType: 'DirectPut',
             amazonopensearchserviceDestinationConfiguration: {
                 indexName: props.opensearchIndex,
@@ -70,8 +71,8 @@ export class KinesisFirehoseStack extends Stack {
                 },
                 cloudWatchLoggingOptions: {
                     enabled: true,
-                    logGroupName: `/aws/kinesisfirehose/${this.stackName}-${props.opensearchIndex}`,
-                    logStreamName: `${this.stackName}-OpenSearchDelivery`
+                    logGroupName: `/aws/kinesisfirehose/${domainName}-${props.opensearchIndex}-${this.stackName.substring(0, 20)}`,
+                    logStreamName: `${domainName}-${props.opensearchIndex}-Delivery`
                 },
                 processingConfiguration: (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') && processorLambda ? {
                     enabled: true,
@@ -123,7 +124,7 @@ export class KinesisFirehoseStack extends Stack {
 
         // Create CloudWatch Logs for Firehose operations (not for subscription)
         const logGroup = new LogGroup(this, `${this.stackName}-FirehoseLogGroup`, {
-            logGroupName: `/aws/firehose/${this.stackName}-${props.opensearchIndex}`,
+            logGroupName: `/aws/firehose/${domainName}-${props.opensearchIndex}-${this.stackName.substring(0, 20)}`,
             removalPolicy: RemovalPolicy.DESTROY,
             retention: logs.RetentionDays.ONE_WEEK,
         });
@@ -135,7 +136,7 @@ export class KinesisFirehoseStack extends Stack {
             
             // Create CloudWatch Logs destination
             const logsDestination = new logs.CfnDestination(this, `${this.stackName}-LogsDestination`, {
-                destinationName: `${this.stackName}-${props.opensearchIndex}-firehose-destination`,
+                destinationName: `${domainName}-${props.opensearchIndex}-${this.stackName.substring(0, 20)}-dest`,
                 targetArn: deliveryStream.attrArn,
                 roleArn: cloudwatchLogsRoleArn,
                 destinationPolicy: JSON.stringify({
@@ -163,7 +164,7 @@ export class KinesisFirehoseStack extends Stack {
                         destinationArn: deliveryStream.attrArn,
                         roleArn: cloudwatchLogsRoleArn,
                         filterPattern: '', // Empty filter pattern means all log events
-                        filterName: `${this.stackName}-logs-to-firehose`
+                        filterName: `${domainName}-${props.opensearchIndex}-${this.stackName.substring(0, 15)}-filter`
                     });
 
                     // Ensure the subscription filter is created after the delivery stream
