@@ -10,7 +10,7 @@ import {AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId} from "aw
 import {StackPropsExt} from "./stack-composer";
 import * as path from "path";
 
-export interface opensearchServiceDomainCdkProps extends StackPropsExt {
+export interface OpenSearchDomainStackProps extends StackPropsExt {
   readonly version: EngineVersion,
   readonly domainName: string,
   readonly dataNodeInstanceType?: string,
@@ -36,13 +36,13 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
   readonly encryptionAtRestEnabled?: boolean
 }
 
-export class OpensearchServiceDomainCdkStack extends Stack {
+export class OpenSearchDomainStack extends Stack {
   public readonly domainEndpoint: string;
   public readonly domain: Domain;
   public readonly firehoseRole: iam.Role;
   public readonly cloudwatchLogsRole: iam.Role;
 
-  constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
+  constructor(scope: Construct, id: string, props: OpenSearchDomainStackProps) {
     super(scope, id, props);
 
     // Create Firehose role with all necessary permissions

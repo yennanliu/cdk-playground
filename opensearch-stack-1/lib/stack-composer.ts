@@ -1,6 +1,6 @@
 import {Construct} from "constructs";
 import {RemovalPolicy, Stack, StackProps} from "aws-cdk-lib";
-import {OpensearchServiceDomainCdkStack} from "./opensearch-service-domain-cdk-stack";
+import {OpenSearchDomainStack} from "./opensearch-domain-stack";
 import {EngineVersion} from "aws-cdk-lib/aws-opensearchservice";
 import {EbsDeviceVolumeType} from "aws-cdk-lib/aws-ec2";
 import * as defaultValuesJson from "../default-values.json"
@@ -73,7 +73,7 @@ export class StackComposer {
             this.stacks.push(networkStack)
         }
 
-        const opensearchStack = new OpensearchServiceDomainCdkStack(scope, 'opensearchServiceDomainCdkStack', {
+        const opensearchStack = new OpenSearchDomainStack(scope, 'opensearchServiceDomainCdkStack', {
             version: version,
             domainName: domainName,
             dataNodeInstanceType: dataNodeType,
