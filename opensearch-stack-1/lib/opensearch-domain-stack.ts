@@ -300,7 +300,7 @@ export class OpenSearchDomainStack extends Stack {
         new PolicyStatement({
           effect: Effect.ALLOW,
           actions: ['lambda:InvokeFunction'],
-          resources: [roleMappingLambda.functionArn]
+          resources: [roleMappingLambda.functionArn, `${roleMappingLambda.functionArn}:*`]
         })
       ])
     });
@@ -344,7 +344,7 @@ export class OpenSearchDomainStack extends Stack {
         new PolicyStatement({
           effect: Effect.ALLOW,
           actions: ['lambda:InvokeFunction'],
-          resources: [indexManagerLambda.functionArn]
+          resources: [indexManagerLambda.functionArn, `${indexManagerLambda.functionArn}:*`]
         })
       ])
     });
@@ -385,7 +385,7 @@ export class OpenSearchDomainStack extends Stack {
         new PolicyStatement({
           effect: Effect.ALLOW,
           actions: ['lambda:InvokeFunction'],
-          resources: [indexManagerLambda.functionArn]
+          resources: [indexManagerLambda.functionArn, `${indexManagerLambda.functionArn}:*`]
         })
       ])
     });
