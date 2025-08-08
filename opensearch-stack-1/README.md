@@ -21,8 +21,8 @@ cdk deploy --all --stage dev \
 
 
 # send both eks, pods cloudwatch log to opensearch
-cdk deploy --all --stage dev \
-    -c domainName="opensearch-domain-dev-6" \
+cdk deploy --all --force --stage dev \
+    -c domainName="opensearch-domain-dev-9" \
     -c eksLogGroupName="/aws/eks/EksCluster3394B24C-ec2cbedced464f24bf3f9d1c4b112048/cluster" \
     -c podLogGroupName="/aws/eks/EksCluster3394B24C-ec2cbedced464f24bf3f9d1c4b112048/application"
 

@@ -180,63 +180,138 @@ export class OpenSearchDomainStack extends Stack {
       }
     });
 
-    // Grant the Lambda permission to be invoked by CloudFormation custom resources
+    // Create Lambda function for OpenSearch index management
+    const indexManagerLambda = new lambda.Function(this, 'OpenSearchIndexManagerLambda', {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: 'opensearch-index-manager.lambda_handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+      timeout: Duration.minutes(10),
+      description: 'Manages OpenSearch indices and templates for eks-logs and pod-logs',
+      environment: {
+        LOG_LEVEL: 'INFO',
+        DOMAIN_ENDPOINT: domain.domainEndpoint,
+        MASTER_USER: 'admin',
+        MASTER_PASSWORD: 'Admin@OpenSearch123!'
+      }
+    });
+
+    // Grant the Lambda permissions to be invoked by CloudFormation custom resources
     roleMappingLambda.addPermission('AllowCustomResourceInvoke', {
       principal: new iam.ServicePrincipal('cloudformation.amazonaws.com'),
       action: 'lambda:InvokeFunction'
     });
 
-    // Create AwsCustomResource to invoke the Lambda
-    const roleMappingResource = new AwsCustomResource(this, 'OpenSearchRoleMapping', {
-      onCreate: {
-        service: 'Lambda',
-        action: 'invoke',
-        physicalResourceId: PhysicalResourceId.of('opensearch-role-mapping'),
-        parameters: {
-          FunctionName: roleMappingLambda.functionName,
-          Payload: JSON.stringify({
-            RequestType: 'Create',
-            domainEndpoint: domain.domainEndpoint,
-            firehoseRoleArn: this.firehoseRole.roleArn,
-            masterUser: 'admin',
-            masterPassword: 'Admin@OpenSearch123!', // In production, use Secrets Manager
-            ResponseURL: 'dummy', // Will be overridden by AwsCustomResource
-            StackId: 'dummy',
-            RequestId: 'dummy',
-            LogicalResourceId: 'OpenSearchRoleMapping'
-          })
-        }
-      },
-      onUpdate: {
-        service: 'Lambda',
-        action: 'invoke',
-        physicalResourceId: PhysicalResourceId.of('opensearch-role-mapping'),
-        parameters: {
-          FunctionName: roleMappingLambda.functionName,
-          Payload: JSON.stringify({
-            RequestType: 'Update',
-            domainEndpoint: domain.domainEndpoint,
-            firehoseRoleArn: this.firehoseRole.roleArn,
-            masterUser: 'admin',
-            masterPassword: 'Admin@OpenSearch123!',
-            ResponseURL: 'dummy',
-            StackId: 'dummy',
-            RequestId: 'dummy',
-            LogicalResourceId: 'OpenSearchRoleMapping'
-          })
-        }
-      },
-      policy: AwsCustomResourcePolicy.fromStatements([
-        new PolicyStatement({
-          effect: Effect.ALLOW,
-          actions: ['lambda:InvokeFunction'],
-          resources: [roleMappingLambda.functionArn]
-        })
-      ])
+    indexManagerLambda.addPermission('AllowCustomResourceInvoke', {
+      principal: new iam.ServicePrincipal('cloudformation.amazonaws.com'),
+      action: 'lambda:InvokeFunction'
+    });
+
+    // Grant Lambda functions OpenSearch access permissions
+    roleMappingLambda.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'es:*',
+        'opensearch:*'
+      ],
+      resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+      ]
+    }));
+
+    indexManagerLambda.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'es:*',
+        'opensearch:*'
+      ],
+      resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+      ]
+    }));
+
+    // Grant Lambda functions basic execution permissions
+    roleMappingLambda.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream', 
+        'logs:PutLogEvents'
+      ],
+      resources: [`arn:aws:logs:${this.region}:${this.account}:*`]
+    }));
+
+    indexManagerLambda.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents'
+      ],
+      resources: [`arn:aws:logs:${this.region}:${this.account}:*`]
+    }));
+
+    // Create CustomResource provider for role mapping
+    const roleMappingProvider = new cr.Provider(this, 'OpenSearchRoleMappingProvider', {
+      onEventHandler: roleMappingLambda
+    });
+
+    // Create CustomResource to invoke the Lambda
+    const roleMappingResource = new CustomResource(this, 'OpenSearchRoleMapping', {
+      serviceToken: roleMappingProvider.serviceToken,
+      properties: {
+        domainEndpoint: domain.domainEndpoint,
+        firehoseRoleArn: this.firehoseRole.roleArn,
+        masterUser: 'admin',
+        masterPassword: 'Admin@OpenSearch123!' // In production, use Secrets Manager
+      }
     });
 
     // Ensure the custom resource runs after the domain is created
     roleMappingResource.node.addDependency(domain);
+
+    // Create CustomResource provider for index templates
+    const indexTemplateProvider = new cr.Provider(this, 'OpenSearchIndexTemplateProvider', {
+      onEventHandler: indexManagerLambda
+    });
+
+    // Create CustomResource for index templates
+    const indexTemplateManagerResource = new CustomResource(this, 'OpenSearchIndexTemplateManager', {
+      serviceToken: indexTemplateProvider.serviceToken,
+      properties: {
+        operation: 'create_templates',
+        domainEndpoint: domain.domainEndpoint,
+        masterUser: 'admin',
+        masterPassword: 'Admin@OpenSearch123!'
+      }
+    });
+
+    // Create CustomResource provider for index creation
+    const indexCreatorProvider = new cr.Provider(this, 'OpenSearchIndexCreatorProvider', {
+      onEventHandler: indexManagerLambda
+    });
+
+    // Create CustomResource for initial indices
+    const indexCreatorResource = new CustomResource(this, 'OpenSearchIndexCreator', {
+      serviceToken: indexCreatorProvider.serviceToken,
+      properties: {
+        operation: 'create_indices',
+        domainEndpoint: domain.domainEndpoint,
+        masterUser: 'admin',
+        masterPassword: 'Admin@OpenSearch123!'
+      }
+    });
+
+    // Ensure the index template manager runs after role mapping is complete
+    indexTemplateManagerResource.node.addDependency(roleMappingResource);
+    
+    // Ensure the index creator runs after templates are created
+    indexCreatorResource.node.addDependency(indexTemplateManagerResource);
 
     // Export the Firehose role ARN and name for use by other stacks
     new CfnOutput(this, 'FirehoseRoleArn', {
@@ -252,8 +327,18 @@ export class OpenSearchDomainStack extends Stack {
     });
 
     new CfnOutput(this, 'OpenSearchRoleMappingStatus', {
-      value: roleMappingResource.getResponseField('Payload'),
+      value: roleMappingResource.getAtt('body').toString(),
       description: 'Status of OpenSearch role mapping configuration'
+    });
+
+    new CfnOutput(this, 'OpenSearchIndexTemplateStatus', {
+      value: indexTemplateManagerResource.getAtt('body').toString(),
+      description: 'Status of OpenSearch index template creation for eks-logs and pod-logs'
+    });
+
+    new CfnOutput(this, 'OpenSearchIndexCreationStatus', {
+      value: indexCreatorResource.getAtt('body').toString(),
+      description: 'Status of OpenSearch index creation for eks-logs and pod-logs'
     });
 
     // Export the CloudWatch Logs role ARN and name for use by other stacks

@@ -16,35 +16,29 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
     Lambda function to configure OpenSearch role mapping for Firehose integration.
     
-    Expected event payload:
-    {
-        "domainEndpoint": "https://search-domain-name.region.es.amazonaws.com",
-        "firehoseRoleArn": "arn:aws:iam::account:role/FirehoseRole",
-        "masterUser": "admin",
-        "masterPassword": "password",
-        "RequestType": "Create|Update|Delete"
-    }
+    This handles CloudFormation custom resource events.
     """
     
     logger.info(f"Received event: {json.dumps(event, indent=2)}")
     
     try:
-        request_type = event.get('RequestType')
+        request_type = event.get('RequestType', 'Create')
+        resource_properties = event.get('ResourceProperties', {})
         
         if request_type == 'Delete':
             # For delete operations, we'll just return success
             # Role mappings don't need to be cleaned up
             logger.info("Delete operation - no cleanup needed for role mappings")
             return {
-                'statusCode': 200,
-                'body': json.dumps({'Message': 'Delete completed successfully'})
+                'PhysicalResourceId': 'opensearch-role-mapping',
+                'Data': {'Message': 'Delete completed successfully'}
             }
         
-        # Extract parameters
-        domain_endpoint = event['domainEndpoint']
-        firehose_role_arn = event['firehoseRoleArn']
-        master_user = event['masterUser']
-        master_password = event['masterPassword']
+        # Extract parameters from ResourceProperties (CloudFormation format)
+        domain_endpoint = resource_properties.get('domainEndpoint') or event.get('domainEndpoint')
+        firehose_role_arn = resource_properties.get('firehoseRoleArn') or event.get('firehoseRoleArn')
+        master_user = resource_properties.get('masterUser', 'admin')
+        master_password = resource_properties.get('masterPassword', 'Admin@OpenSearch123!')
         
         # Ensure domain endpoint starts with https://
         if not domain_endpoint.startswith('https://'):
@@ -142,25 +136,25 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 logger.info(f"Verified role mapping: {json.dumps(updated_mapping, indent=2)}")
             
             return {
-                'statusCode': 200,
-                'body': json.dumps({
+                'PhysicalResourceId': 'opensearch-role-mapping',
+                'Data': {
                     'Message': 'Role mapping configured successfully',
                     'FirehoseRoleArn': firehose_role_arn,
-                    'BackendRoles': backend_roles
-                })
+                    'BackendRoles': backend_roles,
+                    'body': json.dumps({
+                        'Message': 'Role mapping configured successfully',
+                        'FirehoseRoleArn': firehose_role_arn,
+                        'BackendRoles': backend_roles
+                    })
+                }
             }
             
         else:
             error_msg = f"Failed to update role mapping: HTTP {response.status} - {response.data.decode('utf-8')}"
             logger.error(error_msg)
-            return {
-                'statusCode': 500,
-                'body': json.dumps({'Error': error_msg})
-            }
+            raise Exception(error_msg)
+            
     except Exception as e:
         error_msg = f"Error configuring OpenSearch role mapping: {str(e)}"
         logger.error(error_msg, exc_info=True)
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'Error': error_msg})
-        }
+        raise Exception(error_msg)
