@@ -16,33 +16,27 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
     Lambda function to manage OpenSearch indices and index templates.
     
-    Expected event payload:
-    {
-        "domainEndpoint": "https://search-domain-name.region.es.amazonaws.com",
-        "masterUser": "admin", 
-        "masterPassword": "password",
-        "operation": "create_templates|create_indices",
-        "RequestType": "Create|Update|Delete"
-    }
+    This handles CloudFormation custom resource events.
     """
     
     logger.info(f"Received event: {json.dumps(event, indent=2)}")
     
     try:
         request_type = event.get('RequestType', 'Create')
-        operation = event.get('operation', 'create_templates')
+        resource_properties = event.get('ResourceProperties', {})
+        operation = resource_properties.get('operation') or event.get('operation', 'create_templates')
         
         if request_type == 'Delete':
             logger.info("Delete operation - no cleanup needed for index templates")
             return {
-                'statusCode': 200,
-                'body': json.dumps({'Message': 'Delete completed successfully'})
+                'PhysicalResourceId': f'opensearch-index-manager-{operation}',
+                'Data': {'Message': 'Delete completed successfully'}
             }
         
-        # Extract parameters
-        domain_endpoint = event.get('domainEndpoint')
-        master_user = event.get('masterUser', 'admin')
-        master_password = event.get('masterPassword', 'Admin@OpenSearch123!')
+        # Extract parameters from ResourceProperties (CloudFormation format) or direct event
+        domain_endpoint = resource_properties.get('domainEndpoint') or event.get('domainEndpoint')
+        master_user = resource_properties.get('masterUser', 'admin') 
+        master_password = resource_properties.get('masterPassword', 'Admin@OpenSearch123!')
         
         if not domain_endpoint:
             # Try environment variables
@@ -103,21 +97,23 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             results.extend(create_indices(http, domain_endpoint, headers))
         
         return {
-            'statusCode': 200,
-            'body': json.dumps({
+            'PhysicalResourceId': f'opensearch-index-manager-{operation}',
+            'Data': {
                 'Message': f'Index management completed successfully',
                 'Operation': operation,
-                'Results': results
-            })
+                'Results': results,
+                'body': json.dumps({
+                    'Message': f'Index management completed successfully',
+                    'Operation': operation,
+                    'Results': results
+                })
+            }
         }
         
     except Exception as e:
         error_msg = f"Error managing OpenSearch indices: {str(e)}"
         logger.error(error_msg, exc_info=True)
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'Error': error_msg})
-        }
+        raise Exception(error_msg)
 
 def create_index_templates(http: urllib3.PoolManager, domain_endpoint: str, headers: dict) -> list:
     """Create index templates for eks-logs and pod-logs"""
