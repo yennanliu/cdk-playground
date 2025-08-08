@@ -8,9 +8,10 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as cr from "aws-cdk-lib/custom-resources";
 import {AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId} from "aws-cdk-lib/custom-resources";
 import {StackPropsExt} from "./stack-composer";
+import {LoggingRoles} from "./constructs/iam-roles";
 import * as path from "path";
 
-export interface opensearchServiceDomainCdkProps extends StackPropsExt {
+export interface OpenSearchDomainStackProps extends StackPropsExt {
   readonly version: EngineVersion,
   readonly domainName: string,
   readonly dataNodeInstanceType?: string,
@@ -36,83 +37,23 @@ export interface opensearchServiceDomainCdkProps extends StackPropsExt {
   readonly encryptionAtRestEnabled?: boolean
 }
 
-export class OpensearchServiceDomainCdkStack extends Stack {
+export class OpenSearchDomainStack extends Stack {
   public readonly domainEndpoint: string;
   public readonly domain: Domain;
   public readonly firehoseRole: iam.Role;
   public readonly cloudwatchLogsRole: iam.Role;
 
-  constructor(scope: Construct, id: string, props: opensearchServiceDomainCdkProps) {
+  constructor(scope: Construct, id: string, props: OpenSearchDomainStackProps) {
     super(scope, id, props);
 
-    // Create Firehose role with all necessary permissions
-    this.firehoseRole = new iam.Role(this, 'FirehoseRole', {
-      assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
-      description: 'Role for Firehose to access OpenSearch and S3',
+    // Create shared IAM roles using the reusable construct
+    const loggingRoles = new LoggingRoles(this, 'LoggingRoles', {
+      region: this.region,
+      account: this.account
     });
 
-    // Add full OpenSearch permissions
-    this.firehoseRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'es:*',
-        'opensearch:*'
-      ],
-      resources: [
-        `arn:aws:es:${this.region}:*:domain/*`,
-        `arn:aws:opensearch:${this.region}:*:domain/*`
-      ]
-    }));
-
-    // Add S3 permissions for any Firehose backup bucket
-    this.firehoseRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        's3:AbortMultipartUpload',
-        's3:GetBucketLocation',
-        's3:GetObject',
-        's3:ListBucket',
-        's3:ListBucketMultipartUploads',
-        's3:PutObject',
-        's3:PutObjectAcl'
-      ],
-      resources: [
-        'arn:aws:s3:::firehose-*',
-        'arn:aws:s3:::firehose-*/*'
-      ]
-    }));
-
-    // Add CloudWatch Logs permissions for Firehose operations
-    this.firehoseRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'logs:PutLogEvents',
-        'logs:CreateLogStream',
-        'logs:CreateLogGroup'
-      ],
-      resources: [
-        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*`,
-        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/kinesisfirehose/*:log-stream:*`
-      ]
-    }));
-
-    // Create CloudWatch Logs destination role for sending logs to Firehose
-    this.cloudwatchLogsRole = new iam.Role(this, 'CloudWatchLogsRole', {
-      assumedBy: new iam.ServicePrincipal(`logs.${this.region}.amazonaws.com`),
-      description: 'Role for CloudWatch Logs to send data to Firehose',
-    });
-
-    // Add Firehose permissions to CloudWatch Logs role
-    this.cloudwatchLogsRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        'firehose:PutRecord',
-        'firehose:PutRecordBatch'
-      ],
-      resources: [
-        `arn:aws:firehose:${this.region}:${this.account}:deliverystream/*`
-      ]
-    }));
+    this.firehoseRole = loggingRoles.firehoseRole;
+    this.cloudwatchLogsRole = loggingRoles.cloudWatchLogsRole;
 
     // Map objects from props
     const zoneAwarenessConfig: ZoneAwarenessConfig|undefined = props.availabilityZoneCount && props.availabilityZoneCount >= 2 ?
