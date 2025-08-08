@@ -141,16 +141,12 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 updated_mapping = json.loads(verify_response.data.decode('utf-8'))
                 logger.info(f"Verified role mapping: {json.dumps(updated_mapping, indent=2)}")
             
-            # Create index templates to enable auto-creation for our specific indices
-            template_results = create_index_templates(http, domain_endpoint, headers)
-            
             return {
                 'statusCode': 200,
                 'body': json.dumps({
-                    'Message': 'Role mapping and index templates configured successfully',
+                    'Message': 'Role mapping configured successfully',
                     'FirehoseRoleArn': firehose_role_arn,
-                    'BackendRoles': backend_roles,
-                    'IndexTemplates': template_results
+                    'BackendRoles': backend_roles
                 })
             }
             
@@ -168,98 +164,3 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             'statusCode': 500,
             'body': json.dumps({'Error': error_msg})
         }
-
-
-def create_index_templates(http, domain_endpoint: str, headers: Dict[str, str]) -> Dict[str, str]:
-    """
-    Create index templates for eks-logs and pod-logs to enable auto-creation
-    """
-    results = {}
-    
-    # Define index templates
-    templates = {
-        'eks-logs-template': {
-            'index_patterns': ['eks-logs*'],
-            'template': {
-                'mappings': {
-                    'properties': {
-                        '@timestamp': {'type': 'date'},
-                        'log_level': {'type': 'keyword'},
-                        'message': {'type': 'text'},
-                        'eks': {
-                            'properties': {
-                                'cluster_name': {'type': 'keyword'},
-                                'service_name': {'type': 'keyword'},
-                                'log_group': {'type': 'keyword'},
-                                'log_stream': {'type': 'keyword'}
-                            }
-                        },
-                        'aws': {
-                            'properties': {
-                                'region': {'type': 'keyword'},
-                                'log_group': {'type': 'keyword'},
-                                'log_stream': {'type': 'keyword'}
-                            }
-                        },
-                        'source': {'type': 'keyword'},
-                        'raw_message': {'type': 'text'}
-                    }
-                },
-                'settings': {
-                    'number_of_shards': 1,
-                    'number_of_replicas': 0,
-                    'index.auto_expand_replicas': '0-1'
-                }
-            }
-        },
-        'pod-logs-template': {
-            'index_patterns': ['pod-logs*'],
-            'template': {
-                'mappings': {
-                    'properties': {
-                        '@timestamp': {'type': 'date'},
-                        'timestamp': {'type': 'date'},
-                        'message': {'type': 'text'},
-                        'pod_name': {'type': 'keyword'},
-                        'namespace': {'type': 'keyword'},
-                        'container_name': {'type': 'keyword'},
-                        'cluster': {'type': 'keyword'},
-                        'log_type': {'type': 'keyword'},
-                        'log_group': {'type': 'keyword'},
-                        'log_stream': {'type': 'keyword'},
-                        'stream': {'type': 'keyword'},
-                        'logtag': {'type': 'keyword'},
-                        'host': {'type': 'keyword'}
-                    }
-                },
-                'settings': {
-                    'number_of_shards': 1,
-                    'number_of_replicas': 0,
-                    'index.auto_expand_replicas': '0-1'
-                }
-            }
-        }
-    }
-    
-    for template_name, template_config in templates.items():
-        try:
-            template_url = f"{domain_endpoint}/_index_template/{template_name}"
-            
-            logger.info(f"Creating index template: {template_name}")
-            response = http.request('PUT', template_url, 
-                                   body=json.dumps(template_config),
-                                   headers=headers, 
-                                   timeout=30)
-            
-            if response.status in [200, 201]:
-                logger.info(f"Index template {template_name} created successfully")
-                results[template_name] = 'success'
-            else:
-                logger.error(f"Failed to create index template {template_name}: {response.status} - {response.data.decode('utf-8')}")
-                results[template_name] = f'failed: {response.status}'
-                
-        except Exception as e:
-            logger.error(f"Error creating index template {template_name}: {str(e)}")
-            results[template_name] = f'error: {str(e)}'
-    
-    return results
