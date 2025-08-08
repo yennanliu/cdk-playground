@@ -157,3 +157,124 @@ This CDK application implements a centralized logging solution that ingests Clou
 - **Security**: IAM roles with least-privilege access
 - **Monitoring**: CloudWatch Logs for Firehose operations
 
+## Data Flow Chart
+
+```mermaid
+flowchart TD
+    Start([CDK Deploy]) --> LoadConfig[Load Environment Config]
+    LoadConfig --> ValidateConfig{Valid Config?}
+    ValidateConfig -->|No| ConfigError[Configuration Error]
+    ValidateConfig -->|Yes| CreateNetwork{VPC Enabled?}
+    
+    CreateNetwork -->|Yes| NetworkStack[Create Network Stack]
+    CreateNetwork -->|No| OpenSearchStack[Create OpenSearch Stack]
+    NetworkStack --> OpenSearchStack
+    
+    OpenSearchStack --> CreateDomain[Create OpenSearch Domain]
+    CreateDomain --> CreateRoles[Create IAM Roles]
+    CreateRoles --> RoleMapping[Configure Role Mapping]
+    RoleMapping --> IndexTemplates[Create Index Templates]
+    
+    IndexTemplates --> CheckEKSLogs{EKS Logs Configured?}
+    CheckEKSLogs -->|Yes| EKSFirehoseStack[Create EKS Firehose Stack]
+    CheckEKSLogs -->|No| CheckPodLogs{Pod Logs Configured?}
+    
+    EKSFirehoseStack --> EKSResources[Create EKS Resources]
+    EKSResources --> CheckPodLogs
+    
+    CheckPodLogs -->|Yes| PodFirehoseStack[Create Pod Firehose Stack]
+    CheckPodLogs -->|No| DeployComplete[Deployment Complete]
+    PodFirehoseStack --> PodResources[Create Pod Resources]
+    PodResources --> DeployComplete
+    
+    subgraph "EKS Log Processing Flow"
+        EKSLogs[EKS CloudWatch Logs] --> EKSFilter[Subscription Filter]
+        EKSFilter --> EKSFirehose[Kinesis Data Firehose]
+        EKSFirehose --> EKSLambda[Unified Processor Lambda]
+        EKSLambda --> EKSTransform{Transform Success?}
+        EKSTransform -->|Yes| OpenSearch[OpenSearch Domain]
+        EKSTransform -->|No| EKSS3[S3 Backup Bucket]
+        EKSFirehose -.->|Failed Records| EKSS3
+    end
+    
+    subgraph "Pod Log Processing Flow"
+        PodLogs[Pod CloudWatch Logs] --> PodFilter[Subscription Filter]
+        PodFilter --> PodFirehose[Kinesis Data Firehose]
+        PodFirehose --> PodLambda[Unified Processor Lambda]
+        PodLambda --> PodTransform{Transform Success?}
+        PodTransform -->|Yes| OpenSearch
+        PodTransform -->|No| PodS3[S3 Backup Bucket]
+        PodFirehose -.->|Failed Records| PodS3
+    end
+    
+    subgraph "Lambda Processing Details"
+        ProcessStart[Receive Firehose Records] --> Decompress[Decompress GZIP Data]
+        Decompress --> ParseJSON[Parse CloudWatch Logs JSON]
+        ParseJSON --> ProcessType{Processing Type?}
+        ProcessType -->|EKS| EKSProcessor[Process EKS Log Events]
+        ProcessType -->|Pod| PodProcessor[Process Pod Log Events]
+        
+        EKSProcessor --> EKSExtract[Extract Cluster Info]
+        EKSExtract --> EKSStructure[Structure EKS Document]
+        EKSStructure --> CombineEKS[Combine Events to NDJSON]
+        
+        PodProcessor --> PodExtract[Extract Kubernetes Metadata]
+        PodExtract --> PodStructure[Structure Pod Document]
+        PodStructure --> CombinePod[Combine Events to NDJSON]
+        
+        CombineEKS --> ReturnSuccess[Return Success Response]
+        CombinePod --> ReturnSuccess
+        ReturnSuccess --> ProcessEnd[End Processing]
+    end
+    
+    subgraph "Error Handling"
+        ProcessError[Processing Error] --> LogError[Log Error Details]
+        LogError --> ReturnFailed[Return ProcessingFailed]
+        ReturnFailed --> S3Backup[Record Sent to S3]
+    end
+    
+    subgraph "OpenSearch Operations"
+        OpenSearch --> IndexCheck{Index Exists?}
+        IndexCheck -->|No| AutoCreate[Auto-create from Template]
+        IndexCheck -->|Yes| StoreDocument[Store Document]
+        AutoCreate --> StoreDocument
+        StoreDocument --> IndexComplete[Indexing Complete]
+    end
+    
+    classDef startEnd fill:#d4edda,stroke:#155724
+    classDef process fill:#cce5ff,stroke:#004085
+    classDef decision fill:#fff3cd,stroke:#856404
+    classDef error fill:#f8d7da,stroke:#721c24
+    classDef success fill:#d1ecf1,stroke:#0c5460
+    
+    class Start,DeployComplete,ProcessEnd,IndexComplete startEnd
+    class LoadConfig,CreateDomain,CreateRoles,EKSResources,PodResources,ProcessStart,Decompress,ParseJSON process
+    class ValidateConfig,CreateNetwork,CheckEKSLogs,CheckPodLogs,EKSTransform,PodTransform,ProcessType,IndexCheck decision
+    class ConfigError,ProcessError,LogError error
+    class OpenSearch,StoreDocument success
+```
+
+### Data Flow Overview
+
+This flowchart illustrates the complete data processing pipeline from CDK deployment to log ingestion and OpenSearch indexing.
+
+#### Deployment Phase:
+1. **Configuration Loading**: Environment-specific configs (dev/prod) are loaded and validated
+2. **Infrastructure Creation**: Network (optional) → OpenSearch Domain → Firehose Stacks
+3. **Security Setup**: IAM roles, role mapping, and index templates are configured
+4. **Pipeline Setup**: Subscription filters connect CloudWatch Logs to Firehose streams
+
+#### Runtime Processing:
+1. **Log Ingestion**: CloudWatch Logs → Subscription Filters → Kinesis Data Firehose
+2. **Lambda Processing**: Unified processor transforms logs based on type (EKS/Pod)
+3. **Data Transformation**: Decompression → JSON parsing → field extraction → document structuring
+4. **OpenSearch Delivery**: Structured documents delivered to OpenSearch with auto-indexing
+5. **Error Handling**: Failed records automatically backed up to S3
+
+#### Key Processing Steps:
+- **EKS Logs**: Extract cluster information, service names, log levels
+- **Pod Logs**: Parse Kubernetes metadata, container information, application logs  
+- **Document Structure**: Create OpenSearch-compatible documents with proper field mappings
+- **Batch Processing**: Multiple log events combined into newline-delimited JSON
+- **Fault Tolerance**: Processing failures trigger S3 backup with detailed error logging
+
