@@ -157,6 +157,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 'statusCode': 500,
                 'body': json.dumps({'Error': error_msg})
             }
+            
     except Exception as e:
         error_msg = f"Error configuring OpenSearch role mapping: {str(e)}"
         logger.error(error_msg, exc_info=True)

@@ -186,7 +186,7 @@ export class OpenSearchDomainStack extends Stack {
       handler: 'opensearch-index-manager.lambda_handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
       timeout: Duration.minutes(10),
-      description: 'Manages OpenSearch indices and templates',
+      description: 'Manages OpenSearch indices and templates for eks-logs and pod-logs',
       environment: {
         LOG_LEVEL: 'INFO',
         DOMAIN_ENDPOINT: domain.domainEndpoint,
@@ -205,6 +205,56 @@ export class OpenSearchDomainStack extends Stack {
       principal: new iam.ServicePrincipal('cloudformation.amazonaws.com'),
       action: 'lambda:InvokeFunction'
     });
+
+    // Grant Lambda functions OpenSearch access permissions
+    roleMappingLambda.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'es:*',
+        'opensearch:*'
+      ],
+      resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+      ]
+    }));
+
+    indexManagerLambda.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'es:*',
+        'opensearch:*'
+      ],
+      resources: [
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:es:${this.region}:${this.account}:domain/${props.domainName}/*`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}`,
+        `arn:aws:opensearch:${this.region}:${this.account}:domain/${props.domainName}/*`
+      ]
+    }));
+
+    // Grant Lambda functions basic execution permissions
+    roleMappingLambda.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream', 
+        'logs:PutLogEvents'
+      ],
+      resources: [`arn:aws:logs:${this.region}:${this.account}:*`]
+    }));
+
+    indexManagerLambda.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents'
+      ],
+      resources: [`arn:aws:logs:${this.region}:${this.account}:*`]
+    }));
 
     // Create AwsCustomResource to invoke the Lambda
     const roleMappingResource = new AwsCustomResource(this, 'OpenSearchRoleMapping', {
@@ -258,31 +308,35 @@ export class OpenSearchDomainStack extends Stack {
     // Ensure the custom resource runs after the domain is created
     roleMappingResource.node.addDependency(domain);
 
-    // Create AwsCustomResource to invoke the index manager Lambda
-    const indexManagerResource = new AwsCustomResource(this, 'OpenSearchIndexManager', {
+    // Create AwsCustomResource to invoke the index manager Lambda for templates
+    const indexTemplateManagerResource = new AwsCustomResource(this, 'OpenSearchIndexTemplateManager', {
       onCreate: {
         service: 'Lambda',
         action: 'invoke',
-        physicalResourceId: PhysicalResourceId.of('opensearch-index-manager'),
+        physicalResourceId: PhysicalResourceId.of('opensearch-index-template-manager'),
         parameters: {
           FunctionName: indexManagerLambda.functionName,
           Payload: JSON.stringify({
             RequestType: 'Create',
             operation: 'create_templates',
-            domainEndpoint: domain.domainEndpoint
+            domainEndpoint: domain.domainEndpoint,
+            masterUser: 'admin',
+            masterPassword: 'Admin@OpenSearch123!'
           })
         }
       },
       onUpdate: {
         service: 'Lambda',
         action: 'invoke',
-        physicalResourceId: PhysicalResourceId.of('opensearch-index-manager'),
+        physicalResourceId: PhysicalResourceId.of('opensearch-index-template-manager'),
         parameters: {
           FunctionName: indexManagerLambda.functionName,
           Payload: JSON.stringify({
             RequestType: 'Update',
             operation: 'create_templates',
-            domainEndpoint: domain.domainEndpoint
+            domainEndpoint: domain.domainEndpoint,
+            masterUser: 'admin',
+            masterPassword: 'Admin@OpenSearch123!'
           })
         }
       },
@@ -295,8 +349,52 @@ export class OpenSearchDomainStack extends Stack {
       ])
     });
 
-    // Ensure the index manager runs after role mapping is complete
-    indexManagerResource.node.addDependency(roleMappingResource);
+    // Create AwsCustomResource to invoke the index manager Lambda for initial indices
+    const indexCreatorResource = new AwsCustomResource(this, 'OpenSearchIndexCreator', {
+      onCreate: {
+        service: 'Lambda',
+        action: 'invoke',
+        physicalResourceId: PhysicalResourceId.of('opensearch-index-creator'),
+        parameters: {
+          FunctionName: indexManagerLambda.functionName,
+          Payload: JSON.stringify({
+            RequestType: 'Create',
+            operation: 'create_indices',
+            domainEndpoint: domain.domainEndpoint,
+            masterUser: 'admin',
+            masterPassword: 'Admin@OpenSearch123!'
+          })
+        }
+      },
+      onUpdate: {
+        service: 'Lambda',
+        action: 'invoke',
+        physicalResourceId: PhysicalResourceId.of('opensearch-index-creator'),
+        parameters: {
+          FunctionName: indexManagerLambda.functionName,
+          Payload: JSON.stringify({
+            RequestType: 'Update',
+            operation: 'create_indices',
+            domainEndpoint: domain.domainEndpoint,
+            masterUser: 'admin',
+            masterPassword: 'Admin@OpenSearch123!'
+          })
+        }
+      },
+      policy: AwsCustomResourcePolicy.fromStatements([
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['lambda:InvokeFunction'],
+          resources: [indexManagerLambda.functionArn]
+        })
+      ])
+    });
+
+    // Ensure the index template manager runs after role mapping is complete
+    indexTemplateManagerResource.node.addDependency(roleMappingResource);
+    
+    // Ensure the index creator runs after templates are created
+    indexCreatorResource.node.addDependency(indexTemplateManagerResource);
 
     // Export the Firehose role ARN and name for use by other stacks
     new CfnOutput(this, 'FirehoseRoleArn', {
@@ -316,9 +414,14 @@ export class OpenSearchDomainStack extends Stack {
       description: 'Status of OpenSearch role mapping configuration'
     });
 
-    new CfnOutput(this, 'OpenSearchIndexManagerStatus', {
-      value: indexManagerResource.getResponseField('Payload'),
-      description: 'Status of OpenSearch index template creation'
+    new CfnOutput(this, 'OpenSearchIndexTemplateStatus', {
+      value: indexTemplateManagerResource.getResponseField('Payload'),
+      description: 'Status of OpenSearch index template creation for eks-logs and pod-logs'
+    });
+
+    new CfnOutput(this, 'OpenSearchIndexCreationStatus', {
+      value: indexCreatorResource.getResponseField('Payload'),
+      description: 'Status of OpenSearch index creation for eks-logs and pod-logs'
     });
 
     // Export the CloudWatch Logs role ARN and name for use by other stacks

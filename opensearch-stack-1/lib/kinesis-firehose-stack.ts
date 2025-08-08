@@ -33,21 +33,23 @@ export class KinesisFirehoseStack extends Stack {
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
 
-        // Create unified Lambda function for processing CloudWatch Logs data
+        // Create Lambda function for processing CloudWatch Logs data based on index type
         let processorLambda: lambda.Function | undefined;
         if (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') {
-            // Determine processing type based on index name
+            // Determine lambda directory and processing type based on index name
             const processingType = props.opensearchIndex === 'eks-logs' ? 'eks' : 'pod';
+            const lambdaPath = props.opensearchIndex === 'eks-logs' ? 'lambda/firehose-processor' : 'lambda/pod-logs-processor';
             
             processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
                 runtime: lambda.Runtime.NODEJS_18_X,
                 handler: 'index.handler',
-                code: lambda.Code.fromAsset('lambda/unified-processor'),
+                code: lambda.Code.fromAsset(lambdaPath),
                 timeout: Duration.minutes(5),
                 memorySize: 512,
-                description: `Unified processor for ${processingType.toUpperCase()} CloudWatch Logs data for Firehose`,
+                description: `${processingType.toUpperCase()} logs processor for CloudWatch Logs data to Firehose`,
                 environment: {
-                    PROCESSING_TYPE: processingType
+                    PROCESSING_TYPE: processingType,
+                    LOG_TYPE: processingType
                 }
             });
 
