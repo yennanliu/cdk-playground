@@ -180,8 +180,28 @@ export class OpenSearchDomainStack extends Stack {
       }
     });
 
-    // Grant the Lambda permission to be invoked by CloudFormation custom resources
+    // Create Lambda function for OpenSearch index management
+    const indexManagerLambda = new lambda.Function(this, 'OpenSearchIndexManagerLambda', {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      handler: 'opensearch-index-manager.lambda_handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+      timeout: Duration.minutes(10),
+      description: 'Manages OpenSearch indices and templates',
+      environment: {
+        LOG_LEVEL: 'INFO',
+        DOMAIN_ENDPOINT: domain.domainEndpoint,
+        MASTER_USER: 'admin',
+        MASTER_PASSWORD: 'Admin@OpenSearch123!'
+      }
+    });
+
+    // Grant the Lambda permissions to be invoked by CloudFormation custom resources
     roleMappingLambda.addPermission('AllowCustomResourceInvoke', {
+      principal: new iam.ServicePrincipal('cloudformation.amazonaws.com'),
+      action: 'lambda:InvokeFunction'
+    });
+
+    indexManagerLambda.addPermission('AllowCustomResourceInvoke', {
       principal: new iam.ServicePrincipal('cloudformation.amazonaws.com'),
       action: 'lambda:InvokeFunction'
     });
@@ -191,7 +211,7 @@ export class OpenSearchDomainStack extends Stack {
       onCreate: {
         service: 'Lambda',
         action: 'invoke',
-        physicalResourceId: PhysicalResourceId.of('opensearch-role-mapping'),
+        physicalResourceId: PhysicalResourceId.of('opensearch-role-mapping-with-templates'),
         parameters: {
           FunctionName: roleMappingLambda.functionName,
           Payload: JSON.stringify({
@@ -210,7 +230,7 @@ export class OpenSearchDomainStack extends Stack {
       onUpdate: {
         service: 'Lambda',
         action: 'invoke',
-        physicalResourceId: PhysicalResourceId.of('opensearch-role-mapping'),
+        physicalResourceId: PhysicalResourceId.of('opensearch-role-mapping-with-templates'),
         parameters: {
           FunctionName: roleMappingLambda.functionName,
           Payload: JSON.stringify({
@@ -238,6 +258,46 @@ export class OpenSearchDomainStack extends Stack {
     // Ensure the custom resource runs after the domain is created
     roleMappingResource.node.addDependency(domain);
 
+    // Create AwsCustomResource to invoke the index manager Lambda
+    const indexManagerResource = new AwsCustomResource(this, 'OpenSearchIndexManager', {
+      onCreate: {
+        service: 'Lambda',
+        action: 'invoke',
+        physicalResourceId: PhysicalResourceId.of('opensearch-index-manager'),
+        parameters: {
+          FunctionName: indexManagerLambda.functionName,
+          Payload: JSON.stringify({
+            RequestType: 'Create',
+            operation: 'create_templates',
+            domainEndpoint: domain.domainEndpoint
+          })
+        }
+      },
+      onUpdate: {
+        service: 'Lambda',
+        action: 'invoke',
+        physicalResourceId: PhysicalResourceId.of('opensearch-index-manager'),
+        parameters: {
+          FunctionName: indexManagerLambda.functionName,
+          Payload: JSON.stringify({
+            RequestType: 'Update',
+            operation: 'create_templates',
+            domainEndpoint: domain.domainEndpoint
+          })
+        }
+      },
+      policy: AwsCustomResourcePolicy.fromStatements([
+        new PolicyStatement({
+          effect: Effect.ALLOW,
+          actions: ['lambda:InvokeFunction'],
+          resources: [indexManagerLambda.functionArn]
+        })
+      ])
+    });
+
+    // Ensure the index manager runs after role mapping is complete
+    indexManagerResource.node.addDependency(roleMappingResource);
+
     // Export the Firehose role ARN and name for use by other stacks
     new CfnOutput(this, 'FirehoseRoleArn', {
       value: this.firehoseRole.roleArn,
@@ -254,6 +314,11 @@ export class OpenSearchDomainStack extends Stack {
     new CfnOutput(this, 'OpenSearchRoleMappingStatus', {
       value: roleMappingResource.getResponseField('Payload'),
       description: 'Status of OpenSearch role mapping configuration'
+    });
+
+    new CfnOutput(this, 'OpenSearchIndexManagerStatus', {
+      value: indexManagerResource.getResponseField('Payload'),
+      description: 'Status of OpenSearch index template creation'
     });
 
     // Export the CloudWatch Logs role ARN and name for use by other stacks
