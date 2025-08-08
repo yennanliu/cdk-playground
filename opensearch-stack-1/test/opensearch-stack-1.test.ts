@@ -1,17 +1,20 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import * as OpensearchStack1 from '../lib/opensearch-stack-1-stack';
+import { OpenSearchDomainStack } from '../lib/opensearch-domain-stack';
+import { EngineVersion } from 'aws-cdk-lib/aws-opensearchservice';
 
-test('SQS Queue and SNS Topic Created', () => {
+test('OpenSearch Domain Created', () => {
   const app = new cdk.App();
   // WHEN
-  const stack = new OpensearchStack1.OpensearchStack1Stack(app, 'MyTestStack');
+  const stack = new OpenSearchDomainStack(app, 'MyTestStack', {
+    version: EngineVersion.OPENSEARCH_2_5,
+    domainName: 'test-domain',
+    stage: 'test'
+  });
   // THEN
 
   const template = Template.fromStack(stack);
 
-  template.hasResourceProperties('AWS::SQS::Queue', {
-    VisibilityTimeout: 300
-  });
-  template.resourceCountIs('AWS::SNS::Topic', 1);
+  template.resourceCountIs('AWS::OpenSearchService::Domain', 1);
+  template.resourceCountIs('AWS::IAM::Role', 4); // LoggingRoles creates 2 roles + 2 Lambda roles
 });

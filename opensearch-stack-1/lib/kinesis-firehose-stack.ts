@@ -33,37 +33,32 @@ export class KinesisFirehoseStack extends Stack {
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
 
-        // Create Lambda function for processing CloudWatch Logs data
+        // Create unified Lambda function for processing CloudWatch Logs data
         let processorLambda: lambda.Function | undefined;
-        if (props.opensearchIndex === 'eks-logs') {
+        if (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') {
+            // Determine processing type based on index name
+            const processingType = props.opensearchIndex === 'eks-logs' ? 'eks' : 'pod';
+            
             processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
                 runtime: lambda.Runtime.NODEJS_18_X,
                 handler: 'index.handler',
-                code: lambda.Code.fromAsset('lambda/firehose-processor'),
+                code: lambda.Code.fromAsset('lambda/unified-processor'),
                 timeout: Duration.minutes(5),
                 memorySize: 512,
-                description: 'Processes and decompresses EKS CloudWatch Logs data for Firehose'
-            });
-
-            // Grant Firehose permission to invoke the Lambda function
-            processorLambda.grantInvoke(firehoseRole);
-        } else if (props.opensearchIndex === 'pod-logs') {
-            processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
-                runtime: lambda.Runtime.NODEJS_18_X,
-                handler: 'index.handler',
-                code: lambda.Code.fromAsset('lambda/pod-logs-processor'),
-                timeout: Duration.minutes(5),
-                memorySize: 512,
-                description: 'Processes and decompresses Pod CloudWatch Logs data for Firehose'
+                description: `Unified processor for ${processingType.toUpperCase()} CloudWatch Logs data for Firehose`,
+                environment: {
+                    PROCESSING_TYPE: processingType
+                }
             });
 
             // Grant Firehose permission to invoke the Lambda function
             processorLambda.grantInvoke(firehoseRole);
         }
 
-        // Create Kinesis Firehose
+        // Create Kinesis Firehose with unique naming based on domain
+        const domainName = props.opensearchDomain.domainName.replace(/[^a-zA-Z0-9-]/g, '');
         const deliveryStream = new firehose.CfnDeliveryStream(this, `${this.stackName}-OpenSearchDeliveryStream`, {
-            deliveryStreamName: `${props.opensearchIndex}-${this.stackName.substring(0, 40)}`.substring(0, 64),
+            deliveryStreamName: `${props.opensearchIndex}-${domainName}-${this.stackName.substring(0, 20)}`.substring(0, 64),
             deliveryStreamType: 'DirectPut',
             amazonopensearchserviceDestinationConfiguration: {
                 indexName: props.opensearchIndex,
@@ -72,12 +67,12 @@ export class KinesisFirehoseStack extends Stack {
                 indexRotationPeriod: 'NoRotation',  // Prevent date-based indices
                 bufferingHints: {
                     intervalInSeconds: 60,  // Standard buffering interval
-                    sizeInMBs: 5  // Increased buffer size for better performance
+                    sizeInMBs: 1  // Smaller buffer for faster testing - documents will be delivered more frequently
                 },
                 cloudWatchLoggingOptions: {
                     enabled: true,
-                    logGroupName: `/aws/kinesisfirehose/${this.stackName}-${props.opensearchIndex}`,
-                    logStreamName: `${this.stackName}-OpenSearchDelivery`
+                    logGroupName: `/aws/kinesisfirehose/${domainName}-${props.opensearchIndex}-${this.stackName.substring(0, 20)}`,
+                    logStreamName: `${domainName}-${props.opensearchIndex}-Delivery`
                 },
                 processingConfiguration: (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') && processorLambda ? {
                     enabled: true,
@@ -129,7 +124,7 @@ export class KinesisFirehoseStack extends Stack {
 
         // Create CloudWatch Logs for Firehose operations (not for subscription)
         const logGroup = new LogGroup(this, `${this.stackName}-FirehoseLogGroup`, {
-            logGroupName: `/aws/firehose/${this.stackName}-${props.opensearchIndex}`,
+            logGroupName: `/aws/firehose/${domainName}-${props.opensearchIndex}-${this.stackName.substring(0, 20)}`,
             removalPolicy: RemovalPolicy.DESTROY,
             retention: logs.RetentionDays.ONE_WEEK,
         });
@@ -141,7 +136,7 @@ export class KinesisFirehoseStack extends Stack {
             
             // Create CloudWatch Logs destination
             const logsDestination = new logs.CfnDestination(this, `${this.stackName}-LogsDestination`, {
-                destinationName: `${this.stackName}-${props.opensearchIndex}-firehose-destination`,
+                destinationName: `${domainName}-${props.opensearchIndex}-${this.stackName.substring(0, 20)}-dest`,
                 targetArn: deliveryStream.attrArn,
                 roleArn: cloudwatchLogsRoleArn,
                 destinationPolicy: JSON.stringify({
@@ -169,7 +164,7 @@ export class KinesisFirehoseStack extends Stack {
                         destinationArn: deliveryStream.attrArn,
                         roleArn: cloudwatchLogsRoleArn,
                         filterPattern: '', // Empty filter pattern means all log events
-                        filterName: `${this.stackName}-logs-to-firehose`
+                        filterName: `${domainName}-${props.opensearchIndex}-${this.stackName.substring(0, 15)}-filter`
                     });
 
                     // Ensure the subscription filter is created after the delivery stream

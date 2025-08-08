@@ -1,0 +1,21 @@
+{
+    "domainName": "opensearch-prod-domain",
+    "engineVersion": "OS_2.5",
+    "dataNodeType": "r6g.large.search",
+    "dataNodeCount": 3,
+    "dedicatedManagerNodeType": "c6g.medium.search",
+    "dedicatedManagerNodeCount": 3,
+    "warmNodeType": "",
+    "warmNodeCount": 0,
+    "ebsEnabled": true,
+    "ebsIops": 3000,
+    "ebsVolumeSize": 100,
+    "ebsVolumeType": "GP3",
+    "vpcEnabled": true,
+    "vpcId": "",
+    "vpcSubnetIds": [],
+    "vpcSecurityGroupIds": [],
+    "availabilityZoneCount": 3,
+    "eksLogGroupName": "/aws/eks/prod-cluster/application",
+    "podLogGroupName": "/aws/containerinsights/prod-cluster/application"
+}
