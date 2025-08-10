@@ -149,8 +149,13 @@ export class RedisSentinel2Stack extends Stack {
         }),
       }),
       command: [
-        'redis-sentinel',
-        '/etc/redis/sentinel.conf',
+        'sh', '-c', 
+        'echo "port 26379" > /tmp/sentinel.conf && ' +
+        'echo "sentinel monitor mymaster 127.0.0.1 6379 2" >> /tmp/sentinel.conf && ' +
+        'echo "sentinel down-after-milliseconds mymaster 30000" >> /tmp/sentinel.conf && ' +
+        'echo "sentinel parallel-syncs mymaster 1" >> /tmp/sentinel.conf && ' +
+        'echo "sentinel failover-timeout mymaster 180000" >> /tmp/sentinel.conf && ' +
+        'redis-sentinel /tmp/sentinel.conf'
       ],
     });
 
