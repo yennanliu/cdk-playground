@@ -109,6 +109,8 @@ export class RedisSentinel2Stack extends Stack {
         '--protected-mode', 'no',
         '--bind', '0.0.0.0',
         '--port', '6379',
+        '--save', '60', '1000',
+        '--stop-writes-on-bgsave-error', 'no',
       ],
     });
 
