@@ -22,18 +22,13 @@ export class RedisSentinel2Stack extends Stack {
 
   private createVpc(): void {
     this.vpc = new ec2.Vpc(this, 'RedisSentinelVpc', {
-      maxAzs: 3,
-      natGateways: 1,
+      maxAzs: 2,
+      natGateways: 0,
       subnetConfiguration: [
         {
           cidrMask: 24,
           name: 'public',
           subnetType: ec2.SubnetType.PUBLIC,
-        },
-        {
-          cidrMask: 24,
-          name: 'private',
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
       ],
     });
@@ -121,7 +116,7 @@ export class RedisSentinel2Stack extends Stack {
         desiredCount: 2,
         securityGroups: [this.redisSecurityGroup],
         vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          subnetType: ec2.SubnetType.PUBLIC,
         },
         serviceName: `redis-${i}`,
       });
@@ -166,7 +161,7 @@ export class RedisSentinel2Stack extends Stack {
         desiredCount: 1,
         securityGroups: [this.sentinelSecurityGroup],
         vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          subnetType: ec2.SubnetType.PUBLIC,
         },
         serviceName: `sentinel-${i}`,
       });
