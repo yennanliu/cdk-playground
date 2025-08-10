@@ -1,19 +1,168 @@
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { Stack, StackProps } from 'aws-cdk-lib';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
 export class RedisSentinel2Stack extends Stack {
+  private vpc: ec2.Vpc;
+  private cluster: ecs.Cluster;
+  private redisSecurityGroup: ec2.SecurityGroup;
+  private sentinelSecurityGroup: ec2.SecurityGroup;
+
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, 'RedisSentinel2Queue', {
-      visibilityTimeout: Duration.seconds(300)
+    this.createVpc();
+    this.createEcsCluster();
+    this.createSecurityGroups();
+    this.createRedisServices();
+    this.createSentinelServices();
+  }
+
+  private createVpc(): void {
+    this.vpc = new ec2.Vpc(this, 'RedisSentinelVpc', {
+      maxAzs: 3,
+      natGateways: 1,
+      subnetConfiguration: [
+        {
+          cidrMask: 24,
+          name: 'public',
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        {
+          cidrMask: 24,
+          name: 'private',
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+      ],
+    });
+  }
+
+  private createEcsCluster(): void {
+    this.cluster = new ecs.Cluster(this, 'RedisSentinelCluster', {
+      vpc: this.vpc,
+      containerInsights: true,
+    });
+  }
+
+  private createSecurityGroups(): void {
+    this.redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
+      vpc: this.vpc,
+      description: 'Security group for Redis instances',
+      allowAllOutbound: true,
     });
 
-    const topic = new sns.Topic(this, 'RedisSentinel2Topic');
+    this.sentinelSecurityGroup = new ec2.SecurityGroup(this, 'SentinelSecurityGroup', {
+      vpc: this.vpc,
+      description: 'Security group for Sentinel instances',
+      allowAllOutbound: true,
+    });
 
-    topic.addSubscription(new subs.SqsSubscription(queue));
+    this.redisSecurityGroup.addIngressRule(
+      this.redisSecurityGroup,
+      ec2.Port.tcp(6379),
+      'Redis port from other Redis instances'
+    );
+
+    this.redisSecurityGroup.addIngressRule(
+      this.sentinelSecurityGroup,
+      ec2.Port.tcp(6379),
+      'Redis port from Sentinel instances'
+    );
+
+    this.sentinelSecurityGroup.addIngressRule(
+      this.sentinelSecurityGroup,
+      ec2.Port.tcp(26379),
+      'Sentinel port from other Sentinel instances'
+    );
+
+    this.sentinelSecurityGroup.addIngressRule(
+      this.redisSecurityGroup,
+      ec2.Port.tcp(26379),
+      'Sentinel port from Redis instances'
+    );
+  }
+
+  private createRedisServices(): void {
+    const redisTaskDefinition = new ecs.FargateTaskDefinition(this, 'RedisTaskDefinition', {
+      memoryLimitMiB: 512,
+      cpu: 256,
+    });
+
+    redisTaskDefinition.addContainer('redis', {
+      image: ecs.ContainerImage.fromRegistry('redis:7-alpine'),
+      portMappings: [
+        {
+          containerPort: 6379,
+          protocol: ecs.Protocol.TCP,
+        },
+      ],
+      logging: ecs.LogDrivers.awsLogs({
+        streamPrefix: 'redis',
+        logGroup: new logs.LogGroup(this, 'RedisLogGroup', {
+          logGroupName: '/ecs/redis-sentinel/redis',
+        }),
+      }),
+      command: [
+        'redis-server',
+        '--protected-mode', 'no',
+        '--bind', '0.0.0.0',
+        '--port', '6379',
+      ],
+    });
+
+    for (let i = 1; i <= 3; i++) {
+      const service = new ecs.FargateService(this, `RedisService${i}`, {
+        cluster: this.cluster,
+        taskDefinition: redisTaskDefinition,
+        desiredCount: 2,
+        securityGroups: [this.redisSecurityGroup],
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+        serviceName: `redis-${i}`,
+      });
+    }
+  }
+
+  private createSentinelServices(): void {
+    const sentinelTaskDefinition = new ecs.FargateTaskDefinition(this, 'SentinelTaskDefinition', {
+      memoryLimitMiB: 256,
+      cpu: 128,
+    });
+
+    sentinelTaskDefinition.addContainer('sentinel', {
+      image: ecs.ContainerImage.fromRegistry('redis:7-alpine'),
+      portMappings: [
+        {
+          containerPort: 26379,
+          protocol: ecs.Protocol.TCP,
+        },
+      ],
+      logging: ecs.LogDrivers.awsLogs({
+        streamPrefix: 'sentinel',
+        logGroup: new logs.LogGroup(this, 'SentinelLogGroup', {
+          logGroupName: '/ecs/redis-sentinel/sentinel',
+        }),
+      }),
+      command: [
+        'redis-sentinel',
+        '/etc/redis/sentinel.conf',
+      ],
+    });
+
+    for (let i = 1; i <= 3; i++) {
+      const service = new ecs.FargateService(this, `SentinelService${i}`, {
+        cluster: this.cluster,
+        taskDefinition: sentinelTaskDefinition,
+        desiredCount: 1,
+        securityGroups: [this.sentinelSecurityGroup],
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        },
+        serviceName: `sentinel-${i}`,
+      });
+    }
   }
 }
