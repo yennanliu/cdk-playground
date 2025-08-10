@@ -101,7 +101,7 @@ export class RedisSentinel2Stack extends Stack {
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'redis',
         logGroup: new logs.LogGroup(this, 'RedisLogGroup', {
-          logGroupName: '/ecs/redis-sentinel/redis',
+          logGroupName: `/ecs/redis-sentinel-v2/redis-${Date.now()}`,
         }),
       }),
       command: [
@@ -128,8 +128,8 @@ export class RedisSentinel2Stack extends Stack {
 
   private createSentinelServices(): void {
     const sentinelTaskDefinition = new ecs.FargateTaskDefinition(this, 'SentinelTaskDefinition', {
-      memoryLimitMiB: 256,
-      cpu: 128,
+      memoryLimitMiB: 512,
+      cpu: 256,
     });
 
     sentinelTaskDefinition.addContainer('sentinel', {
@@ -143,7 +143,7 @@ export class RedisSentinel2Stack extends Stack {
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'sentinel',
         logGroup: new logs.LogGroup(this, 'SentinelLogGroup', {
-          logGroupName: '/ecs/redis-sentinel/sentinel',
+          logGroupName: `/ecs/redis-sentinel-v2/sentinel-${Date.now()}`,
         }),
       }),
       command: [
