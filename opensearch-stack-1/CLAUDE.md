@@ -58,7 +58,10 @@ The application uses a stage-based configuration system:
 - **stage**: Environment identifier (dev/prod)
 - **openSearch**: Domain configuration (instance types, node counts, EBS settings)
 - **network**: VPC settings (optional, can reuse existing or create new)
-- **logs**: CloudWatch log group configurations for EKS and Pod logs
+- **logs**: Service-based log configuration with backward compatibility
+  - **services**: Object containing service-specific configurations (eks, pod, database, kafka, etc.)
+    - Each service has: `logGroupName`, `indexName`, `processorType`, `enabled`
+  - **Backward compatibility**: Legacy `eksLogGroupName` and `podLogGroupName` still supported
 
 ### Data Flow
 
@@ -73,10 +76,24 @@ The system includes Lambda functions for:
 - **Role Mapper**: Configures OpenSearch security roles
 - **Index Manager**: Manages OpenSearch indices and templates
 
+## Recent Changes (Phase 1 Refactoring)
+
+**Service-Based Architecture**: The codebase has been refactored to support multiple service types:
+
+- **New Configuration Structure**: Services are now defined in a `services` object with per-service configuration
+- **Backward Compatibility**: Legacy `eksLogGroupName`/`podLogGroupName` still work alongside new structure
+- **Enhanced KinesisFirehoseStack**: Now service-agnostic with configurable processor types and filter patterns
+- **Improved StackComposer**: Dynamically creates Firehose stacks based on service configuration
+- **Service-Specific Processing**: Different Lambda processors and filter patterns per service type
+
+**Ready for Extension**: The architecture now easily supports adding database logs, Kafka logs, application logs, and other services without code changes - just configuration updates.
+
 ## Important Notes
 
 - DON'T save compiled .js or .d.ts files in lib/ - CDK handles compilation during deployment
-- The application supports both single log group and multiple log group configurations
+- The application supports both legacy single service and new multi-service configurations
 - Network stack is optional - OpenSearch can deploy in default VPC or custom VPC
 - Each Firehose stack creates separate S3 buckets for backup storage
 - Configuration validation ensures type safety and proper AWS resource parameters
+- Service names must start with letters and contain only letters, numbers, hyphens, and underscores
+- Index names must be lowercase following the same pattern

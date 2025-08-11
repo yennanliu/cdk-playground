@@ -4,7 +4,7 @@ import { ConfigParser } from "./parser";
 import * as devDefaults from "./dev.json";
 import * as prodDefaults from "./prod.json";
 
-export { StackConfiguration, ParsedOpenSearchConfig } from "./types";
+export { StackConfiguration, ParsedOpenSearchConfig, ServiceLogConfig, LogConfig } from "./types";
 export { ConfigValidator } from "./validator";
 
 export class ConfigManager {

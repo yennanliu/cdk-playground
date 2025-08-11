@@ -13,7 +13,11 @@ export interface KinesisFirehoseStackProps extends StackPropsExt {
     readonly opensearchDomain: opensearch.Domain;
     readonly opensearchIndex: string;
     readonly opensearchStackName: string;
-    readonly eksLogGroupName?: string;  // Optional EKS log group name for subscription filter
+    readonly serviceLogGroupName?: string;  // Service log group name for subscription filter
+    readonly serviceName?: string;  // Service identifier (eks, pod, database, etc.)
+    readonly processorType?: string;  // Processor type for Lambda function
+    // Backward compatibility
+    readonly eksLogGroupName?: string;  // Deprecated: use serviceLogGroupName instead
 }
 
 export class KinesisFirehoseStack extends Stack {
@@ -33,12 +37,13 @@ export class KinesisFirehoseStack extends Stack {
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
 
-        // Create Lambda function for processing CloudWatch Logs data based on index type
+        // Create Lambda function for processing CloudWatch Logs data
         let processorLambda: lambda.Function | undefined;
-        if (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') {
-            // Determine lambda directory and processing type based on index name
-            const processingType = props.opensearchIndex === 'eks-logs' ? 'eks' : 'pod';
-            const lambdaPath = props.opensearchIndex === 'eks-logs' ? 'lambda/firehose-processor' : 'lambda/pod-logs-processor';
+        const processingType = this.determineProcessingType(props);
+        const logGroupName = props.serviceLogGroupName || props.eksLogGroupName;
+        
+        if (processingType && this.shouldCreateProcessor(processingType)) {
+            const lambdaPath = this.getLambdaPath(processingType);
             
             processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
                 runtime: lambda.Runtime.NODEJS_18_X,
@@ -49,7 +54,8 @@ export class KinesisFirehoseStack extends Stack {
                 description: `${processingType.toUpperCase()} logs processor for CloudWatch Logs data to Firehose`,
                 environment: {
                     PROCESSING_TYPE: processingType,
-                    LOG_TYPE: processingType
+                    LOG_TYPE: processingType,
+                    SERVICE_NAME: props.serviceName || processingType
                 }
             });
 
@@ -77,39 +83,7 @@ export class KinesisFirehoseStack extends Stack {
                     logGroupName: `/aws/kinesisfirehose/${domainName}-${props.opensearchIndex}-${uniqueSuffix}`,
                     logStreamName: `${domainName}-${props.opensearchIndex}-Delivery`
                 },
-                processingConfiguration: (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') && processorLambda ? {
-                    enabled: true,
-                    processors: [
-                        {
-                            type: 'Lambda',
-                            parameters: [
-                                {
-                                    parameterName: 'LambdaArn',
-                                    parameterValue: processorLambda.functionArn
-                                }
-                            ]
-                        }
-                    ]
-                } : (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') ? {
-                    enabled: false  // Fallback: disable processing if Lambda not created
-                } : {
-                    enabled: true,
-                    processors: [
-                        {
-                            type: 'MetadataExtraction',
-                            parameters: [
-                                {
-                                    parameterName: 'MetadataExtractionQuery',
-                                    parameterValue: '{symbol: .TICKER_SYMBOL, sector: .SECTOR, price_change: .CHANGE, current_price: .PRICE, timestamp: now}'
-                                },
-                                {
-                                    parameterName: 'JsonParsingEngine',
-                                    parameterValue: 'JQ-1.6'
-                                }
-                            ]
-                        }
-                    ]
-                },
+                processingConfiguration: this.getProcessingConfiguration(processorLambda, processingType),
                 s3BackupMode: 'FailedDocumentsOnly',  // Only backup failed deliveries
                 s3Configuration: {
                     bucketArn: backupBucket.bucketArn,
@@ -132,8 +106,8 @@ export class KinesisFirehoseStack extends Stack {
             retention: logs.RetentionDays.ONE_WEEK,
         });
 
-        // Create CloudWatch Logs destination for easier management (for eks-logs and pod-logs)
-        if (props.opensearchIndex === 'eks-logs' || props.opensearchIndex === 'pod-logs') {
+        // Create CloudWatch Logs destination and subscription filter
+        if (logGroupName && this.shouldCreateSubscriptionFilter(processingType)) {
             // Import the CloudWatch Logs role ARN from the OpenSearch stack
             const cloudwatchLogsRoleArn = Fn.importValue(`${props.opensearchStackName}-CloudWatchLogsRoleArn`);
             
@@ -158,24 +132,120 @@ export class KinesisFirehoseStack extends Stack {
             // Ensure destination is created after the delivery stream
             logsDestination.addDependency(deliveryStream);
 
-            // Add CloudWatch Logs subscription filter for EKS logs (if specified)
-            if (props.eksLogGroupName) {
+            // Add CloudWatch Logs subscription filter
+            if (logGroupName) {
                 try {
-                    // Create subscription filter to send EKS logs to Firehose
+                    // Create subscription filter to send logs to Firehose
                     const subscriptionFilter = new logs.CfnSubscriptionFilter(this, `${this.stackName}-LogsSubscriptionFilter`, {
-                        logGroupName: props.eksLogGroupName,
+                        logGroupName: logGroupName,
                         destinationArn: deliveryStream.attrArn,
                         roleArn: cloudwatchLogsRoleArn,
-                        filterPattern: '', // Empty filter pattern means all log events
+                        filterPattern: this.getFilterPattern(processingType), 
                         filterName: `${domainName}-${props.opensearchIndex}-${uniqueSuffix}-filter`
                     });
 
                     // Ensure the subscription filter is created after the delivery stream
                     subscriptionFilter.addDependency(deliveryStream);
                 } catch (error) {
-                    console.warn(`Could not create subscription filter for log group ${props.eksLogGroupName}: ${error}`);
+                    console.warn(`Could not create subscription filter for log group ${logGroupName}: ${error}`);
                 }
             }
         }
+    }
+
+    private determineProcessingType(props: KinesisFirehoseStackProps): string | undefined {
+        // Use explicit processorType if provided
+        if (props.processorType) {
+            return props.processorType;
+        }
+
+        // Determine from service name if provided
+        if (props.serviceName) {
+            return props.serviceName;
+        }
+
+        // Backward compatibility: determine from index name
+        if (props.opensearchIndex === 'eks-logs') {
+            return 'eks';
+        }
+        if (props.opensearchIndex === 'pod-logs') {
+            return 'pod';
+        }
+
+        // Default for unknown services
+        return undefined;
+    }
+
+    private shouldCreateProcessor(processingType: string): boolean {
+        // Define which processing types need Lambda processors
+        const typesNeedingProcessors = ['eks', 'pod', 'database', 'kafka', 'application'];
+        return typesNeedingProcessors.includes(processingType);
+    }
+
+    private getLambdaPath(processingType: string): string {
+        // Define Lambda paths for different processing types
+        const lambdaPaths: { [key: string]: string } = {
+            'eks': 'lambda/firehose-processor',
+            'pod': 'lambda/pod-logs-processor',
+            'database': 'lambda/unified-processor',
+            'kafka': 'lambda/unified-processor', 
+            'application': 'lambda/unified-processor'
+        };
+        
+        return lambdaPaths[processingType] || 'lambda/unified-processor';
+    }
+
+    private shouldCreateSubscriptionFilter(processingType?: string): boolean {
+        // Define which processing types need subscription filters
+        const typesNeedingSubscriptions = ['eks', 'pod', 'database', 'kafka', 'application'];
+        return processingType ? typesNeedingSubscriptions.includes(processingType) : false;
+    }
+
+    private getFilterPattern(processingType?: string): string {
+        // Define filter patterns for different processing types
+        const filterPatterns: { [key: string]: string } = {
+            'eks': '',  // All EKS logs
+            'pod': '',  // All Pod logs
+            'database': '[timestamp, request_id, level="ERROR" || level="WARN" || level="INFO"]', // Database logs
+            'kafka': '[timestamp, level, logger, ...rest]',  // Kafka logs
+            'application': ''  // All application logs
+        };
+        
+        return processingType ? (filterPatterns[processingType] || '') : '';
+    }
+
+    private getProcessingConfiguration(processorLambda: lambda.Function | undefined, processingType?: string): any {
+        if (processorLambda) {
+            return {
+                enabled: true,
+                processors: [{
+                    type: 'Lambda',
+                    parameters: [{
+                        parameterName: 'LambdaArn',
+                        parameterValue: processorLambda.functionArn
+                    }]
+                }]
+            };
+        }
+
+        if (this.shouldCreateProcessor(processingType || '')) {
+            // Fallback: disable processing if Lambda should exist but wasn't created
+            return { enabled: false };
+        }
+
+        // Default processing for services that don't need custom Lambda
+        return {
+            enabled: true,
+            processors: [{
+                type: 'MetadataExtraction',
+                parameters: [{
+                    parameterName: 'MetadataExtractionQuery',
+                    parameterValue: '{timestamp: now, service_type: "' + (processingType || 'unknown') + '"}'
+                }, {
+                    parameterName: 'JsonParsingEngine',
+                    parameterValue: 'JQ-1.6'
+                }]
+            }]
+        };
     }
 }

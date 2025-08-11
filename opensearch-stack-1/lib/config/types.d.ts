@@ -22,7 +22,16 @@ export interface NetworkConfig {
     readonly vpcSecurityGroupIds?: string[];
     readonly availabilityZoneCount: number;
 }
+export interface ServiceLogConfig {
+    readonly logGroupName: string;
+    readonly indexName: string;
+    readonly processorType?: string;
+    readonly enabled?: boolean;
+}
 export interface LogConfig {
+    readonly services: {
+        readonly [serviceName: string]: ServiceLogConfig;
+    };
     readonly eksLogGroupName?: string;
     readonly podLogGroupName?: string;
 }
@@ -35,6 +44,12 @@ export interface StackConfiguration {
 export interface ParsedOpenSearchConfig extends Omit<OpenSearchConfig, 'engineVersion' | 'ebsVolumeType'> {
     readonly version: EngineVersion;
     readonly ebsVolumeType?: EbsDeviceVolumeType;
+}
+export interface RawServiceLogConfig {
+    readonly logGroupName?: string;
+    readonly indexName?: string;
+    readonly processorType?: string;
+    readonly enabled?: boolean;
 }
 export interface RawConfigDefaults {
     readonly domainName?: string;
@@ -54,6 +69,9 @@ export interface RawConfigDefaults {
     readonly vpcSubnetIds?: string[];
     readonly vpcSecurityGroupIds?: string[];
     readonly availabilityZoneCount?: number;
+    readonly services?: {
+        readonly [serviceName: string]: RawServiceLogConfig;
+    };
     readonly eksLogGroupName?: string;
     readonly podLogGroupName?: string;
 }

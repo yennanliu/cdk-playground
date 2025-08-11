@@ -6,4 +6,5 @@ export declare class ConfigValidator {
     validateEngineVersion(engineVersion: string): EngineVersion;
     validateEbsVolumeType(ebsVolumeTypeName?: string): EbsDeviceVolumeType | undefined;
     validateAndTransformConfig(config: StackConfiguration): ParsedOpenSearchConfig;
+    private validateServices;
 }

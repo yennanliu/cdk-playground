@@ -16,6 +16,20 @@
     "vpcSubnetIds": [],
     "vpcSecurityGroupIds": [],
     "availabilityZoneCount": 3,
+    "services": {
+        "eks": {
+            "logGroupName": "/aws/eks/prod-cluster/cluster",
+            "indexName": "eks-logs",
+            "processorType": "eks",
+            "enabled": true
+        },
+        "pod": {
+            "logGroupName": "/aws/containerinsights/prod-cluster/application",
+            "indexName": "pod-logs", 
+            "processorType": "pod",
+            "enabled": true
+        }
+    },
     "eksLogGroupName": "/aws/eks/prod-cluster/application",
     "podLogGroupName": "/aws/containerinsights/prod-cluster/application"
 }

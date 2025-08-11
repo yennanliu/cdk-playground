@@ -3,7 +3,7 @@ import {Stack, StackProps} from "aws-cdk-lib";
 import {OpenSearchDomainStack} from "./opensearch-domain-stack";
 import {NetworkStack} from "./network-stack";
 import {KinesisFirehoseStack} from "./kinesis-firehose-stack";
-import {ConfigManager, StackConfiguration, ParsedOpenSearchConfig} from "./config";
+import {ConfigManager, StackConfiguration, ParsedOpenSearchConfig, ServiceLogConfig} from "./config";
 import {ConfigValidator} from "./config/validator";
 
 export interface StackPropsExt extends StackProps {
@@ -57,32 +57,88 @@ export class StackComposer {
         })
         this.stacks.push(opensearchStack)
 
-        // Create EKS logs Firehose stack if EKS log group is configured
-        if (config.logs.eksLogGroupName) {
-            const eksFirehoseStack = new KinesisFirehoseStack(scope, 'kinesisFirehoseEksStack', {
-                opensearchDomain: opensearchStack.domain,
-                opensearchIndex: 'eks-logs',
-                opensearchStackName: opensearchStack.stackName,
-                eksLogGroupName: config.logs.eksLogGroupName,
-                stackName: `KinesisFirehoseEKSCDKStack-${parsedConfig.domainName}`,
-                description: "This stack contains Kinesis Data Firehose delivery streams for EKS logs",
-                ...props,
-            })
-            this.stacks.push(eksFirehoseStack)
+        // Create service-specific Firehose stacks
+        this.createServiceFirehoseStacks(scope, config, opensearchStack, parsedConfig, props);
+    }
+
+    private createServiceFirehoseStacks(
+        scope: Construct, 
+        config: StackConfiguration, 
+        opensearchStack: OpenSearchDomainStack, 
+        parsedConfig: ParsedOpenSearchConfig, 
+        props: StackPropsExt
+    ): void {
+        // Handle new service-based configuration
+        if (config.logs.services) {
+            Object.entries(config.logs.services).forEach(([serviceName, serviceConfig]) => {
+                if (serviceConfig.enabled !== false) {
+                    this.createFirehoseStack(
+                        scope,
+                        serviceName,
+                        serviceConfig,
+                        opensearchStack,
+                        parsedConfig.domainName,
+                        props
+                    );
+                }
+            });
         }
 
-        // Create Pod logs Firehose stack if Pod log group is configured  
-        if (config.logs.podLogGroupName) {
-            const podFirehoseStack = new KinesisFirehoseStack(scope, 'kinesisFirehosePodStack', {
-                opensearchDomain: opensearchStack.domain,
-                opensearchIndex: 'pod-logs',
-                opensearchStackName: opensearchStack.stackName,
-                eksLogGroupName: config.logs.podLogGroupName, // Reuse the same parameter name but for pod logs
-                stackName: `KinesisFirehosePodCDKStack-${parsedConfig.domainName}`,
-                description: "This stack contains Kinesis Data Firehose delivery streams for Pod logs",
-                ...props,
-            })
-            this.stacks.push(podFirehoseStack)
+        // Backward compatibility: Handle legacy EKS and Pod configurations
+        if (config.logs.eksLogGroupName) {
+            this.createFirehoseStack(
+                scope,
+                'eks',
+                {
+                    logGroupName: config.logs.eksLogGroupName,
+                    indexName: 'eks-logs',
+                    processorType: 'eks'
+                },
+                opensearchStack,
+                parsedConfig.domainName,
+                props
+            );
         }
+
+        if (config.logs.podLogGroupName) {
+            this.createFirehoseStack(
+                scope,
+                'pod',
+                {
+                    logGroupName: config.logs.podLogGroupName,
+                    indexName: 'pod-logs',
+                    processorType: 'pod'
+                },
+                opensearchStack,
+                parsedConfig.domainName,
+                props
+            );
+        }
+    }
+
+    private createFirehoseStack(
+        scope: Construct,
+        serviceName: string,
+        serviceConfig: ServiceLogConfig,
+        opensearchStack: OpenSearchDomainStack,
+        domainName: string,
+        props: StackPropsExt
+    ): void {
+        const firehoseStack = new KinesisFirehoseStack(scope, `kinesisFirehose${this.capitalizeFirst(serviceName)}Stack`, {
+            opensearchDomain: opensearchStack.domain,
+            opensearchIndex: serviceConfig.indexName,
+            opensearchStackName: opensearchStack.stackName,
+            serviceLogGroupName: serviceConfig.logGroupName,
+            serviceName: serviceName,
+            processorType: serviceConfig.processorType,
+            stackName: `KinesisFirehose${this.capitalizeFirst(serviceName)}CDKStack-${domainName}`,
+            description: `This stack contains Kinesis Data Firehose delivery streams for ${serviceName} logs`,
+            ...props,
+        });
+        this.stacks.push(firehoseStack);
+    }
+
+    private capitalizeFirst(str: string): string {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 }

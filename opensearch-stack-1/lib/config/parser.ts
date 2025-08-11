@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { RawConfigDefaults, StackConfiguration } from "./types";
+import { RawConfigDefaults, StackConfiguration, ServiceLogConfig, RawServiceLogConfig } from "./types";
 import { ConfigValidator } from "./validator";
 
 export class ConfigParser {
@@ -26,6 +26,7 @@ export class ConfigParser {
         const availabilityZoneCount = this.getContextForType(scope, 'availabilityZoneCount', 'number', defaults);
         const eksLogGroupName = this.getContextForType(scope, 'eksLogGroupName', 'string', defaults);
         const podLogGroupName = this.getContextForType(scope, 'podLogGroupName', 'string', defaults);
+        const services = this.getContextForType(scope, 'services', 'object', defaults);
 
         validator.validateRequired(domainName, 'domainName');
         validator.validateEngineVersion(engineVersion);
@@ -55,6 +56,8 @@ export class ConfigParser {
                 availabilityZoneCount: availabilityZoneCount || 1,
             },
             logs: {
+                services: this.parseServices(services, defaults.services),
+                // Backward compatibility
                 eksLogGroupName,
                 podLogGroupName,
             },
@@ -104,5 +107,40 @@ export class ConfigParser {
         }
 
         return option;
+    }
+
+    private static parseServices(contextServices: any, defaultServices?: { [key: string]: RawServiceLogConfig }): { [key: string]: ServiceLogConfig } {
+        const services: { [key: string]: ServiceLogConfig } = {};
+        
+        // Parse services from context
+        if (contextServices && typeof contextServices === 'object') {
+            Object.entries(contextServices).forEach(([serviceName, serviceConfig]) => {
+                if (typeof serviceConfig === 'object' && serviceConfig !== null) {
+                    const config = serviceConfig as any;
+                    services[serviceName] = {
+                        logGroupName: config.logGroupName || '',
+                        indexName: config.indexName || `${serviceName}-logs`,
+                        processorType: config.processorType || serviceName,
+                        enabled: config.enabled !== false
+                    };
+                }
+            });
+        }
+
+        // Merge with default services
+        if (defaultServices) {
+            Object.entries(defaultServices).forEach(([serviceName, defaultConfig]) => {
+                if (!services[serviceName] && defaultConfig.logGroupName) {
+                    services[serviceName] = {
+                        logGroupName: defaultConfig.logGroupName,
+                        indexName: defaultConfig.indexName || `${serviceName}-logs`,
+                        processorType: defaultConfig.processorType || serviceName,
+                        enabled: defaultConfig.enabled !== false
+                    };
+                }
+            });
+        }
+
+        return services;
     }
 }

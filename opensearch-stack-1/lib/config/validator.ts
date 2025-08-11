@@ -1,6 +1,6 @@
 import { EngineVersion } from "aws-cdk-lib/aws-opensearchservice";
 import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
-import { ParsedOpenSearchConfig, StackConfiguration } from "./types";
+import { ParsedOpenSearchConfig, StackConfiguration, ServiceLogConfig } from "./types";
 
 export class ConfigValidator {
     
@@ -72,10 +72,44 @@ export class ConfigValidator {
             throw new Error(`Availability zone count must be greater than 0. Received: ${config.openSearch.availabilityZoneCount}`);
         }
 
+        // Validate service configurations
+        this.validateServices(config.logs.services);
+
         return {
             ...config.openSearch,
             version,
             ebsVolumeType,
         };
+    }
+
+    private validateServices(services?: { [key: string]: ServiceLogConfig }): void {
+        if (!services) {
+            return;
+        }
+
+        Object.entries(services).forEach(([serviceName, serviceConfig]) => {
+            if (!serviceConfig.logGroupName) {
+                throw new Error(`Service '${serviceName}' must have a logGroupName specified`);
+            }
+
+            if (!serviceConfig.indexName) {
+                throw new Error(`Service '${serviceName}' must have an indexName specified`);
+            }
+
+            // Validate service name format
+            if (!/^[a-zA-Z][a-zA-Z0-9-_]*$/.test(serviceName)) {
+                throw new Error(`Service name '${serviceName}' must start with a letter and contain only letters, numbers, hyphens, and underscores`);
+            }
+
+            // Validate index name format
+            if (!/^[a-z][a-z0-9-_]*$/.test(serviceConfig.indexName)) {
+                throw new Error(`Index name '${serviceConfig.indexName}' for service '${serviceName}' must be lowercase and contain only letters, numbers, hyphens, and underscores`);
+            }
+
+            // Validate log group name format
+            if (!serviceConfig.logGroupName.startsWith('/')) {
+                throw new Error(`Log group name '${serviceConfig.logGroupName}' for service '${serviceName}' must start with '/'`);
+            }
+        });
     }
 }
