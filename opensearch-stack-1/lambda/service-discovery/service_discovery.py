@@ -114,6 +114,17 @@ def handle_cloudtrail_event(event: Dict[str, Any]) -> Dict[str, Any]:
     Handle CloudTrail event for new log group creation.
     """
     detail = event['detail']
+    
+    # Check if requestParameters exists and contains logGroupName
+    if not detail.get('requestParameters') or not detail['requestParameters'].get('logGroupName'):
+        logger.warning("CloudTrail event has no requestParameters or logGroupName - likely a failed API call")
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'message': 'Skipped CloudTrail event with missing requestParameters'
+            })
+        }
+    
     log_group_name = detail['requestParameters']['logGroupName']
     
     logger.info(f"Processing new log group: {log_group_name}")

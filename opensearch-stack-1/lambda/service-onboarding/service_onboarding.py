@@ -205,6 +205,8 @@ def validate_service_configuration(service_info: Dict[str, Any],
         errors.append("Log group name must start with '/'")
     
     # Check for conflicts with existing services
+    # Note: We only check for conflicts with services in 'onboarded' status
+    # Services in 'onboarding_in_progress' are allowed since this could be the same onboarding process
     try:
         response = table.get_item(
             Key={
@@ -215,8 +217,9 @@ def validate_service_configuration(service_info: Dict[str, Any],
         
         if 'Item' in response:
             existing_service = response['Item']
-            if existing_service['status'] in ['onboarded', 'onboarding_in_progress']:
-                errors.append(f"Service {service_info['service_name']} already exists or is being onboarded")
+            # Only consider it a conflict if the service is fully onboarded
+            if existing_service['status'] == 'onboarded':
+                errors.append(f"Service {service_info['service_name']} is already onboarded")
     
     except Exception as e:
         logger.warning(f"Error checking for existing service: {str(e)}")
