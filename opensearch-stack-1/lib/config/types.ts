@@ -36,9 +36,6 @@ export interface LogConfig {
     readonly services: {
         readonly [serviceName: string]: ServiceLogConfig;
     };
-    // Backward compatibility - will be deprecated
-    readonly eksLogGroupName?: string;
-    readonly podLogGroupName?: string;
 }
 
 export interface StackConfiguration {
@@ -81,7 +78,4 @@ export interface RawConfigDefaults {
     readonly services?: {
         readonly [serviceName: string]: RawServiceLogConfig;
     };
-    // Backward compatibility - will be deprecated
-    readonly eksLogGroupName?: string;
-    readonly podLogGroupName?: string;
 }

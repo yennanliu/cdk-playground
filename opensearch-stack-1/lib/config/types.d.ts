@@ -32,8 +32,6 @@ export interface LogConfig {
     readonly services: {
         readonly [serviceName: string]: ServiceLogConfig;
     };
-    readonly eksLogGroupName?: string;
-    readonly podLogGroupName?: string;
 }
 export interface StackConfiguration {
     readonly openSearch: OpenSearchConfig;
@@ -72,6 +70,4 @@ export interface RawConfigDefaults {
     readonly services?: {
         readonly [serviceName: string]: RawServiceLogConfig;
     };
-    readonly eksLogGroupName?: string;
-    readonly podLogGroupName?: string;
 }

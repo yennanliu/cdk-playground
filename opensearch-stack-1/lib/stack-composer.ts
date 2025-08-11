@@ -3,11 +3,17 @@ import {Stack, StackProps} from "aws-cdk-lib";
 import {OpenSearchDomainStack} from "./opensearch-domain-stack";
 import {NetworkStack} from "./network-stack";
 import {KinesisFirehoseStack} from "./kinesis-firehose-stack";
+import {ServiceDiscoveryStack} from "./automation/service-discovery-stack";
+import {ServiceApiStack} from "./automation/service-api-stack";
+import {MonitoringStack} from "./automation/monitoring-stack";
 import {ConfigManager, StackConfiguration, ParsedOpenSearchConfig, ServiceLogConfig} from "./config";
 import {ConfigValidator} from "./config/validator";
 
 export interface StackPropsExt extends StackProps {
-    readonly stage: string
+    readonly stage: string;
+    readonly enableAutomation?: boolean;  // Enable service discovery and automation
+    readonly notificationEmail?: string;  // Email for alerts
+    readonly slackWebhook?: string;       // Slack webhook for notifications
 }
 
 export class StackComposer {
@@ -59,6 +65,11 @@ export class StackComposer {
 
         // Create service-specific Firehose stacks
         this.createServiceFirehoseStacks(scope, config, opensearchStack, parsedConfig, props);
+        
+        // Create automation stacks if enabled
+        if (props.enableAutomation !== false) {
+            this.createAutomationStacks(scope, opensearchStack, parsedConfig, props);
+        }
     }
 
     private createServiceFirehoseStacks(
@@ -68,7 +79,7 @@ export class StackComposer {
         parsedConfig: ParsedOpenSearchConfig, 
         props: StackPropsExt
     ): void {
-        // Handle new service-based configuration
+        // Create Firehose stacks for all configured services
         if (config.logs.services) {
             Object.entries(config.logs.services).forEach(([serviceName, serviceConfig]) => {
                 if (serviceConfig.enabled !== false) {
@@ -82,37 +93,6 @@ export class StackComposer {
                     );
                 }
             });
-        }
-
-        // Backward compatibility: Handle legacy EKS and Pod configurations
-        if (config.logs.eksLogGroupName) {
-            this.createFirehoseStack(
-                scope,
-                'eks',
-                {
-                    logGroupName: config.logs.eksLogGroupName,
-                    indexName: 'eks-logs',
-                    processorType: 'eks'
-                },
-                opensearchStack,
-                parsedConfig.domainName,
-                props
-            );
-        }
-
-        if (config.logs.podLogGroupName) {
-            this.createFirehoseStack(
-                scope,
-                'pod',
-                {
-                    logGroupName: config.logs.podLogGroupName,
-                    indexName: 'pod-logs',
-                    processorType: 'pod'
-                },
-                opensearchStack,
-                parsedConfig.domainName,
-                props
-            );
         }
     }
 
@@ -140,5 +120,45 @@ export class StackComposer {
 
     private capitalizeFirst(str: string): string {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    private createAutomationStacks(
+        scope: Construct, 
+        opensearchStack: OpenSearchDomainStack, 
+        parsedConfig: ParsedOpenSearchConfig, 
+        props: StackPropsExt
+    ): void {
+        // Create service discovery and automation stack
+        const serviceDiscoveryStack = new ServiceDiscoveryStack(scope, 'serviceDiscoveryStack', {
+            opensearchDomainName: parsedConfig.domainName,
+            stackName: `OpenSearchServiceDiscoveryCDKStack-${parsedConfig.domainName}`,
+            description: "This stack contains service discovery and onboarding automation for OpenSearch logging",
+            ...props,
+        });
+        this.stacks.push(serviceDiscoveryStack);
+
+        // Create self-service API stack
+        const serviceApiStack = new ServiceApiStack(scope, 'serviceApiStack', {
+            serviceRegistry: serviceDiscoveryStack.serviceRegistry,
+            onboardingQueue: serviceDiscoveryStack.onboardingQueue,
+            opensearchDomainName: parsedConfig.domainName,
+            stackName: `OpenSearchServiceAPICDKStack-${parsedConfig.domainName}`,
+            description: "This stack contains the self-service API for OpenSearch service management",
+            ...props,
+        });
+        this.stacks.push(serviceApiStack);
+
+        // Create monitoring stack
+        const monitoringStack = new MonitoringStack(scope, 'monitoringStack', {
+            serviceRegistry: serviceDiscoveryStack.serviceRegistry,
+            onboardingQueue: serviceDiscoveryStack.onboardingQueue,
+            opensearchDomainName: parsedConfig.domainName,
+            notificationEmail: props.notificationEmail,
+            slackWebhook: props.slackWebhook,
+            stackName: `OpenSearchMonitoringCDKStack-${parsedConfig.domainName}`,
+            description: "This stack contains monitoring and alerting for OpenSearch service management",
+            ...props,
+        });
+        this.stacks.push(monitoringStack);
     }
 }

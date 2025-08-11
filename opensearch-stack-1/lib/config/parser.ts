@@ -24,8 +24,6 @@ export class ConfigParser {
         const vpcSubnetIds = this.getContextForType(scope, 'vpcSubnetIds', 'object', defaults);
         const vpcSecurityGroupIds = this.getContextForType(scope, 'vpcSecurityGroupIds', 'object', defaults);
         const availabilityZoneCount = this.getContextForType(scope, 'availabilityZoneCount', 'number', defaults);
-        const eksLogGroupName = this.getContextForType(scope, 'eksLogGroupName', 'string', defaults);
-        const podLogGroupName = this.getContextForType(scope, 'podLogGroupName', 'string', defaults);
         const services = this.getContextForType(scope, 'services', 'object', defaults);
 
         validator.validateRequired(domainName, 'domainName');
@@ -57,9 +55,6 @@ export class ConfigParser {
             },
             logs: {
                 services: this.parseServices(services, defaults.services),
-                // Backward compatibility
-                eksLogGroupName,
-                podLogGroupName,
             },
             stage,
         };

@@ -29,7 +29,5 @@
             "processorType": "pod",
             "enabled": true
         }
-    },
-    "eksLogGroupName": "/aws/eks/prod-cluster/application",
-    "podLogGroupName": "/aws/containerinsights/prod-cluster/application"
+    }
 }

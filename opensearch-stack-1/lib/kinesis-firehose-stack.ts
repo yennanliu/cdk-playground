@@ -16,8 +16,6 @@ export interface KinesisFirehoseStackProps extends StackPropsExt {
     readonly serviceLogGroupName?: string;  // Service log group name for subscription filter
     readonly serviceName?: string;  // Service identifier (eks, pod, database, etc.)
     readonly processorType?: string;  // Processor type for Lambda function
-    // Backward compatibility
-    readonly eksLogGroupName?: string;  // Deprecated: use serviceLogGroupName instead
 }
 
 export class KinesisFirehoseStack extends Stack {
@@ -40,7 +38,7 @@ export class KinesisFirehoseStack extends Stack {
         // Create Lambda function for processing CloudWatch Logs data
         let processorLambda: lambda.Function | undefined;
         const processingType = this.determineProcessingType(props);
-        const logGroupName = props.serviceLogGroupName || props.eksLogGroupName;
+        const logGroupName = props.serviceLogGroupName;
         
         if (processingType && this.shouldCreateProcessor(processingType)) {
             const lambdaPath = this.getLambdaPath(processingType);
