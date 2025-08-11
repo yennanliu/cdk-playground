@@ -116,16 +116,7 @@ export class MonitoringStack extends Stack {
         // Create CloudWatch Dashboard
         this.createDashboard(props);
 
-        // Create Log Groups
-        new logs.LogGroup(this, 'AlertingFunctionLogs', {
-            logGroupName: `/aws/lambda/${this.alertingFunction.functionName}`,
-            retention: logs.RetentionDays.TWO_WEEKS
-        });
-
-        new logs.LogGroup(this, 'HealthCheckFunctionLogs', {
-            logGroupName: `/aws/lambda/${this.healthCheckFunction.functionName}`,
-            retention: logs.RetentionDays.TWO_WEEKS
-        });
+        // Note: CloudWatch Log Groups for Lambda functions are created automatically
     }
 
     private createAlarms(props: MonitoringStackProps): void {

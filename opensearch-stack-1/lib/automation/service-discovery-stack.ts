@@ -198,18 +198,8 @@ export class ServiceDiscoveryStack extends Stack {
             })
         );
 
-        // Create CloudWatch Log Groups for functions
-        new logs.LogGroup(this, 'DiscoveryFunctionLogs', {
-            logGroupName: `/aws/lambda/${this.discoveryFunction.functionName}`,
-            retention: logs.RetentionDays.TWO_WEEKS,
-            removalPolicy: RemovalPolicy.DESTROY
-        });
-
-        new logs.LogGroup(this, 'OnboardingFunctionLogs', {
-            logGroupName: `/aws/lambda/${this.onboardingFunction.functionName}`,
-            retention: logs.RetentionDays.TWO_WEEKS,
-            removalPolicy: RemovalPolicy.DESTROY
-        });
+        // Note: CloudWatch Log Groups for Lambda functions are created automatically
+        // We don't need to explicitly create them to avoid conflicts
 
         // Create service template parameters in SSM
         this.createServiceTemplates(props.stage);

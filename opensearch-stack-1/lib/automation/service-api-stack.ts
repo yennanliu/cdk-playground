@@ -163,19 +163,8 @@ export class ServiceApiStack extends Stack {
             stage: this.api.deploymentStage
         });
 
-        // Create CloudWatch Log Group for API Gateway
-        new logs.LogGroup(this, 'ApiGatewayLogs', {
-            logGroupName: `/aws/apigateway/${this.api.restApiId}`,
-            retention: logs.RetentionDays.TWO_WEEKS,
-            removalPolicy: RemovalPolicy.DESTROY
-        });
-
-        // Create CloudWatch Log Group for Lambda
-        new logs.LogGroup(this, 'ApiHandlerLogs', {
-            logGroupName: `/aws/lambda/${this.apiHandler.functionName}`,
-            retention: logs.RetentionDays.TWO_WEEKS,
-            removalPolicy: RemovalPolicy.DESTROY
-        });
+        // Note: CloudWatch Log Groups are created automatically
+        // API Gateway and Lambda will create their own log groups
     }
 
     private createServiceRequestModel(): apigateway.Model {
