@@ -144,7 +144,10 @@ export class ServiceDiscoveryStack extends Stack {
                 'lambda:UpdateFunction',
                 'lambda:DeleteFunction',
                 's3:CreateBucket',
-                's3:DeleteBucket'
+                's3:DeleteBucket',
+                's3:PutBucketPublicAccessBlock',
+                's3:PutBucketVersioning',
+                's3:PutEncryptionConfiguration'
             ],
             resources: ['*']
         }));

@@ -4,6 +4,8 @@ import os
 import subprocess
 import tempfile
 import shutil
+import hashlib
+import re
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 import logging
@@ -25,6 +27,62 @@ CDK_STACK_NAME = os.environ['CDK_STACK_NAME']
 
 # Service registry table
 table = dynamodb.Table(SERVICE_REGISTRY_TABLE)
+
+def generate_stack_name(service_name: str, domain_name: str) -> str:
+    """
+    Generate a valid CloudFormation stack name from service name and domain.
+    Stack names must:
+    - Be 1-128 characters long
+    - Contain only alphanumeric characters and hyphens
+    - Start with alphabetic character
+    - Not end with hyphen
+    """
+    # Clean the service name: remove underscores, convert to lowercase, limit length
+    clean_service = re.sub(r'[^a-zA-Z0-9]', '', service_name.lower())
+    
+    # Create a short hash of the full service name for uniqueness
+    service_hash = hashlib.md5(service_name.encode()).hexdigest()[:8]
+    
+    # Clean domain name
+    clean_domain = re.sub(r'[^a-zA-Z0-9]', '', domain_name.lower())
+    
+    # Construct stack name with length limit
+    base_name = f"Firehose-{clean_service[:20]}-{service_hash}"
+    
+    # Add domain suffix if there's room (max 128 chars)
+    if len(base_name) + len(clean_domain) + 1 <= 128:
+        stack_name = f"{base_name}-{clean_domain[:20]}"
+    else:
+        stack_name = base_name
+    
+    # Ensure it starts with letter and doesn't end with hyphen
+    if not stack_name[0].isalpha():
+        stack_name = f"S{stack_name}"
+    
+    stack_name = stack_name.rstrip('-')
+    
+    return stack_name
+
+def generate_resource_name(service_name: str, resource_type: str) -> str:
+    """
+    Generate a valid CloudFormation resource name from service name.
+    Resource names must be alphanumeric only.
+    """
+    # Remove all non-alphanumeric characters and capitalize each word
+    clean_name = re.sub(r'[^a-zA-Z0-9]', '', service_name)
+    
+    # Capitalize first letter if it's not already
+    if clean_name and not clean_name[0].isupper():
+        clean_name = clean_name[0].upper() + clean_name[1:]
+    
+    # Limit length to prevent overly long names
+    clean_name = clean_name[:50]  # Leave room for resource type suffix
+    
+    # Ensure it's not empty
+    if not clean_name:
+        clean_name = "Service"
+    
+    return f"{clean_name}{resource_type}"
 
 def handler(event, context):
     """
@@ -256,7 +314,7 @@ def generate_cdk_configuration(service_info: Dict[str, Any],
             }
         },
         'deployment': {
-            'stackName': f"KinesisFirehose{service_name.title()}CDKStack-{OPENSEARCH_DOMAIN}",
+            'stackName': generate_stack_name(service_name, OPENSEARCH_DOMAIN),
             'templateConfig': template_config
         }
     }
@@ -337,12 +395,29 @@ def generate_cloudformation_template(service_name: str, cdk_config: Dict[str, An
     service_config = cdk_config['logs']['services'][service_name]
     template_config = cdk_config['deployment']['templateConfig']
     
+    # Generate valid CloudFormation resource names
+    firehose_resource_name = generate_resource_name(service_name, "FirehoseDeliveryStream")
+    subscription_resource_name = generate_resource_name(service_name, "SubscriptionFilter")
+    backup_bucket_name = generate_resource_name(service_name, "BackupBucket")
+    
     # Simplified CloudFormation template
     template = {
         "AWSTemplateFormatVersion": "2010-09-09",
         "Description": f"OpenSearch logging infrastructure for service: {service_name}",
         "Resources": {
-            f"{service_name}FirehoseDeliveryStream": {
+            backup_bucket_name: {
+                "Type": "AWS::S3::Bucket",
+                "Properties": {
+                    "BucketName": f"opensearch-backup-{service_config['indexName']}-{STAGE}",
+                    "PublicAccessBlockConfiguration": {
+                        "BlockPublicAcls": True,
+                        "BlockPublicPolicy": True,
+                        "IgnorePublicAcls": True,
+                        "RestrictPublicBuckets": True
+                    }
+                }
+            },
+            firehose_resource_name: {
                 "Type": "AWS::KinesisFirehose::DeliveryStream",
                 "Properties": {
                     "DeliveryStreamName": f"{service_config['indexName']}-{OPENSEARCH_DOMAIN}",
@@ -350,31 +425,41 @@ def generate_cloudformation_template(service_name: str, cdk_config: Dict[str, An
                     "AmazonopensearchserviceDestinationConfiguration": {
                         "IndexName": service_config['indexName'],
                         "DomainARN": f"arn:aws:es:{boto3.Session().region_name}:{boto3.client('sts').get_caller_identity()['Account']}:domain/{OPENSEARCH_DOMAIN}",
-                        "RoleARN": f"arn:aws:iam::{boto3.client('sts').get_caller_identity()['Account']}:role/service-role/firehose_delivery_role",
+                        "RoleARN": f"arn:aws:iam::{boto3.client('sts').get_caller_identity()['Account']}:role/OSServiceDomainCDKStack-n-LoggingRolesFirehoseRole1-B33QyhlseWX8",
                         "BufferingHints": {
                             "IntervalInSeconds": template_config.get('bufferInterval', 60),
                             "SizeInMBs": template_config.get('bufferSize', 5)
                         },
                         "RetryOptions": {
                             "DurationInSeconds": template_config.get('retryDuration', 300)
+                        },
+                        "S3BackupMode": "FailedDocumentsOnly",
+                        "S3Configuration": {
+                            "BucketARN": {
+                                "Fn::GetAtt": [backup_bucket_name, "Arn"]
+                            },
+                            "Prefix": f"backup/{service_config['indexName']}/",
+                            "CompressionFormat": "GZIP",
+                            "RoleARN": f"arn:aws:iam::{boto3.client('sts').get_caller_identity()['Account']}:role/OSServiceDomainCDKStack-n-LoggingRolesFirehoseRole1-B33QyhlseWX8"
                         }
                     }
                 }
             },
-            f"{service_name}SubscriptionFilter": {
+            subscription_resource_name: {
                 "Type": "AWS::Logs::SubscriptionFilter",
                 "Properties": {
                     "LogGroupName": service_config['logGroupName'],
                     "FilterPattern": template_config.get('filterPattern', ''),
                     "DestinationArn": {
-                        "Fn::GetAtt": [f"{service_name}FirehoseDeliveryStream", "Arn"]
-                    }
+                        "Fn::GetAtt": [firehose_resource_name, "Arn"]
+                    },
+                    "RoleArn": f"arn:aws:iam::{boto3.client('sts').get_caller_identity()['Account']}:role/OSServiceDomainCDKStack-n-LoggingRolesCloudWatchLog-8JNppvBwUbHR"
                 }
             }
         },
         "Outputs": {
             "DeliveryStreamName": {
-                "Value": {"Ref": f"{service_name}FirehoseDeliveryStream"},
+                "Value": {"Ref": firehose_resource_name},
                 "Description": f"Firehose delivery stream for {service_name}"
             }
         }
