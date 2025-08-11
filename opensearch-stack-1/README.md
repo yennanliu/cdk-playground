@@ -26,6 +26,11 @@ cdk deploy --all --force --stage dev \
     -c eksLogGroupName="/aws/eks/EksCluster3394B24C-ec2cbedced464f24bf3f9d1c4b112048/cluster" \
     -c podLogGroupName="/aws/eks/EksCluster3394B24C-ec2cbedced464f24bf3f9d1c4b112048/application"
 
+
+cdk deploy --all --stage dev \
+      -c domainName="new-opensearch-domain-dev-1" \
+      -c enableAutomation=true \
+      -c notificationEmail="test@google.com"
 ```
 
 ## CDK Architecture
