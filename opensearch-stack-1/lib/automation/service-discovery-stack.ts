@@ -140,6 +140,7 @@ export class ServiceDiscoveryStack extends Stack {
                 'firehose:CreateDeliveryStream',
                 'firehose:UpdateDeliveryStream',
                 'firehose:DeleteDeliveryStream',
+                'firehose:DescribeDeliveryStream',
                 'lambda:CreateFunction',
                 'lambda:UpdateFunction',
                 'lambda:DeleteFunction',
