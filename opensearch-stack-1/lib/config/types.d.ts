@@ -22,9 +22,15 @@ export interface NetworkConfig {
     readonly vpcSecurityGroupIds?: string[];
     readonly availabilityZoneCount: number;
 }
+export interface AppTypeConfig {
+    readonly appType: string;
+    readonly logGroups: string[];
+    readonly transformationModule: string;
+}
 export interface LogConfig {
     readonly eksLogGroupName?: string;
     readonly podLogGroupName?: string;
+    readonly appTypeConfigs: AppTypeConfig[];
 }
 export interface StackConfiguration {
     readonly openSearch: OpenSearchConfig;
@@ -56,4 +62,5 @@ export interface RawConfigDefaults {
     readonly availabilityZoneCount?: number;
     readonly eksLogGroupName?: string;
     readonly podLogGroupName?: string;
+    readonly appTypeConfigs?: AppTypeConfig[];
 }

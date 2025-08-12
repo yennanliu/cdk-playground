@@ -26,10 +26,35 @@ export class ConfigParser {
         const availabilityZoneCount = this.getContextForType(scope, 'availabilityZoneCount', 'number', defaults);
         const eksLogGroupName = this.getContextForType(scope, 'eksLogGroupName', 'string', defaults);
         const podLogGroupName = this.getContextForType(scope, 'podLogGroupName', 'string', defaults);
+        const appTypeConfigs = this.getContextForType(scope, 'appTypeConfigs', 'object', defaults);
 
         validator.validateRequired(domainName, 'domainName');
         validator.validateEngineVersion(engineVersion);
         validator.validateEbsVolumeType(ebsVolumeType);
+
+        // Build appTypeConfigs dynamically from context parameters if not provided explicitly
+        let finalAppTypeConfigs = appTypeConfigs || [];
+        
+        // If appTypeConfigs is empty but we have individual log group names, create configs dynamically
+        if ((!finalAppTypeConfigs || finalAppTypeConfigs.length === 0) && (eksLogGroupName || podLogGroupName)) {
+            finalAppTypeConfigs = [];
+            
+            if (eksLogGroupName) {
+                finalAppTypeConfigs.push({
+                    appType: 'eks_app',
+                    logGroups: [eksLogGroupName],
+                    transformationModule: 'eks-processor'
+                });
+            }
+            
+            if (podLogGroupName) {
+                finalAppTypeConfigs.push({
+                    appType: 'pod_app',
+                    logGroups: [podLogGroupName],
+                    transformationModule: 'pod-processor'
+                });
+            }
+        }
 
         return {
             openSearch: {
@@ -57,6 +82,7 @@ export class ConfigParser {
             logs: {
                 eksLogGroupName,
                 podLogGroupName,
+                appTypeConfigs: finalAppTypeConfigs,
             },
             stage,
         };

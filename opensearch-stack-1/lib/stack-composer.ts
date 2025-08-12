@@ -2,7 +2,7 @@ import {Construct} from "constructs";
 import {Stack, StackProps} from "aws-cdk-lib";
 import {OpenSearchDomainStack} from "./opensearch-domain-stack";
 import {NetworkStack} from "./network-stack";
-import {KinesisFirehoseStack} from "./kinesis-firehose-stack";
+import {KinesisFirehoseAppStack} from "./kinesis-firehose-app-stack";
 import {ConfigManager, StackConfiguration, ParsedOpenSearchConfig} from "./config";
 import {ConfigValidator} from "./config/validator";
 
@@ -57,32 +57,23 @@ export class StackComposer {
         })
         this.stacks.push(opensearchStack)
 
-        // Create EKS logs Firehose stack if EKS log group is configured
-        if (config.logs.eksLogGroupName) {
-            const eksFirehoseStack = new KinesisFirehoseStack(scope, 'kinesisFirehoseEksStack', {
+        // Create Firehose stacks for each app type configuration
+        config.logs.appTypeConfigs.forEach((appTypeConfig, index) => {
+            // Clean app type name for CDK naming (replace underscores with dashes, capitalize words)
+            const cleanAppType = appTypeConfig.appType.replace(/_/g, '-');
+            const capitalizedAppType = cleanAppType.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join('');
+            
+            const appFirehoseStack = new KinesisFirehoseAppStack(scope, `kinesisFirehose${capitalizedAppType}Stack`, {
                 opensearchDomain: opensearchStack.domain,
-                opensearchIndex: 'eks-logs',
                 opensearchStackName: opensearchStack.stackName,
-                eksLogGroupName: config.logs.eksLogGroupName,
-                stackName: `KinesisFirehoseEKSCDKStack-${parsedConfig.domainName}`,
-                description: "This stack contains Kinesis Data Firehose delivery streams for EKS logs",
+                appTypeConfig: appTypeConfig,
+                stackName: `KinesisFirehose${capitalizedAppType}CDKStack-${parsedConfig.domainName}`,
+                description: `This stack contains Kinesis Data Firehose delivery streams for ${appTypeConfig.appType} logs`,
                 ...props,
-            })
-            this.stacks.push(eksFirehoseStack)
-        }
-
-        // Create Pod logs Firehose stack if Pod log group is configured  
-        if (config.logs.podLogGroupName) {
-            const podFirehoseStack = new KinesisFirehoseStack(scope, 'kinesisFirehosePodStack', {
-                opensearchDomain: opensearchStack.domain,
-                opensearchIndex: 'pod-logs',
-                opensearchStackName: opensearchStack.stackName,
-                eksLogGroupName: config.logs.podLogGroupName, // Reuse the same parameter name but for pod logs
-                stackName: `KinesisFirehosePodCDKStack-${parsedConfig.domainName}`,
-                description: "This stack contains Kinesis Data Firehose delivery streams for Pod logs",
-                ...props,
-            })
-            this.stacks.push(podFirehoseStack)
-        }
+            });
+            this.stacks.push(appFirehoseStack);
+        });
     }
 }
