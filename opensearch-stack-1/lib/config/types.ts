@@ -34,6 +34,7 @@ export interface AppTypeConfig {
 export interface LogConfig {
     readonly eksLogGroupName?: string;
     readonly podLogGroupName?: string;
+    readonly mazeLogGroupName?: string;
     readonly appTypeConfigs: AppTypeConfig[];
 }
 
@@ -69,5 +70,6 @@ export interface RawConfigDefaults {
     readonly availabilityZoneCount?: number;
     readonly eksLogGroupName?: string;
     readonly podLogGroupName?: string;
+    readonly mazeLogGroupName?: string;
     readonly appTypeConfigs?: AppTypeConfig[];
 }
