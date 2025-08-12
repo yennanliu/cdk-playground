@@ -3,6 +3,7 @@ const zlib = require('zlib');
 /**
  * Simple processor for Maze Application log events
  * Creates documents with the expected schema: @timestamp, @message, @logStream
+ * Updated: 2025-08-12 - Fixed schema to match OpenSearch expectations
  */
 
 /**
@@ -79,12 +80,15 @@ function processRecord(record) {
 }
 
 exports.handler = async (event) => {
+    console.log('Maze processor invoked with', event.records.length, 'records');
     const output = [];
     
     for (const record of event.records) {
         const outputRecord = processRecord(record);
+        console.log('Processed record:', outputRecord.recordId, outputRecord.result);
         output.push(outputRecord);
     }
     
+    console.log('Maze processor completed, returning', output.length, 'records');
     return { records: output };
 };
