@@ -32,6 +32,30 @@ export class ConfigParser {
         validator.validateEngineVersion(engineVersion);
         validator.validateEbsVolumeType(ebsVolumeType);
 
+        // Build appTypeConfigs dynamically from context parameters if not provided explicitly
+        let finalAppTypeConfigs = appTypeConfigs || [];
+        
+        // If appTypeConfigs is empty but we have individual log group names, create configs dynamically
+        if ((!finalAppTypeConfigs || finalAppTypeConfigs.length === 0) && (eksLogGroupName || podLogGroupName)) {
+            finalAppTypeConfigs = [];
+            
+            if (eksLogGroupName) {
+                finalAppTypeConfigs.push({
+                    appType: 'eks_app',
+                    logGroups: [eksLogGroupName],
+                    transformationModule: 'eks-processor'
+                });
+            }
+            
+            if (podLogGroupName) {
+                finalAppTypeConfigs.push({
+                    appType: 'pod_app',
+                    logGroups: [podLogGroupName],
+                    transformationModule: 'pod-processor'
+                });
+            }
+        }
+
         return {
             openSearch: {
                 domainName: domainName!,
@@ -58,7 +82,7 @@ export class ConfigParser {
             logs: {
                 eksLogGroupName,
                 podLogGroupName,
-                appTypeConfigs: appTypeConfigs || [],
+                appTypeConfigs: finalAppTypeConfigs,
             },
             stage,
         };
