@@ -17,5 +17,17 @@
     "vpcSecurityGroupIds": [],
     "availabilityZoneCount": 1,
     "eksLogGroupName": "/aws/eks/dev-cluster/application",
-    "podLogGroupName": "/aws/containerinsights/dev-cluster/application"
+    "podLogGroupName": "/aws/containerinsights/dev-cluster/application",
+    "appTypeConfigs": [
+        {
+            "appType": "eks_app",
+            "logGroups": ["/aws/eks/dev-cluster/application"],
+            "transformationModule": "eks-processor"
+        },
+        {
+            "appType": "pod_app",
+            "logGroups": ["/aws/containerinsights/dev-cluster/application"],
+            "transformationModule": "pod-processor"
+        }
+    ]
 }
