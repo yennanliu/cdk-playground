@@ -32,6 +32,7 @@ Log Group E (batch) ──→ Subscription Filter → Firehose → Batch Lambda 
 ### Dev Configuration Example (`lib/config/dev.json`)
 
 ```json
+// exp 1
 {
   "domainName": "opensearch-dev-domain",
   "appTypeConfigs": [
@@ -47,6 +48,29 @@ Log Group E (batch) ──→ Subscription Filter → Firehose → Batch Lambda 
     }
   ]
 }
+
+// exp 2
+ {
+    "domainName": "opensearch-dev-domain",
+    "engineVersion": "OS_2.5",
+    "dataNodeType": "t3.small.search",
+    "dataNodeCount": 1,
+    "ebsEnabled": true,
+    "ebsVolumeSize": 10,
+    "ebsVolumeType": "GP3",
+    "vpcEnabled": false,
+    "availabilityZoneCount": 1,
+    "appTypeConfigs": [
+      {
+        "appType": "eks_cluster",
+        "logGroups": [
+          "/aws/eks/EksCluster3394B24C-4a7f56e614724b4998b51ae4d3eaa46c/cluster",
+          "/aws/eks/EksCluster3394B24C-5a669018a0d64b3fab014289364f5236/cluster"
+        ],
+        "transformationModule": "eks-processor"
+      }
+    ]
+  }
 ```
 
 ### Lambda Directory Structure
