@@ -39,12 +39,11 @@ export class KinesisFirehoseAppStack extends Stack {
         backupBucket.grantReadWrite(firehoseRole);
 
         // Create Lambda function for processing CloudWatch Logs data based on app type
-        const lambdaPath = `lambda/app-processors/${appTypeConfig.transformationModule}`;
-        
+        // Package the entire lambda directory to include shared modules
         const processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
             runtime: lambda.Runtime.NODEJS_18_X,
-            handler: 'index.handler',
-            code: lambda.Code.fromAsset(lambdaPath),
+            handler: `app-processors/${appTypeConfig.transformationModule}/index.handler`,
+            code: lambda.Code.fromAsset('lambda'),
             timeout: Duration.minutes(5),
             memorySize: 512,
             description: `${appTypeConfig.appType} logs processor for CloudWatch Logs data to Firehose`,
