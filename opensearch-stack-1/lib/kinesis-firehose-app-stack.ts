@@ -30,7 +30,10 @@ export class KinesisFirehoseAppStack extends Stack {
 
         // Import the Firehose role ARN from the OpenSearch stack
         const firehoseRoleArn = Fn.importValue(`${props.opensearchStackName}-FirehoseRoleArn`);
-        const firehoseRole = iam.Role.fromRoleArn(this, 'ImportedFirehoseRole', firehoseRoleArn);
+        const firehoseRole = iam.Role.fromRoleArn(this, 'ImportedFirehoseRole', firehoseRoleArn, {
+            // Ensure the role is mutable for additional permissions
+            mutable: true
+        });
 
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
@@ -106,6 +109,9 @@ export class KinesisFirehoseAppStack extends Stack {
             }
         });
 
+        // Ensure delivery stream waits for all role permissions to be set
+        deliveryStream.node.addDependency(processorLambda);
+
         // Create CloudWatch Logs for Firehose operations
         const logGroup = new LogGroup(this, `${this.stackName}-FirehoseLogGroup`, {
             logGroupName: `/aws/firehose/${domainName}-${appTypeConfig.appType}-${uniqueSuffix}`,
@@ -139,20 +145,17 @@ export class KinesisFirehoseAppStack extends Stack {
 
         // Create subscription filters for each log group in the app type configuration
         appTypeConfig.logGroups.forEach((logGroupName, index) => {
-            try {
-                const subscriptionFilter = new logs.CfnSubscriptionFilter(this, `${this.stackName}-LogsSubscriptionFilter-${index}`, {
-                    logGroupName: logGroupName,
-                    destinationArn: deliveryStream.attrArn,
-                    roleArn: cloudwatchLogsRoleArn,
-                    filterPattern: '', // Empty filter pattern means all log events
-                    filterName: `${domainName}-${appTypeConfig.appType}-${uniqueSuffix}-filter-${index}`
-                });
+            const subscriptionFilter = new logs.CfnSubscriptionFilter(this, `${this.stackName}-LogsSubscriptionFilter-${index}`, {
+                logGroupName: logGroupName,
+                destinationArn: deliveryStream.attrArn,
+                roleArn: cloudwatchLogsRoleArn,
+                filterPattern: '', // Empty filter pattern means all log events
+                filterName: `${domainName}-${appTypeConfig.appType}-${uniqueSuffix}-filter-${index}`
+            });
 
-                // Ensure the subscription filter is created after the delivery stream
-                subscriptionFilter.addDependency(deliveryStream);
-            } catch (error) {
-                console.warn(`Could not create subscription filter for log group ${logGroupName}: ${error}`);
-            }
+            // Ensure the subscription filter is created after the delivery stream
+            subscriptionFilter.addDependency(deliveryStream);
+            subscriptionFilter.addDependency(logsDestination);
         });
 
         // Export the delivery stream ARN for reference

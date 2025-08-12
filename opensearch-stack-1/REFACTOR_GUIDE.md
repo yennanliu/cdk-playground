@@ -145,6 +145,7 @@ exports.handler = async (event) => {
 Add the new app type to your configuration file:
 
 ```json
+// dev.json
 {
   "appTypeConfigs": [
     {
