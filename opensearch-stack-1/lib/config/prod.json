@@ -15,7 +15,5 @@
     "vpcId": "",
     "vpcSubnetIds": [],
     "vpcSecurityGroupIds": [],
-    "availabilityZoneCount": 3,
-    "eksLogGroupName": "/aws/eks/prod-cluster/application",
-    "podLogGroupName": "/aws/containerinsights/prod-cluster/application"
+    "availabilityZoneCount": 3
 }
