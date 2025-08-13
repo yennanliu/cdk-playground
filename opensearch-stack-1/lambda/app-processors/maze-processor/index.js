@@ -1,4 +1,4 @@
-const { StreamingProcessor } = require('../shared/streaming-processor');
+const { StreamingProcessor } = require('../../shared/streaming-processor');
 
 /**
  * Direct OpenSearch delivery processor for Maze Application log events

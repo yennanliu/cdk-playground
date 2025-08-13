@@ -22,7 +22,7 @@ class OpenSearchClient {
      * @param {Array} documents - Array of documents to index
      * @returns {Promise} - Promise resolving to response
      */
-    async sendBulkToOpenSearch(documents) {
+    sendBulkToOpenSearch(documents) {
         return new Promise((resolve, reject) => {
             if (!documents || documents.length === 0) {
                 resolve({ success: true, indexed: 0 });
@@ -35,7 +35,7 @@ class OpenSearchClient {
                 bulkBody.push(JSON.stringify({ 
                     index: { 
                         _index: this.index,
-                        _id: `${doc['@logStream']}-${Date.parse(doc['@timestamp'])}-${Math.random().toString(36).substr(2, 9)}`
+                        _id: `${doc['@logStream']}-${Date.parse(doc['@timestamp'])}-${require('crypto').randomUUID()}`
                     } 
                 }));
                 bulkBody.push(JSON.stringify(doc));

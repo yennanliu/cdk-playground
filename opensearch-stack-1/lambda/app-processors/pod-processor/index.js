@@ -1,5 +1,5 @@
-const { StreamingProcessor } = require('../shared/streaming-processor');
-const { LogUtils } = require('../shared/log-utils');
+const { StreamingProcessor } = require('../../shared/streaming-processor');
+const { LogUtils } = require('../../shared/log-utils');
 
 /**
  * Direct OpenSearch delivery processor for Pod Application log events
