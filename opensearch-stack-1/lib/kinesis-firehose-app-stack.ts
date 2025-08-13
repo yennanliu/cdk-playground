@@ -46,7 +46,9 @@ export class KinesisFirehoseAppStack extends Stack {
         const processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
             runtime: lambda.Runtime.NODEJS_18_X,
             handler: `app-processors/${appTypeConfig.transformationModule}/index.handler`,
-            code: lambda.Code.fromAsset('lambda'),
+            code: lambda.Code.fromAsset('lambda', {
+                exclude: ['**/*.md', '**/*.txt', '**/.*']
+            }),
             timeout: Duration.minutes(5),
             memorySize: 512,
             description: `${appTypeConfig.appType} logs processor for CloudWatch Logs data to Firehose`,

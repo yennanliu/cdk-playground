@@ -1,6 +1,31 @@
 import { Construct } from "constructs";
-import { RawConfigDefaults, StackConfiguration } from "./types";
+import { RawConfigDefaults, StackConfiguration, AppTypeConfig } from "./types";
 import { ConfigValidator } from "./validator";
+
+// App Type Registry Pattern
+interface AppTypeRegistryEntry {
+    readonly appType: string;
+    readonly processor: string;
+    readonly contextKey: string;
+}
+
+const APP_TYPE_REGISTRY = {
+    eks_app: { 
+        appType: 'eks_app', 
+        processor: 'eks-processor', 
+        contextKey: 'eksLogGroupName' 
+    },
+    pod_app: { 
+        appType: 'pod_app', 
+        processor: 'pod-processor', 
+        contextKey: 'podLogGroupName' 
+    },
+    maze_app: { 
+        appType: 'maze_app', 
+        processor: 'maze-processor', 
+        contextKey: 'mazeLogGroupName' 
+    }
+} as const satisfies Record<string, AppTypeRegistryEntry>;
 
 export class ConfigParser {
     
@@ -33,43 +58,13 @@ export class ConfigParser {
         validator.validateEngineVersion(engineVersion);
         validator.validateEbsVolumeType(ebsVolumeType);
 
-        // Build appTypeConfigs dynamically from context parameters
-        let finalAppTypeConfigs = appTypeConfigs || [];
-        
-        // If we have individual log group names from context, add them to the config
-        if (eksLogGroupName || podLogGroupName || mazeLogGroupName) {
-            // If no existing configs, start with empty array
-            if (!finalAppTypeConfigs || finalAppTypeConfigs.length === 0) {
-                finalAppTypeConfigs = [];
-            }
-            
-            // Add EKS config if provided and not already present
-            if (eksLogGroupName && !finalAppTypeConfigs.some((config: any) => config.appType === 'eks_app')) {
-                finalAppTypeConfigs.push({
-                    appType: 'eks_app',
-                    logGroups: [eksLogGroupName],
-                    transformationModule: 'eks-processor'
-                });
-            }
-            
-            // Add Pod config if provided and not already present
-            if (podLogGroupName && !finalAppTypeConfigs.some((config: any) => config.appType === 'pod_app')) {
-                finalAppTypeConfigs.push({
-                    appType: 'pod_app',
-                    logGroups: [podLogGroupName],
-                    transformationModule: 'pod-processor'
-                });
-            }
-            
-            // Add Maze config if provided and not already present
-            if (mazeLogGroupName && !finalAppTypeConfigs.some((config: any) => config.appType === 'maze_app')) {
-                finalAppTypeConfigs.push({
-                    appType: 'maze_app',
-                    logGroups: [mazeLogGroupName],
-                    transformationModule: 'maze-processor'
-                });
-            }
-        }
+        // Build appTypeConfigs dynamically using registry pattern
+        const contextValues = {
+            eksLogGroupName,
+            podLogGroupName, 
+            mazeLogGroupName
+        };
+        const finalAppTypeConfigs = this.buildAppTypeConfigs(appTypeConfigs, contextValues);
 
         return {
             openSearch: {
@@ -146,5 +141,44 @@ export class ConfigParser {
         }
 
         return option;
+    }
+
+    /**
+     * Build app type configurations using the registry pattern
+     * @param existingConfigs - Existing app type configurations from context
+     * @param contextValues - Individual log group names from context
+     * @returns Array of app type configurations
+     */
+    private static buildAppTypeConfigs(
+        existingConfigs: AppTypeConfig[] | undefined, 
+        contextValues: Record<string, string | undefined>
+    ): AppTypeConfig[] {
+        let finalConfigs = existingConfigs || [];
+        
+        // Check if any individual log group names are provided
+        const hasIndividualLogGroups = Object.values(contextValues).some(value => value !== undefined);
+        
+        if (hasIndividualLogGroups) {
+            // If no existing configs, start with empty array
+            if (!finalConfigs || finalConfigs.length === 0) {
+                finalConfigs = [];
+            }
+            
+            // Process each app type in the registry
+            Object.values(APP_TYPE_REGISTRY).forEach(registryEntry => {
+                const logGroupName = contextValues[registryEntry.contextKey as keyof typeof contextValues];
+                
+                // Add config if log group is provided and not already present
+                if (logGroupName && !finalConfigs.some(config => config.appType === registryEntry.appType)) {
+                    finalConfigs.push({
+                        appType: registryEntry.appType,
+                        logGroups: [logGroupName],
+                        transformationModule: registryEntry.processor
+                    });
+                }
+            });
+        }
+        
+        return finalConfigs;
     }
 }
