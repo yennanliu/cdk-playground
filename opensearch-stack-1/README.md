@@ -24,7 +24,8 @@ cdk deploy --all --stage dev \
 cdk deploy --all --force --stage dev \
     -c domainName="opensearch-domain-dev-12" \
     -c eksLogGroupName="/aws/eks/EksCluster3394B24C-4a7f56e614724b4998b51ae4d3eaa46c/cluster" \
-    -c podLogGroupName="/aws/eks/EksCluster3394B24C-ed22b92ec4764ec592ea533328f9e9da/application"
+    -c podLogGroupName="/aws/eks/EksCluster3394B24C-ed22b92ec4764ec592ea533328f9e9da/application" \
+    -c mazeLogGroupName="MazeCdkStack-4-MazeTaskDefMazeContainerLogGroup4C11E95F-DjUOHja9qNtz"
 
 ```
 

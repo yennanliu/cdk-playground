@@ -26,20 +26,25 @@ export class ConfigParser {
         const availabilityZoneCount = this.getContextForType(scope, 'availabilityZoneCount', 'number', defaults);
         const eksLogGroupName = this.getContextForType(scope, 'eksLogGroupName', 'string', defaults);
         const podLogGroupName = this.getContextForType(scope, 'podLogGroupName', 'string', defaults);
+        const mazeLogGroupName = this.getContextForType(scope, 'mazeLogGroupName', 'string', defaults);
         const appTypeConfigs = this.getContextForType(scope, 'appTypeConfigs', 'object', defaults);
 
         validator.validateRequired(domainName, 'domainName');
         validator.validateEngineVersion(engineVersion);
         validator.validateEbsVolumeType(ebsVolumeType);
 
-        // Build appTypeConfigs dynamically from context parameters if not provided explicitly
+        // Build appTypeConfigs dynamically from context parameters
         let finalAppTypeConfigs = appTypeConfigs || [];
         
-        // If appTypeConfigs is empty but we have individual log group names, create configs dynamically
-        if ((!finalAppTypeConfigs || finalAppTypeConfigs.length === 0) && (eksLogGroupName || podLogGroupName)) {
-            finalAppTypeConfigs = [];
+        // If we have individual log group names from context, add them to the config
+        if (eksLogGroupName || podLogGroupName || mazeLogGroupName) {
+            // If no existing configs, start with empty array
+            if (!finalAppTypeConfigs || finalAppTypeConfigs.length === 0) {
+                finalAppTypeConfigs = [];
+            }
             
-            if (eksLogGroupName) {
+            // Add EKS config if provided and not already present
+            if (eksLogGroupName && !finalAppTypeConfigs.some((config: any) => config.appType === 'eks_app')) {
                 finalAppTypeConfigs.push({
                     appType: 'eks_app',
                     logGroups: [eksLogGroupName],
@@ -47,11 +52,21 @@ export class ConfigParser {
                 });
             }
             
-            if (podLogGroupName) {
+            // Add Pod config if provided and not already present
+            if (podLogGroupName && !finalAppTypeConfigs.some((config: any) => config.appType === 'pod_app')) {
                 finalAppTypeConfigs.push({
                     appType: 'pod_app',
                     logGroups: [podLogGroupName],
                     transformationModule: 'pod-processor'
+                });
+            }
+            
+            // Add Maze config if provided and not already present
+            if (mazeLogGroupName && !finalAppTypeConfigs.some((config: any) => config.appType === 'maze_app')) {
+                finalAppTypeConfigs.push({
+                    appType: 'maze_app',
+                    logGroups: [mazeLogGroupName],
+                    transformationModule: 'maze-processor'
                 });
             }
         }
@@ -82,6 +97,7 @@ export class ConfigParser {
             logs: {
                 eksLogGroupName,
                 podLogGroupName,
+                mazeLogGroupName,
                 appTypeConfigs: finalAppTypeConfigs,
             },
             stage,

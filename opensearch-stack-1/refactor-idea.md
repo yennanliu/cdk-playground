@@ -72,3 +72,4 @@
   - Use AWS Secrets Manager for credentials
   - Replace wildcard IAM permissions with least-privilege policies
 
+
