@@ -21,12 +21,13 @@ cdk deploy --all --stage dev \
 
 
 # send both eks, pods cloudwatch log to opensearch
-cdk deploy --all --force --stage dev \
-    -c domainName="opensearch-domain-dev-12" \
-    -c eksLogGroupName="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/cluster" \
-    -c podLogGroupName="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/application" \
-    -c mazeLogGroupName="MazeCdkStack-4-MazeTaskDefMazeContainerLogGroup4C11E95F-DjUOHja9qNtz"
-
+  cdk deploy --all --force --stage dev \
+      -c domainName="opensearch-domain-dev-12" \
+      -c eksLogGroupName="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/cluster" \
+      -c podLogGroupName="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/application" \
+      -c mazeLogGroupName="MazeCdkStack-4-MazeTaskDefMazeContainerLogGroup4C11E95F-DjUOHja9qNtz" \
+      -c postgresLogGroupName="/aws/rds/instance/rubyappinfra1stack-3-cicd-databasepostgresinstance-ts
+  hvw8bdzwcd/postgresql"
 ```
 
 ## CDK Architecture
