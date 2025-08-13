@@ -7,11 +7,11 @@ const https = require('https');
  * Updated: 2025-08-13 - Implementing zero data loss streaming buffer approach
  */
 
-// OpenSearch configuration from environment variables
-const OPENSEARCH_ENDPOINT = process.env.OPENSEARCH_ENDPOINT || 'search-opensearch-domain-dev-12-q3vc3mukmgvlgu7u6p3zwhrahy.ap-northeast-1.es.amazonaws.com';
-const OPENSEARCH_INDEX = process.env.OPENSEARCH_INDEX || 'pod_app-logs';
-const MASTER_USER = process.env.MASTER_USER || 'admin';
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'Admin@OpenSearch123!';
+// OpenSearch configuration from CDK-provided environment variables
+const OPENSEARCH_ENDPOINT = process.env.OPENSEARCH_ENDPOINT;
+const OPENSEARCH_INDEX = process.env.OPENSEARCH_INDEX;
+const MASTER_USER = process.env.MASTER_USER;
+const MASTER_PASSWORD = process.env.MASTER_PASSWORD;
 
 /**
  * Decompress and parse CloudWatch Logs data

@@ -38,6 +38,9 @@ export class KinesisFirehoseAppStack extends Stack {
         // Grant the imported role permissions to write to this stack's S3 bucket
         backupBucket.grantReadWrite(firehoseRole);
 
+        // Create OpenSearch index name based on app type
+        const opensearchIndex = `${appTypeConfig.appType}-logs`;
+
         // Create Lambda function for processing CloudWatch Logs data based on app type
         // Package the entire lambda directory to include shared modules
         const processorLambda = new lambda.Function(this, `${this.stackName}-LogProcessor`, {
@@ -48,16 +51,19 @@ export class KinesisFirehoseAppStack extends Stack {
             memorySize: 512,
             description: `${appTypeConfig.appType} logs processor for CloudWatch Logs data to Firehose`,
             environment: {
+                // Original configuration
                 APP_TYPE: appTypeConfig.appType,
-                TRANSFORMATION_MODULE: appTypeConfig.transformationModule
+                TRANSFORMATION_MODULE: appTypeConfig.transformationModule,
+                // Infrastructure-derived OpenSearch configuration
+                OPENSEARCH_ENDPOINT: props.opensearchDomain.domainEndpoint,
+                OPENSEARCH_INDEX: opensearchIndex,
+                MASTER_USER: 'admin',
+                MASTER_PASSWORD: 'Admin@OpenSearch123!'
             }
         });
 
         // Grant Firehose permission to invoke the Lambda function
         processorLambda.grantInvoke(firehoseRole);
-
-        // Create OpenSearch index name based on app type
-        const opensearchIndex = `${appTypeConfig.appType}-logs`;
 
         // Create Kinesis Firehose with unique naming based on app type and domain
         const domainName = props.opensearchDomain.domainName.replace(/[^a-zA-Z0-9-]/g, '');
