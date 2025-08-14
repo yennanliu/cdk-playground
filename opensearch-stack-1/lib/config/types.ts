@@ -32,7 +32,7 @@ export interface AppTypeConfig {
 }
 
 export interface LogConfig {
-    readonly eksLogGroupName?: string;
+    readonly eksControlPlaneGroup?: string;
     readonly podLogGroupName?: string;
     readonly mazeLogGroupName?: string;
     readonly postgresLogGroupName?: string;
@@ -69,7 +69,7 @@ export interface RawConfigDefaults {
     readonly vpcSubnetIds?: string[];
     readonly vpcSecurityGroupIds?: string[];
     readonly availabilityZoneCount?: number;
-    readonly eksLogGroupName?: string;
+    readonly eksControlPlaneGroup?: string;
     readonly podLogGroupName?: string;
     readonly mazeLogGroupName?: string;
     readonly postgresLogGroupName?: string;

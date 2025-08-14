@@ -5,7 +5,7 @@
 - Currently creates separate Lambda functions per log type (firehose-processor for EKS logs, pod-logs-processor for pod logs)
 - Each Lambda processes one specific log type with hardcoded logic
 - Subscription filters are created per log group in kinesis-firehose-stack.ts
-- Configuration is simple: just eksLogGroupName and podLogGroupName
+- Configuration is simple: just eksControlPlaneGroup and podLogGroupName
 
 ## Refactoring Plan
 
@@ -77,7 +77,7 @@ Log Group E (batch) ──→ Subscription Filter → Firehose → Batch Lambda 
 
 ### 5. Backward Compatibility
 
-- Keep existing eksLogGroupName/podLogGroupName config working alongside new system
+- Keep existing eksControlPlaneGroup/podLogGroupName config working alongside new system
 - Provide migration path for existing configurations
 
 This approach will eliminate code duplication, make it easier to add new application types, and group related log processing logic together.

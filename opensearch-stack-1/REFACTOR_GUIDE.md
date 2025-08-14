@@ -37,7 +37,7 @@ Log Group E (batch) ──→ Subscription Filter → Firehose → Batch Lambda 
   "domainName": "opensearch-dev-domain",
   "appTypeConfigs": [
     {
-      "appType": "eks_app",
+      "appType": "eks-control-plane",
       "logGroups": ["/aws/eks/dev-cluster/application"],
       "transformationModule": "eks-processor"
     },
@@ -149,7 +149,7 @@ Add the new app type to your configuration file:
 {
   "appTypeConfigs": [
     {
-      "appType": "eks_app",
+      "appType": "eks-control-plane",
       "logGroups": ["/aws/eks/dev-cluster/application"],
       "transformationModule": "eks-processor"
     },

@@ -21,7 +21,7 @@ echo "✅ OpenSearch endpoint: $OPENSEARCH_ENDPOINT"
 echo "Checking for indices..."
 curl -s -u admin:Admin@OpenSearch123! \
   "https://$OPENSEARCH_ENDPOINT/_cat/indices?v" \
-  | grep -E "(eks-logs|pod-logs)" || echo "ℹ️  No eks-logs or pod-logs indices found yet"
+  | grep -E "(eks-control-plane|pod-logs)" || echo "ℹ️  No eks-control-plane or pod-logs indices found yet"
 
 # Check for index templates
 echo "Checking for index templates..."
