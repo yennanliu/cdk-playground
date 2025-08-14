@@ -10,15 +10,15 @@ interface AppTypeRegistryEntry {
 }
 
 const APP_TYPE_REGISTRY = {
-    eks_app: { 
-        appType: 'eks_app', 
+    eks_control_plane_app: { 
+        appType: 'eks-control-plane', 
         processor: 'eks-processor', 
-        contextKey: 'eksLogGroupName' 
+        contextKey: 'eksControlPlaneGroup' 
     },
-    pod_app: { 
-        appType: 'pod_app', 
+    eks_pod_app: { 
+        appType: 'eks-pod', 
         processor: 'pod-processor', 
-        contextKey: 'podLogGroupName' 
+        contextKey: 'eksPodGroup' 
     },
     maze_app: { 
         appType: 'maze_app', 
@@ -26,9 +26,9 @@ const APP_TYPE_REGISTRY = {
         contextKey: 'mazeLogGroupName' 
     },
     postgres_app: { 
-        appType: 'postgres_app', 
+        appType: 'postgres', 
         processor: 'postgres-processor', 
-        contextKey: 'postgresLogGroupName' 
+        contextKey: 'postgresLog' 
     }
 } as const satisfies Record<string, AppTypeRegistryEntry>;
 
@@ -54,10 +54,10 @@ export class ConfigParser {
         const vpcSubnetIds = this.getContextForType(scope, 'vpcSubnetIds', 'object', defaults);
         const vpcSecurityGroupIds = this.getContextForType(scope, 'vpcSecurityGroupIds', 'object', defaults);
         const availabilityZoneCount = this.getContextForType(scope, 'availabilityZoneCount', 'number', defaults);
-        const eksLogGroupName = this.getContextForType(scope, 'eksLogGroupName', 'string', defaults);
-        const podLogGroupName = this.getContextForType(scope, 'podLogGroupName', 'string', defaults);
+        const eksControlPlaneGroup = this.getContextForType(scope, 'eksControlPlaneGroup', 'string', defaults);
+        const eksPodGroup = this.getContextForType(scope, 'eksPodGroup', 'string', defaults);
         const mazeLogGroupName = this.getContextForType(scope, 'mazeLogGroupName', 'string', defaults);
-        const postgresLogGroupName = this.getContextForType(scope, 'postgresLogGroupName', 'string', defaults);
+        const postgresLog = this.getContextForType(scope, 'postgresLog', 'string', defaults);
         const appTypeConfigs = this.getContextForType(scope, 'appTypeConfigs', 'object', defaults);
 
         validator.validateRequired(domainName, 'domainName');
@@ -66,10 +66,10 @@ export class ConfigParser {
 
         // Build appTypeConfigs dynamically using registry pattern
         const contextValues = {
-            eksLogGroupName,
-            podLogGroupName, 
+            eksControlPlaneGroup,
+            eksPodGroup, 
             mazeLogGroupName,
-            postgresLogGroupName
+            postgresLog
         };
         const finalAppTypeConfigs = this.buildAppTypeConfigs(appTypeConfigs, contextValues);
 
@@ -97,10 +97,10 @@ export class ConfigParser {
                 availabilityZoneCount: availabilityZoneCount || 1,
             },
             logs: {
-                eksLogGroupName,
-                podLogGroupName,
+                eksControlPlaneGroup,
+                eksPodGroup,
                 mazeLogGroupName,
-                postgresLogGroupName,
+                postgresLog,
                 appTypeConfigs: finalAppTypeConfigs,
             },
             stage,

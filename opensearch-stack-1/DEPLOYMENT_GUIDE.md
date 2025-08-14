@@ -7,8 +7,8 @@ This guide explains how to deploy and verify the OpenSearch logging infrastructu
 ```bash
 cdk deploy --all --stage dev \
     -c domainName="opensearch-domain-dev-5" \
-    -c eksLogGroupName="/aws/eks/EksCluster3394B24C-ed22b92ec4764ec592ea533328f9e9da/cluster" \
-    -c podLogGroupName="/aws/eks/EksCluster3394B24C-ed22b92ec4764ec592ea533328f9e9da/application"
+    -c eksControlPlaneGroup="/aws/eks/EksCluster3394B24C-ed22b92ec4764ec592ea533328f9e9da/cluster" \
+    -c eksPodGroup="/aws/eks/EksCluster3394B24C-ed22b92ec4764ec592ea533328f9e9da/application"
 ```
 
 ## What Gets Deployed
@@ -22,8 +22,8 @@ cdk deploy --all --stage dev \
   - Index templates for auto-creation
 
 ### 2. Kinesis Firehose Stacks
-- **EKS Stack**: Processes EKS cluster logs → `eks-logs` index
-- **Pod Stack**: Processes Pod application logs → `pod-logs` index
+- **EKS Stack**: Processes EKS control plane logs → `eks-control-plane` index
+- **Pod Stack**: Processes EKS pod application logs → `eks-pod` index
 - Each includes:
   - Unified Lambda processor
   - S3 backup bucket
@@ -69,18 +69,18 @@ aws cloudformation describe-stacks \
 
 ## How Index Auto-Creation Works
 
-1. **Index Templates**: Lambda creates templates for `eks-logs*` and `pod-logs*` patterns
+1. **Index Templates**: Lambda creates templates for `eks-control-plane*` and `eks-pod*` patterns
 2. **First Document**: When Firehose delivers first document matching pattern, OpenSearch creates index
 3. **Structure**: Templates ensure consistent field mappings and settings
 
 ## Expected Indices
 
-- **`eks-logs`**: EKS cluster logs with fields:
+- **`eks-control-plane`**: EKS control plane logs with fields:
   - `@timestamp`, `log_level`, `message`
   - `eks.cluster_name`, `eks.service_name`
   - `aws.region`, `source`
 
-- **`pod-logs`**: Pod application logs with fields:
+- **`eks-pod`**: EKS pod application logs with fields:
   - `@timestamp`, `pod_name`, `namespace`
   - `container_name`, `cluster`, `log_type`
   - `message`, `log_group`, `log_stream`
