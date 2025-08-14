@@ -26,9 +26,9 @@ const APP_TYPE_REGISTRY = {
         contextKey: 'mazeLogGroupName' 
     },
     postgres_app: { 
-        appType: 'postgres_app', 
+        appType: 'postgres', 
         processor: 'postgres-processor', 
-        contextKey: 'postgresLogGroupName' 
+        contextKey: 'postgresLog' 
     }
 } as const satisfies Record<string, AppTypeRegistryEntry>;
 
@@ -57,7 +57,7 @@ export class ConfigParser {
         const eksControlPlaneGroup = this.getContextForType(scope, 'eksControlPlaneGroup', 'string', defaults);
         const eksPodGroup = this.getContextForType(scope, 'eksPodGroup', 'string', defaults);
         const mazeLogGroupName = this.getContextForType(scope, 'mazeLogGroupName', 'string', defaults);
-        const postgresLogGroupName = this.getContextForType(scope, 'postgresLogGroupName', 'string', defaults);
+        const postgresLog = this.getContextForType(scope, 'postgresLog', 'string', defaults);
         const appTypeConfigs = this.getContextForType(scope, 'appTypeConfigs', 'object', defaults);
 
         validator.validateRequired(domainName, 'domainName');
@@ -69,7 +69,7 @@ export class ConfigParser {
             eksControlPlaneGroup,
             eksPodGroup, 
             mazeLogGroupName,
-            postgresLogGroupName
+            postgresLog
         };
         const finalAppTypeConfigs = this.buildAppTypeConfigs(appTypeConfigs, contextValues);
 
@@ -100,7 +100,7 @@ export class ConfigParser {
                 eksControlPlaneGroup,
                 eksPodGroup,
                 mazeLogGroupName,
-                postgresLogGroupName,
+                postgresLog,
                 appTypeConfigs: finalAppTypeConfigs,
             },
             stage,

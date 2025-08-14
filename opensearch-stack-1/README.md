@@ -26,7 +26,7 @@ cdk deploy --all --stage dev \
       -c eksControlPlaneGroup="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/cluster" \
       -c eksPodGroup="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/application" \
       -c mazeLogGroupName="MazeCdkStack-4-MazeTaskDefMazeContainerLogGroup4C11E95F-DjUOHja9qNtz" \
-      -c postgresLogGroupName="/aws/rds/instance/rubyappinfra1stack-3-cicd-databasepostgresinstance-tshvw8bdzwcd/postgresql"
+      -c postgresLog="/aws/rds/instance/rubyappinfra1stack-3-cicd-databasepostgresinstance-tshvw8bdzwcd/postgresql"
 ```
 
 ## CDK Architecture
