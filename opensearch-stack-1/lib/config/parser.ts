@@ -15,10 +15,10 @@ const APP_TYPE_REGISTRY = {
         processor: 'eks-processor', 
         contextKey: 'eksControlPlaneGroup' 
     },
-    pod_app: { 
-        appType: 'pod_app', 
+    eks_pod_app: { 
+        appType: 'eks-pod', 
         processor: 'pod-processor', 
-        contextKey: 'podLogGroupName' 
+        contextKey: 'eksPodGroup' 
     },
     maze_app: { 
         appType: 'maze_app', 
@@ -55,7 +55,7 @@ export class ConfigParser {
         const vpcSecurityGroupIds = this.getContextForType(scope, 'vpcSecurityGroupIds', 'object', defaults);
         const availabilityZoneCount = this.getContextForType(scope, 'availabilityZoneCount', 'number', defaults);
         const eksControlPlaneGroup = this.getContextForType(scope, 'eksControlPlaneGroup', 'string', defaults);
-        const podLogGroupName = this.getContextForType(scope, 'podLogGroupName', 'string', defaults);
+        const eksPodGroup = this.getContextForType(scope, 'eksPodGroup', 'string', defaults);
         const mazeLogGroupName = this.getContextForType(scope, 'mazeLogGroupName', 'string', defaults);
         const postgresLogGroupName = this.getContextForType(scope, 'postgresLogGroupName', 'string', defaults);
         const appTypeConfigs = this.getContextForType(scope, 'appTypeConfigs', 'object', defaults);
@@ -67,7 +67,7 @@ export class ConfigParser {
         // Build appTypeConfigs dynamically using registry pattern
         const contextValues = {
             eksControlPlaneGroup,
-            podLogGroupName, 
+            eksPodGroup, 
             mazeLogGroupName,
             postgresLogGroupName
         };
@@ -98,7 +98,7 @@ export class ConfigParser {
             },
             logs: {
                 eksControlPlaneGroup,
-                podLogGroupName,
+                eksPodGroup,
                 mazeLogGroupName,
                 postgresLogGroupName,
                 appTypeConfigs: finalAppTypeConfigs,

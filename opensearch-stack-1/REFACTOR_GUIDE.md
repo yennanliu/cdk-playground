@@ -42,7 +42,7 @@ Log Group E (batch) ──→ Subscription Filter → Firehose → Batch Lambda 
       "transformationModule": "eks-processor"
     },
     {
-      "appType": "pod_app", 
+      "appType": "eks-pod", 
       "logGroups": ["/aws/containerinsights/dev-cluster/application"],
       "transformationModule": "pod-processor"
     }
@@ -154,7 +154,7 @@ Add the new app type to your configuration file:
       "transformationModule": "eks-processor"
     },
     {
-      "appType": "pod_app",
+      "appType": "eks-pod",
       "logGroups": ["/aws/containerinsights/dev-cluster/application"], 
       "transformationModule": "pod-processor"
     },

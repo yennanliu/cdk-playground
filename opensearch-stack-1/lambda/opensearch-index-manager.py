@@ -89,7 +89,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         results = []
         
         if operation in ['create_templates', 'both']:
-            # Create index templates for eks-control-plane and pod-logs
+            # Create index templates for eks-control-plane and eks-pod
             results.extend(create_index_templates(http, domain_endpoint, headers))
         
         if operation in ['create_indices', 'both']:
@@ -116,7 +116,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         raise Exception(error_msg)
 
 def create_index_templates(http: urllib3.PoolManager, domain_endpoint: str, headers: dict) -> list:
-    """Create index templates for eks-control-plane and pod-logs"""
+    """Create index templates for eks-control-plane and eks-pod"""
     results = []
     
     # EKS Logs Index Template
@@ -158,7 +158,7 @@ def create_index_templates(http: urllib3.PoolManager, domain_endpoint: str, head
     
     # Pod Logs Index Template
     pod_template = {
-        "index_patterns": ["pod-logs-*"],
+        "index_patterns": ["eks-pod-*"],
         "template": {
             "settings": {
                 "number_of_shards": 2,
@@ -233,8 +233,8 @@ def create_index_templates(http: urllib3.PoolManager, domain_endpoint: str, head
         results.append({"template": "eks-control-plane-template", "status": "error", "error": str(e)})
     
     # Create Pod template
-    pod_url = f"{domain_endpoint}/_index_template/pod-logs-template"
-    logger.info(f"Creating Pod logs index template...")
+    pod_url = f"{domain_endpoint}/_index_template/eks-pod-template"
+    logger.info(f"Creating EKS pod logs index template...")
     
     try:
         response = http.request('PUT', pod_url, 
@@ -243,20 +243,20 @@ def create_index_templates(http: urllib3.PoolManager, domain_endpoint: str, head
                                timeout=30)
         
         if response.status in [200, 201]:
-            logger.info("Pod logs index template created successfully")
-            results.append({"template": "pod-logs-template", "status": "created"})
+            logger.info("EKS pod logs index template created successfully")
+            results.append({"template": "eks-pod-template", "status": "created"})
         else:
             logger.warning(f"Failed to create Pod template: {response.status} - {response.data.decode('utf-8')}")
-            results.append({"template": "pod-logs-template", "status": "failed", "error": response.data.decode('utf-8')})
+            results.append({"template": "eks-pod-template", "status": "failed", "error": response.data.decode('utf-8')})
             
     except Exception as e:
         logger.error(f"Error creating Pod template: {str(e)}")
-        results.append({"template": "pod-logs-template", "status": "error", "error": str(e)})
+        results.append({"template": "eks-pod-template", "status": "error", "error": str(e)})
     
     return results
 
 def create_indices(http: urllib3.PoolManager, domain_endpoint: str, headers: dict) -> list:
-    """Create actual indices for eks-control-plane and pod-logs"""
+    """Create actual indices for eks-control-plane and eks-pod"""
     results = []
     
     # Generate index names with current date
@@ -264,7 +264,7 @@ def create_indices(http: urllib3.PoolManager, domain_endpoint: str, headers: dic
     current_date = datetime.now().strftime('%Y.%m.%d')
     
     eks_index_name = f"eks-control-plane-{current_date}"
-    pod_index_name = f"pod-logs-{current_date}"
+    pod_index_name = f"eks-pod-{current_date}"
     
     # Check if indices already exist
     for index_name, log_type in [(eks_index_name, "eks"), (pod_index_name, "pod")]:

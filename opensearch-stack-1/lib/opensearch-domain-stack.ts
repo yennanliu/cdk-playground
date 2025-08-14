@@ -186,7 +186,7 @@ export class OpenSearchDomainStack extends Stack {
       handler: 'opensearch-index-manager.lambda_handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
       timeout: Duration.minutes(10),
-      description: 'Manages OpenSearch indices and templates for eks-control-plane and pod-logs',
+      description: 'Manages OpenSearch indices and templates for eks-control-plane and eks-pod',
       environment: {
         LOG_LEVEL: 'INFO',
         DOMAIN_ENDPOINT: domain.domainEndpoint,
@@ -333,12 +333,12 @@ export class OpenSearchDomainStack extends Stack {
 
     new CfnOutput(this, 'OpenSearchIndexTemplateStatus', {
       value: indexTemplateManagerResource.getAtt('body').toString(),
-      description: 'Status of OpenSearch index template creation for eks-control-plane and pod-logs'
+      description: 'Status of OpenSearch index template creation for eks-control-plane and eks-pod'
     });
 
     new CfnOutput(this, 'OpenSearchIndexCreationStatus', {
       value: indexCreatorResource.getAtt('body').toString(),
-      description: 'Status of OpenSearch index creation for eks-control-plane and pod-logs'
+      description: 'Status of OpenSearch index creation for eks-control-plane and eks-pod'
     });
 
     // Export the CloudWatch Logs role ARN and name for use by other stacks
