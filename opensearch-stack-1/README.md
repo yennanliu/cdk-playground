@@ -24,7 +24,7 @@ cdk deploy --all --stage dev \
   cdk deploy --all --force --stage dev \
       -c domainName="opensearch-domain-dev-12" \
       -c eksControlPlaneGroup="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/cluster" \
-      -c eksPodGroup="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/application" \
+      -c eksPodGroup="/aws/eks/EksCluster3394B24C-a83cd01ca25b445c8db31757802fe566/application" \
       -c mazeLogGroupName="MazeCdkStack-4-MazeTaskDefMazeContainerLogGroup4C11E95F-DjUOHja9qNtz" \
       -c postgresLog="/aws/rds/instance/rubyappinfra1stack-3-cicd-databasepostgresinstance-tshvw8bdzwcd/postgresql"
 ```

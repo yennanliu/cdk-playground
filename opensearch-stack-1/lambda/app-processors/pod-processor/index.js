@@ -4,7 +4,9 @@ const { LogUtils } = require('../../shared/log-utils');
 /**
  * Direct OpenSearch delivery processor for Pod Application log events
  * Processes ALL log events in each batch and sends them directly to OpenSearch
- * Updated: 2025-08-13 - Refactored to use shared utilities
+ * Updated: 2025-08-14 - Fixed processing logic for updated CloudWatch log structure
+ * - Now handles kubernetes metadata at root level (new format)
+ * - Maintains backwards compatibility with legacy nested format
  */
 
 /**
@@ -17,14 +19,14 @@ function processPodLogEvent(logData, logEvent) {
     const messageJson = LogUtils.tryParseJSON(logEvent.message);
     const baseDoc = LogUtils.createBaseDocument(logData, logEvent);
     
-    // Fluent Bit format with kubernetes metadata
+    // Updated CloudWatch log structure with kubernetes metadata at root level
     if (messageJson && messageJson.kubernetes) {
         return {
             ...baseDoc,
-            '@message': messageJson.log || messageJson.message || logEvent.message,
-            message: messageJson.log || messageJson.message,
+            '@message': messageJson.message || logEvent.message,
+            message: messageJson.message,
+            logtag: messageJson.logtag,
             stream: messageJson.stream,
-            time: messageJson.time,
             // Kubernetes metadata
             pod_name: messageJson.kubernetes.pod_name,
             namespace: messageJson.kubernetes.namespace_name,
@@ -42,6 +44,31 @@ function processPodLogEvent(logData, logEvent) {
             log_type: 'pod-application'
         };
     } 
+    // Legacy Fluent Bit format (nested in log field) - kept for backwards compatibility
+    else if (messageJson && messageJson.log && typeof messageJson.log === 'object' && messageJson.log.kubernetes) {
+        return {
+            ...baseDoc,
+            '@message': messageJson.log.message || messageJson.message || logEvent.message,
+            message: messageJson.log.message || messageJson.message,
+            stream: messageJson.log.stream,
+            time: messageJson.log.time,
+            // Kubernetes metadata
+            pod_name: messageJson.log.kubernetes.pod_name,
+            namespace: messageJson.log.kubernetes.namespace_name,
+            container_name: messageJson.log.kubernetes.container_name,
+            container_image: messageJson.log.kubernetes.container_image,
+            container_image_id: messageJson.log.kubernetes.container_image_id,
+            pod_id: messageJson.log.kubernetes.pod_id,
+            pod_ip: messageJson.log.kubernetes.pod_ip,
+            host: messageJson.log.kubernetes.host,
+            node_name: messageJson.log.kubernetes.node_name,
+            labels: messageJson.log.kubernetes.labels,
+            annotations: messageJson.log.kubernetes.annotations,
+            docker_id: messageJson.log.kubernetes.docker_id,
+            container_hash: messageJson.log.kubernetes.container_hash,
+            log_type: 'pod-application-legacy'
+        };
+    }
     // Direct container logs without Fluent Bit metadata
     else if (messageJson && (messageJson.log || messageJson.message)) {
         return {
