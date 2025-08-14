@@ -35,6 +35,7 @@ export interface LogConfig {
     readonly eksLogGroupName?: string;
     readonly podLogGroupName?: string;
     readonly mazeLogGroupName?: string;
+    readonly postgresLogGroupName?: string;
     readonly appTypeConfigs: AppTypeConfig[];
 }
 
@@ -71,5 +72,6 @@ export interface RawConfigDefaults {
     readonly eksLogGroupName?: string;
     readonly podLogGroupName?: string;
     readonly mazeLogGroupName?: string;
+    readonly postgresLogGroupName?: string;
     readonly appTypeConfigs?: AppTypeConfig[];
 }
