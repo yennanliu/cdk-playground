@@ -44,6 +44,7 @@ export interface StackConfiguration {
     readonly network: NetworkConfig;
     readonly logs: LogConfig;
     readonly stage: string;
+    readonly region: string;
 }
 
 export interface ParsedOpenSearchConfig extends Omit<OpenSearchConfig, 'engineVersion' | 'ebsVolumeType'> {
@@ -74,4 +75,5 @@ export interface RawConfigDefaults {
     readonly mazeLogGroupName?: string;
     readonly postgresLog?: string;
     readonly appTypeConfigs?: AppTypeConfig[];
+    readonly region?: string;
 }

@@ -21,12 +21,21 @@ cdk deploy --all --stage dev \
 
 
 # send both eks, pods cloudwatch log to opensearch
-  cdk deploy --all --force --stage dev \
-      -c domainName="opensearch-domain-dev-12" \
-      -c eksControlPlaneGroup="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/cluster" \
-      -c eksPodGroup="/aws/eks/EksCluster3394B24C-a83cd01ca25b445c8db31757802fe566/application" \
-      -c mazeLogGroupName="MazeCdkStack-4-MazeTaskDefMazeContainerLogGroup4C11E95F-DjUOHja9qNtz" \
-      -c postgresLog="/aws/rds/instance/rubyappinfra1stack-3-cicd-databasepostgresinstance-tshvw8bdzwcd/postgresql"
+
+export REGION="ap-northeast-1"
+export DOMAIN_NAME="opensearch-domain-dev-12"
+export EKS_CONTROL_PLANE_GROUP="/aws/eks/EksCluster3394B24C-996e8229a5784d1c97f30f4c94106da3/cluster"
+export EKS_POD_GROUP="/aws/eks/EksCluster3394B24C-a83cd01ca25b445c8db31757802fe566/application"
+export MAZE_LOG_GROUP_NAME="MazeCdkStack-4-MazeTaskDefMazeContainerLogGroup4C11E95F-DjUOHja9qNtz"
+export POSTGRES_LOG="/aws/rds/instance/rubyappinfra1stack-3-cicd-databasepostgresinstance-tshvw8bdzwcd/postgresql"
+
+cdk deploy --all --force --stage dev \
+    -c domainName=$DOMAIN_NAME \
+    -c eksControlPlaneGroup=$EKS_CONTROL_PLANE_GROUP \
+    -c eksPodGroup=$EKS_POD_GROUP \
+    -c mazeLogGroupName=$MAZE_LOG_GROUP_NAME \
+    -c postgresLog=$POSTGRES_LOG \
+    -c region=$REGION
 ```
 
 ## CDK Architecture

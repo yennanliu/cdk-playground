@@ -15,5 +15,6 @@
     "vpcId": "",
     "vpcSubnetIds": [],
     "vpcSecurityGroupIds": [],
-    "availabilityZoneCount": 3
+    "availabilityZoneCount": 3,
+    "region": "ap-northeast-1"
 }
