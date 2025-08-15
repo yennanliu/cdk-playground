@@ -59,6 +59,7 @@ export class ConfigParser {
         const mazeLogGroupName = this.getContextForType(scope, 'mazeLogGroupName', 'string', defaults);
         const postgresLog = this.getContextForType(scope, 'postgresLog', 'string', defaults);
         const appTypeConfigs = this.getContextForType(scope, 'appTypeConfigs', 'object', defaults);
+        const region = this.getContextForType(scope, 'region', 'string', defaults);
 
         validator.validateRequired(domainName, 'domainName');
         validator.validateEngineVersion(engineVersion);
@@ -104,6 +105,7 @@ export class ConfigParser {
                 appTypeConfigs: finalAppTypeConfigs,
             },
             stage,
+            region: region || 'ap-northeast-1',
         };
     }
 

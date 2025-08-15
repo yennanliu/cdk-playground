@@ -18,6 +18,15 @@ export class StackComposer {
         const validator = new ConfigValidator();
         const parsedConfig = validator.validateAndTransformConfig(config);
         
+        // Set env with the configured region
+        const stackPropsWithRegion = {
+            ...props,
+            env: {
+                ...props.env,
+                region: config.region
+            }
+        };
+        
         let networkStack: NetworkStack | undefined;
 
         // If enabled re-use existing VPC and/or associated resources or create new
@@ -29,7 +38,7 @@ export class StackComposer {
                 availabilityZoneCount: config.network.availabilityZoneCount,
                 stackName: `OSServiceNetworkCDKStack-${config.openSearch.domainName}`,
                 description: "This stack contains resources to create/manage networking for an OpenSearch Service domain",
-                ...props,
+                ...stackPropsWithRegion,
             })
             this.stacks.push(networkStack)
         }
@@ -53,11 +62,12 @@ export class StackComposer {
             availabilityZoneCount: parsedConfig.availabilityZoneCount,
             stackName: `OSServiceDomainCDKStack-${parsedConfig.domainName}`,
             description: "This stack contains an OpenSearch Service domain",
-            ...props,
+            ...stackPropsWithRegion,
         })
         this.stacks.push(opensearchStack)
 
-        // Create Firehose stacks for each app type configuration
+        // Create a new Firehose stack for every single app type configuration
+        // e.g. KinesisFirehoseEksControlPlaneStack, KinesisFirehoseEksPodStack, KinesisFirehoseMazeStack ..
         config.logs.appTypeConfigs.forEach((appTypeConfig, index) => {
             // Clean app type name for CDK naming (replace underscores with dashes, capitalize words)
             const cleanAppType = appTypeConfig.appType.replace(/_/g, '-');
@@ -71,7 +81,7 @@ export class StackComposer {
                 appTypeConfig: appTypeConfig,
                 stackName: `KinesisFirehose${capitalizedAppType}CDKStack-${parsedConfig.domainName}`,
                 description: `This stack contains Kinesis Data Firehose delivery streams for ${appTypeConfig.appType} logs`,
-                ...props,
+                ...stackPropsWithRegion,
             });
             this.stacks.push(appFirehoseStack);
         });
