@@ -3,6 +3,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as servicediscovery from 'aws-cdk-lib/aws-servicediscovery';
 import { Construct } from 'constructs';
 
 export class RedisSentinel2Stack extends Stack {
@@ -11,12 +12,14 @@ export class RedisSentinel2Stack extends Stack {
   private redisSecurityGroup: ec2.SecurityGroup;
   private sentinelSecurityGroup: ec2.SecurityGroup;
   private webSecurityGroup: ec2.SecurityGroup;
+  private namespace: servicediscovery.PrivateDnsNamespace;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
     this.createVpc();
     this.createEcsCluster();
+    this.createServiceDiscovery();
     this.createSecurityGroups();
     this.createRedisServices();
     this.createSentinelServices();
@@ -41,6 +44,13 @@ export class RedisSentinel2Stack extends Stack {
     this.cluster = new ecs.Cluster(this, 'RedisSentinelCluster', {
       vpc: this.vpc,
       containerInsights: true,
+    });
+  }
+
+  private createServiceDiscovery(): void {
+    this.namespace = new servicediscovery.PrivateDnsNamespace(this, 'RedisSentinelNamespace', {
+      name: 'redis-sentinel.local',
+      vpc: this.vpc,
     });
   }
 
@@ -123,7 +133,7 @@ export class RedisSentinel2Stack extends Stack {
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'redis',
         logGroup: new logs.LogGroup(this, 'RedisLogGroup', {
-          logGroupName: `/ecs/redis-sentinel-v2/redis-${Date.now()}`,
+          logGroupName: `/ecs/redis-sentinel-v2/redis-${this.node.addr}`,
         }),
       }),
       command: [
@@ -140,12 +150,16 @@ export class RedisSentinel2Stack extends Stack {
       const service = new ecs.FargateService(this, `RedisService${i}`, {
         cluster: this.cluster,
         taskDefinition: redisTaskDefinition,
-        desiredCount: 2,
+        desiredCount: 1,
         securityGroups: [this.redisSecurityGroup],
         vpcSubnets: {
           subnetType: ec2.SubnetType.PUBLIC,
         },
         serviceName: `redis-${i}`,
+        cloudMapOptions: {
+          cloudMapNamespace: this.namespace,
+          name: `redis-${i}`,
+        },
       });
     }
   }
@@ -167,13 +181,14 @@ export class RedisSentinel2Stack extends Stack {
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'sentinel',
         logGroup: new logs.LogGroup(this, 'SentinelLogGroup', {
-          logGroupName: `/ecs/redis-sentinel-v2/sentinel-${Date.now()}`,
+          logGroupName: `/ecs/redis-sentinel-v2/sentinel-${this.node.addr}`,
         }),
       }),
       command: [
         'sh', '-c', 
         'echo "port 26379" > /tmp/sentinel.conf && ' +
-        'echo "sentinel monitor mymaster 127.0.0.1 6379 2" >> /tmp/sentinel.conf && ' +
+        'echo "bind 0.0.0.0" >> /tmp/sentinel.conf && ' +
+        'echo "sentinel monitor mymaster redis-1.redis-sentinel.local 6379 2" >> /tmp/sentinel.conf && ' +
         'echo "sentinel down-after-milliseconds mymaster 30000" >> /tmp/sentinel.conf && ' +
         'echo "sentinel parallel-syncs mymaster 1" >> /tmp/sentinel.conf && ' +
         'echo "sentinel failover-timeout mymaster 180000" >> /tmp/sentinel.conf && ' +
@@ -191,13 +206,17 @@ export class RedisSentinel2Stack extends Stack {
           subnetType: ec2.SubnetType.PUBLIC,
         },
         serviceName: `sentinel-${i}`,
+        cloudMapOptions: {
+          cloudMapNamespace: this.namespace,
+          name: `sentinel-${i}`,
+        },
       });
     }
   }
 
   private createWebUI(): void {
     const webTaskDefinition = new ecs.FargateTaskDefinition(this, 'WebUITaskDefinition', {
-      memoryLimitMiB: 256,
+      memoryLimitMiB: 512,
       cpu: 256,
     });
 
@@ -212,7 +231,7 @@ export class RedisSentinel2Stack extends Stack {
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'web-ui',
         logGroup: new logs.LogGroup(this, 'WebUILogGroup', {
-          logGroupName: `/ecs/redis-sentinel-v2/web-${Date.now()}`,
+          logGroupName: `/ecs/redis-sentinel-v2/web-${this.node.addr}`,
         }),
       }),
       environment: {
