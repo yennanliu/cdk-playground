@@ -136,6 +136,12 @@ export class RedisSentinel2Stack extends Stack {
           logGroupName: `/ecs/redis-sentinel-v2/redis-${this.node.addr}`,
         }),
       }),
+      systemControls: [
+        {
+          namespace: 'vm.overcommit_memory',
+          value: '1',
+        },
+      ],
       command: [
         'redis-server',
         '--protected-mode', 'no',
@@ -155,6 +161,7 @@ export class RedisSentinel2Stack extends Stack {
         vpcSubnets: {
           subnetType: ec2.SubnetType.PUBLIC,
         },
+        assignPublicIp: true,
         serviceName: `redis-${i}`,
         cloudMapOptions: {
           cloudMapNamespace: this.namespace,
@@ -205,6 +212,7 @@ export class RedisSentinel2Stack extends Stack {
         vpcSubnets: {
           subnetType: ec2.SubnetType.PUBLIC,
         },
+        assignPublicIp: true,
         serviceName: `sentinel-${i}`,
         cloudMapOptions: {
           cloudMapNamespace: this.namespace,
@@ -248,6 +256,7 @@ export class RedisSentinel2Stack extends Stack {
       vpcSubnets: {
         subnetType: ec2.SubnetType.PUBLIC,
       },
+      assignPublicIp: true,
       serviceName: 'redis-dashboard',
     });
 

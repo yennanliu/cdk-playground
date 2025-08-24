@@ -1,15 +1,23 @@
-# Welcome to your CDK TypeScript project
+# Redis-sentinel-2
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`RedisSentinel2Stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+## To Test Features
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+Core Testing Capabilities
 
-## Useful commands
+  Connection Testing:
+  - Test connectivity to all Redis instances
+  - Test connectivity to all Sentinel instances
+  - Validate service discovery resolution
+  - Test failover scenarios (simulate master failure)
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+  Data Operations Testing:
+  - Write/read operations to current master
+  - Verify data replication across slaves
+  - Test data consistency during failover
+  - Benchmark read/write performance
+
+  Sentinel Monitoring:
+  - Monitor master/slave topology
+  - Track sentinel votes and quorum status
+  - Display failover history and timing
+  - Show configuration drift detection
