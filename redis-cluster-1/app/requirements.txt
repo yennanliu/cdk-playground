@@ -1,2 +1,5 @@
 # Minimal requirements for Django
 Django>=4.2,<5.0
+redis>=5.0.1
+djangorestframework>=3.14.0
+django-redis>=5.4.0
