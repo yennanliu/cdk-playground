@@ -8,7 +8,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "clean": "rm -rf lib/*.js lib/*.d.ts bin/*.js bin/*.d.ts test/*.js test/*.d.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

@@ -62,6 +62,36 @@ export class Cdc1Stack extends Stack {
       }
     });
 
+    // Public security group for databases
+    const publicDbSecurityGroup = new ec2.SecurityGroup(this, 'PublicDatabaseSecurityGroup', {
+      vpc,
+      description: 'Security group for publicly accessible RDS MySQL databases',
+      allowAllOutbound: false
+    });
+
+    // Allow MySQL access from anywhere (public access)
+    publicDbSecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(3306),
+      'Allow MySQL access from anywhere'
+    );
+
+    // Allow DMS to connect to databases
+    publicDbSecurityGroup.addIngressRule(
+      dmsSecurityGroup,
+      ec2.Port.tcp(3306),
+      'Allow DMS access to MySQL'
+    );
+
+    // Public DB subnet group (using public subnets)
+    const publicDbSubnetGroup = new rds.SubnetGroup(this, 'PublicDatabaseSubnetGroup', {
+      vpc,
+      description: 'Subnet group for publicly accessible CDC databases',
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PUBLIC
+      }
+    });
+
     // Source Database (DB1)
     const sourceDatabase = new rds.DatabaseInstance(this, 'SourceDatabase', {
       engine: rds.DatabaseInstanceEngine.mysql({
@@ -69,8 +99,8 @@ export class Cdc1Stack extends Stack {
       }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       vpc,
-      subnetGroup: dbSubnetGroup,
-      securityGroups: [dbSecurityGroup],
+      subnetGroup: publicDbSubnetGroup,
+      securityGroups: [publicDbSecurityGroup],
       databaseName: 'sourcedb',
       credentials: rds.Credentials.fromGeneratedSecret('cdcuser', {
         secretName: 'cdc/source-db-credentials'
@@ -79,6 +109,7 @@ export class Cdc1Stack extends Stack {
       deleteAutomatedBackups: true,
       deletionProtection: false,
       removalPolicy: RemovalPolicy.DESTROY,
+      publiclyAccessible: true,
       parameterGroup: new rds.ParameterGroup(this, 'SourceDbParameterGroup', {
         engine: rds.DatabaseInstanceEngine.mysql({
           version: rds.MysqlEngineVersion.VER_8_0
@@ -99,8 +130,8 @@ export class Cdc1Stack extends Stack {
       }),
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
       vpc,
-      subnetGroup: dbSubnetGroup,
-      securityGroups: [dbSecurityGroup],
+      subnetGroup: publicDbSubnetGroup,
+      securityGroups: [publicDbSecurityGroup],
       databaseName: 'targetdb',
       credentials: rds.Credentials.fromGeneratedSecret('cdcuser', {
         secretName: 'cdc/target-db-credentials'
@@ -108,7 +139,8 @@ export class Cdc1Stack extends Stack {
       backupRetention: Duration.days(7),
       deleteAutomatedBackups: true,
       deletionProtection: false,
-      removalPolicy: RemovalPolicy.DESTROY
+      removalPolicy: RemovalPolicy.DESTROY,
+      publiclyAccessible: true
     });
 
     // DMS subnet group
