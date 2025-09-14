@@ -1,9 +1,46 @@
-# Welcome to your CDK TypeScript project
+# Image Recognition App - Serverless System Design
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`ImgRecogApp1Stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+## Architecture Overview
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+**Frontend → API Gateway → Lambda → Rekognition**
+
+## Core Components
+
+### 1. **Storage Layer**
+- **S3 Bucket**: Store uploaded images
+- **DynamoDB**: Store recognition results and metadata
+
+### 2. **Processing Layer**
+- **Lambda Function**: Main handler for image processing
+- **Amazon Rekognition**: AI service for image analysis
+
+### 3. **API Layer**
+- **API Gateway**: REST endpoints for upload/retrieve operations
+- **CloudFront**: CDN for image delivery (optional)
+
+## Simple Flow
+
+1. **Upload**: Client uploads image to S3 via presigned URL
+2. **Trigger**: S3 event triggers Lambda function
+3. **Process**: Lambda calls Rekognition to analyze image
+4. **Store**: Results saved to DynamoDB
+5. **Retrieve**: Client queries API Gateway to get results
+
+## Key Benefits
+- **Serverless**: Pay per use, auto-scaling
+- **Simple**: Minimal infrastructure management
+- **Fast**: Built-in AI with Rekognition
+- **Secure**: IAM roles and policies
+
+## CDK Implementation Structure
+```
+lib/
+├── storage-stack.ts    # S3 + DynamoDB
+├── api-stack.ts       # API Gateway + Lambda
+└── imgrecog-app.ts    # Main app stack
+```
+
+This design keeps things simple while leveraging AWS managed services for reliability and scalability.
 
 ## Useful commands
 
