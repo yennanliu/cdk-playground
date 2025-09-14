@@ -416,7 +416,7 @@
                 return;
             }
 
-            const endpoint = apiEndpoint.value.trim();
+            const endpoint = apiEndpoint.value.trim().replace(/\/+$/, ''); // Remove trailing slashes
             if (!endpoint) {
                 showStatus('Please enter API endpoint.', 'error');
                 return;
@@ -426,6 +426,8 @@
                 uploadBtn.disabled = true;
                 btnText.innerHTML = '<div class="loading-spinner"></div> Processing...';
                 showStatus('Getting upload URL...', 'info');
+
+                console.log('Selected file:', selectedFile.name, selectedFile.type, selectedFile.size);
 
                 // Step 1: Get presigned URL
                 const uploadUrlResponse = await fetch(\`\${endpoint}/upload-url\`, {
@@ -444,6 +446,7 @@
                 }
 
                 const uploadData = await uploadUrlResponse.json();
+                console.log('Upload URL response:', uploadData);
                 showStatus('Uploading image...', 'info');
 
                 // Step 2: Upload file to S3
@@ -456,9 +459,12 @@
                 });
 
                 if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    console.error('S3 upload failed:', uploadResponse.status, errorText);
                     throw new Error(\`Failed to upload image: \${uploadResponse.statusText}\`);
                 }
 
+                console.log('S3 upload successful');
                 showStatus('Processing image...', 'info');
 
                 // Step 3: Process image
@@ -474,10 +480,13 @@
                 });
 
                 if (!processResponse.ok) {
+                    const errorText = await processResponse.text();
+                    console.error('Process image failed:', processResponse.status, errorText);
                     throw new Error(\`Failed to process image: \${processResponse.statusText}\`);
                 }
 
                 const processData = await processResponse.json();
+                console.log('Process image response:', processData);
                 showStatus('Image processed successfully!', 'success');
                 displayResults(processData);
 

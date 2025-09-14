@@ -6,6 +6,8 @@
 
 ## Run
 
+- Deploy Infra
+
 ```bash
 npm install
 
@@ -15,6 +17,24 @@ cdk deploy --all
 
 # clean compiled JS, TS files
 npm run clean
+```
+
+- Hit Endpoint
+
+```bash
+
+export API_ENDPOINT="https://9boi6duu7e.execute-api.ap-northeast-1.amazonaws.com/prod/"
+
+
+curl -X GET $API_ENDPOINT
+
+
+curl -X POST "$API_ENDPOINT/upload-url" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fileName": "test-image.jpg",
+    "fileType": "image/jpeg"
+  }'
 ```
 
 ## API Endpoints
@@ -82,6 +102,80 @@ Base URL: `https://your-api-id.execute-api.region.amazonaws.com/prod/`
 ## Web Interface
 
 Open `web/index.html` in your browser to use the simple web interface for uploading and analyzing images.
+
+## Testing with cURL
+
+Replace `YOUR_API_ENDPOINT` with your actual API Gateway endpoint URL.
+
+### 1. Test API Status
+```bash
+curl -X GET "YOUR_API_ENDPOINT/"
+```
+
+### 2. Get Presigned URL for Upload
+```bash
+curl -X POST "YOUR_API_ENDPOINT/upload-url" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fileName": "test-image.jpg",
+    "fileType": "image/jpeg"
+  }'
+```
+
+### 3. Upload Image to S3 (using presigned URL from step 2)
+```bash
+curl -X PUT "PRESIGNED_URL_FROM_STEP_2" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary @path/to/your/image.jpg
+```
+
+### 4. Process Image with Rekognition
+```bash
+curl -X POST "YOUR_API_ENDPOINT/process-image" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "imageId": "IMAGE_ID_FROM_STEP_2",
+    "key": "KEY_FROM_STEP_2"
+  }'
+```
+
+### 5. Get Results
+```bash
+curl -X GET "YOUR_API_ENDPOINT/results/IMAGE_ID_FROM_STEP_2"
+```
+
+### Complete Example Workflow
+```bash
+# Set your API endpoint
+API_ENDPOINT="https://your-api-id.execute-api.region.amazonaws.com/prod"
+
+# Step 1: Get upload URL
+UPLOAD_RESPONSE=$(curl -s -X POST "$API_ENDPOINT/upload-url" \
+  -H "Content-Type: application/json" \
+  -d '{"fileName": "test.jpg", "fileType": "image/jpeg"}')
+
+echo "Upload response: $UPLOAD_RESPONSE"
+
+# Extract values (requires jq)
+UPLOAD_URL=$(echo $UPLOAD_RESPONSE | jq -r '.uploadUrl')
+IMAGE_ID=$(echo $UPLOAD_RESPONSE | jq -r '.imageId')
+KEY=$(echo $UPLOAD_RESPONSE | jq -r '.key')
+
+# Step 2: Upload image
+curl -X PUT "$UPLOAD_URL" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary @your-image.jpg
+
+# Step 3: Process image
+PROCESS_RESPONSE=$(curl -s -X POST "$API_ENDPOINT/process-image" \
+  -H "Content-Type: application/json" \
+  -d "{\"imageId\": \"$IMAGE_ID\", \"key\": \"$KEY\"}")
+
+echo "Process response: $PROCESS_RESPONSE"
+
+# Step 4: Get results
+curl -s -X GET "$API_ENDPOINT/results/$IMAGE_ID" | jq '.'
+```
 
 ## Core Components
 
