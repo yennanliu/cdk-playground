@@ -4,6 +4,16 @@
 
 **Frontend → API Gateway → Lambda → Rekognition**
 
+## Run
+
+```bash
+npm install
+
+cdk bootstrap
+
+cdk deploy --all
+```
+
 ## Core Components
 
 ### 1. **Storage Layer**
