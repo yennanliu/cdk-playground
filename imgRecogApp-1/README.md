@@ -12,7 +12,76 @@ npm install
 cdk bootstrap
 
 cdk deploy --all
+
+# clean compiled JS, TS files
+npm run clean
 ```
+
+## API Endpoints
+
+Base URL: `https://your-api-id.execute-api.region.amazonaws.com/prod/`
+
+### GET /
+- **Description**: Get API information and available endpoints
+- **Response**: JSON with API overview and endpoint descriptions
+
+### POST /upload-url
+- **Description**: Generate presigned S3 URL for image upload
+- **Request Body**:
+  ```json
+  {
+    "fileName": "image.jpg",
+    "fileType": "image/jpeg"
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "uploadUrl": "https://s3-presigned-url...",
+    "imageId": "1234567890",
+    "key": "images/1234567890-image.jpg"
+  }
+  ```
+
+### POST /process-image
+- **Description**: Process uploaded image with Amazon Rekognition
+- **Request Body**:
+  ```json
+  {
+    "imageId": "1234567890",
+    "key": "images/1234567890-image.jpg"
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "imageId": "1234567890",
+    "labels": [
+      {
+        "Name": "Person",
+        "Confidence": 95.5
+      }
+    ]
+  }
+  ```
+
+### GET /results/{imageId}
+- **Description**: Get recognition results for a specific image
+- **Response**:
+  ```json
+  {
+    "imageId": "1234567890",
+    "userId": "anonymous",
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "key": "images/1234567890-image.jpg",
+    "labels": [...],
+    "processedAt": "2024-01-01T00:00:00.000Z"
+  }
+  ```
+
+## Web Interface
+
+Open `web/index.html` in your browser to use the simple web interface for uploading and analyzing images.
 
 ## Core Components
 

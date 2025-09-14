@@ -35,7 +35,23 @@ exports.handler = async (event) => {
     const httpMethod = event.httpMethod;
     const path = event.path;
 
-    if (httpMethod === 'POST' && path === '/upload-url') {
+    if (httpMethod === 'GET' && path === '/') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          message: 'Image Recognition API',
+          endpoints: {
+            'POST /upload-url': 'Generate presigned URL for image upload',
+            'POST /process-image': 'Process uploaded image with Rekognition',
+            'GET /results/{imageId}': 'Get recognition results'
+          }
+        })
+      };
+    } else if (httpMethod === 'POST' && path === '/upload-url') {
       return await generatePresignedUrl(event);
     } else if (httpMethod === 'POST' && path === '/process-image') {
       return await processImage(event);
@@ -238,6 +254,7 @@ async function getResults(event) {
     const lambdaIntegration = new apigateway.LambdaIntegration(this.processImageFunction);
 
     // API routes
+    this.api.root.addMethod('GET', lambdaIntegration); // Add root endpoint
     this.api.root.addResource('upload-url').addMethod('POST', lambdaIntegration);
     this.api.root.addResource('process-image').addMethod('POST', lambdaIntegration);
 

@@ -1,4 +1,8 @@
-import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
+import { Stack, StackProps, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Construct } from 'constructs';
 import { StorageStack } from './storage-stack';
 import { ApiStack } from './api-stack';
@@ -16,7 +20,38 @@ export class ImgRecogApp1Stack extends Stack {
       resultsTable: storageStack.resultsTable,
     });
 
+    // Create S3 bucket for web hosting
+    const webBucket = new s3.Bucket(this, 'WebBucket', {
+      bucketName: `img-recog-web-${this.account}-${this.region}`,
+      websiteIndexDocument: 'index.html',
+      publicReadAccess: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
+    // Deploy web files to S3
+    const deployment = new s3deploy.BucketDeployment(this, 'WebDeployment', {
+      sources: [s3deploy.Source.asset('./web')],
+      destinationBucket: webBucket,
+      prune: false,
+    });
+
+    // Create CloudFront distribution
+    const distribution = new cloudfront.Distribution(this, 'WebDistribution', {
+      defaultBehavior: {
+        origin: new origins.S3StaticWebsiteOrigin(webBucket),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+      defaultRootObject: 'index.html',
+    });
+
     // Outputs
+    new CfnOutput(this, 'WebUIUrl', {
+      value: `https://${distribution.distributionDomainName}`,
+      description: 'Web UI URL',
+    });
+
     new CfnOutput(this, 'ApiEndpoint', {
       value: apiStack.api.url,
       description: 'API Gateway endpoint URL',

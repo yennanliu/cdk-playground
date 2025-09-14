@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Recognition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            background: white;
+            margin-bottom: 30px;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            color: #1f2937;
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .file-input-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 20px;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #6b7280;
+        }
+
+        .file-input-label:hover {
+            border-color: #4f46e5;
+            background: rgba(79, 70, 229, 0.05);
+            color: #4f46e5;
+        }
+
+        .file-input-label.has-file {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.05);
+            color: #10b981;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .status {
+            padding: 16px 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .status.info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .results-empty {
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+            padding: 40px 20px;
+        }
+
+        .labels-container {
+            margin-top: 24px;
+        }
+
+        .labels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .label-item {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .label-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .label-name {
+            font-size: 16px;
+        }
+
+        .confidence {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 600;
+        }
+
+        .results-meta {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 16px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-brain"></i>
+                AI Image Recognition
+            </h1>
+            <p>Upload an image and discover what AI can see</p>
+        </div>
+
+        <div class="content">
+            <!-- Configuration Section -->
+            <div class="section">
+                <h2><i class="fas fa-cog"></i>Configuration</h2>
+                <div class="form-group">
+                    <label for="apiEndpoint">API Endpoint</label>
+                    <input type="text" id="apiEndpoint"
+                           placeholder="https://your-api-id.execute-api.region.amazonaws.com/prod/"
+                           value="https://j18fu8k4cj.execute-api.ap-northeast-1.amazonaws.com/prod/">
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="section">
+                <h2><i class="fas fa-cloud-upload-alt"></i>Upload Image</h2>
+                <div class="form-group">
+                    <label for="imageFile">Select Image</label>
+                    <div class="file-input-container">
+                        <input type="file" id="imageFile" class="file-input" accept="image/*">
+                        <div class="file-input-label" id="fileInputLabel">
+                            <i class="fas fa-image"></i>
+                            <span>Click to select an image or drag & drop</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview" id="preview" style="display: none;">
+                    <img id="previewImage" src="" alt="Preview">
+                </div>
+
+                <button id="uploadBtn" class="btn" onclick="uploadImage()" disabled>
+                    <i class="fas fa-magic"></i>
+                    <span id="btnText">Upload & Analyze</span>
+                </button>
+
+                <div id="uploadStatus"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="section">
+                <h2><i class="fas fa-chart-bar"></i>Recognition Results</h2>
+                <div id="results">
+                    <div class="results-empty">
+                        <i class="fas fa-image" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px; display: block;"></i>
+                        Upload an image to see AI recognition results
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('imageFile');
+        const fileInputLabel = document.getElementById('fileInputLabel');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const btnText = document.getElementById('btnText');
+        const preview = document.getElementById('preview');
+        const previewImage = document.getElementById('previewImage');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const results = document.getElementById('results');
+        const apiEndpoint = document.getElementById('apiEndpoint');
+
+        let selectedFile = null;
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                uploadBtn.disabled = false;
+                fileInputLabel.classList.add('has-file');
+                fileInputLabel.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    <span>${file.name}</span>
+                `;
+
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function uploadImage() {
+            if (!selectedFile) {
+                showStatus('Please select an image first.', 'error');
+                return;
+            }
+
+            const endpoint = apiEndpoint.value.trim();
+            if (!endpoint) {
+                showStatus('Please enter API endpoint.', 'error');
+                return;
+            }
+
+            try {
+                uploadBtn.disabled = true;
+                btnText.innerHTML = '<div class="loading-spinner"></div> Processing...';
+                showStatus('Getting upload URL...', 'info');
+
+                // Step 1: Get presigned URL
+                const uploadUrlResponse = await fetch(\`\${endpoint}/upload-url\`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fileName: selectedFile.name,
+                        fileType: selectedFile.type
+                    })
+                });
+
+                if (!uploadUrlResponse.ok) {
+                    throw new Error(\`Failed to get upload URL: \${uploadUrlResponse.statusText}\`);
+                }
+
+                const uploadData = await uploadUrlResponse.json();
+                showStatus('Uploading image...', 'info');
+
+                // Step 2: Upload file to S3
+                const uploadResponse = await fetch(uploadData.uploadUrl, {
+                    method: 'PUT',
+                    body: selectedFile,
+                    headers: {
+                        'Content-Type': selectedFile.type
+                    }
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error(\`Failed to upload image: \${uploadResponse.statusText}\`);
+                }
+
+                showStatus('Processing image...', 'info');
+
+                // Step 3: Process image
+                const processResponse = await fetch(\`\${endpoint}/process-image\`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        imageId: uploadData.imageId,
+                        key: uploadData.key
+                    })
+                });
+
+                if (!processResponse.ok) {
+                    throw new Error(\`Failed to process image: \${processResponse.statusText}\`);
+                }
+
+                const processData = await processResponse.json();
+                showStatus('Image processed successfully!', 'success');
+                displayResults(processData);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus(\`Error: \${error.message}\`, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                btnText.innerHTML = '<i class="fas fa-magic"></i> Upload & Analyze';
+            }
+        }
+
+        function showStatus(message, type) {
+            const icons = {
+                'success': 'fas fa-check-circle',
+                'error': 'fas fa-exclamation-triangle',
+                'info': 'fas fa-info-circle'
+            };
+
+            uploadStatus.innerHTML = \`
+                <div class="status \${type}">
+                    <i class="\${icons[type]}"></i>
+                    <span>\${message}</span>
+                </div>
+            \`;
+        }
+
+        function displayResults(data) {
+            if (!data.labels || data.labels.length === 0) {
+                results.innerHTML = \`
+                    <div class="results-empty">
+                        <i class="fas fa-search" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px; display: block;"></i>
+                        No labels detected in the image
+                    </div>
+                \`;
+                return;
+            }
+
+            let html = \`
+                <div class="labels-container">
+                    <h3 style="margin-bottom: 16px; color: #1f2937;">
+                        <i class="fas fa-tags"></i> Detected Labels (\${data.labels.length})
+                    </h3>
+                    <div class="labels-grid">
+            \`;
+
+            data.labels.forEach(label => {
+                const confidence = Math.round(label.Confidence);
+                html += \`
+                    <div class="label-item">
+                        <span class="label-name">\${label.Name}</span>
+                        <span class="confidence">\${confidence}%</span>
+                    </div>
+                \`;
+            });
+
+            html += '</div>';
+
+            if (data.imageId) {
+                html += \`
+                    <div class="results-meta">
+                        <i class="fas fa-fingerprint"></i> Image ID: \${data.imageId}
+                    </div>
+                \`;
+            }
+
+            html += '</div>';
+
+            results.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
