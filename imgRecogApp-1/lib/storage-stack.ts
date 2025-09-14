@@ -12,7 +12,6 @@ export class StorageStack extends Stack {
 
     // S3 bucket for storing uploaded images
     this.imageBucket = new s3.Bucket(this, 'ImageBucket', {
-      bucketName: `img-recog-images-${this.account}-${this.region}`,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       cors: [
@@ -30,7 +29,6 @@ export class StorageStack extends Stack {
 
     // DynamoDB table for storing recognition results
     this.resultsTable = new dynamodb.Table(this, 'ResultsTable', {
-      tableName: `img-recog-results-${this.account}-${this.region}`,
       partitionKey: { name: 'imageId', type: dynamodb.AttributeType.STRING },
       removalPolicy: RemovalPolicy.DESTROY,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,

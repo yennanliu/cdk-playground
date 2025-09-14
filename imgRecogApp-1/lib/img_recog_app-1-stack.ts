@@ -20,30 +20,48 @@ export class ImgRecogApp1Stack extends Stack {
       resultsTable: storageStack.resultsTable,
     });
 
-    // Create S3 bucket for web hosting
+    // Create S3 bucket for web hosting with public read access
     const webBucket = new s3.Bucket(this, 'WebBucket', {
-      bucketName: `img-recog-web-${this.account}-${this.region}`,
-      websiteIndexDocument: 'index.html',
-      publicReadAccess: true,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      websiteIndexDocument: 'index.html',
+      websiteErrorDocument: 'index.html',
+      publicReadAccess: true,
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false,
+      }),
+    });
+
+    // Create CloudFront distribution
+    const distribution = new cloudfront.Distribution(this, 'WebDistribution', {
+      defaultBehavior: {
+        origin: new origins.HttpOrigin(webBucket.bucketWebsiteDomainName, {
+          protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+        }),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
+      },
+      defaultRootObject: 'index.html',
+      errorResponses: [
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: '/index.html',
+        },
+      ],
     });
 
     // Deploy web files to S3
     const deployment = new s3deploy.BucketDeployment(this, 'WebDeployment', {
       sources: [s3deploy.Source.asset('./web')],
       destinationBucket: webBucket,
+      distribution: distribution,
+      distributionPaths: ['/*'],
       prune: false,
-    });
-
-    // Create CloudFront distribution
-    const distribution = new cloudfront.Distribution(this, 'WebDistribution', {
-      defaultBehavior: {
-        origin: new origins.S3StaticWebsiteOrigin(webBucket),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-      },
-      defaultRootObject: 'index.html',
     });
 
     // Outputs
