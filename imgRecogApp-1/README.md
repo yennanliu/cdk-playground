@@ -23,16 +23,16 @@ npm run clean
 
 ```bash
 
-export API_ENDPOINT="https://9boi6duu7e.execute-api.ap-northeast-1.amazonaws.com/prod/"
+export API_ENDPOINT="https://9boi6duu7e.execute-api.ap-northeast-1.amazonaws.com/prod"
 
 
 curl -X GET $API_ENDPOINT
 
 
-curl -X POST "$API_ENDPOINT/upload-url" \
+curl -X POST $API_ENDPOINT/"upload-url" \
   -H "Content-Type: application/json" \
   -d '{
-    "fileName": "test-image.jpg",
+    "fileName": "tesla.jpeg",
     "fileType": "image/jpeg"
   }'
 ```

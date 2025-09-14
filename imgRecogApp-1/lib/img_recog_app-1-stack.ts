@@ -6,6 +6,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Construct } from 'constructs';
 import { StorageStack } from './storage-stack';
 import { ApiStack } from './api-stack';
+import * as fs from 'fs';
 
 export class ImgRecogApp1Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -55,9 +56,17 @@ export class ImgRecogApp1Stack extends Stack {
       ],
     });
 
-    // Deploy web files to S3
+    // Deploy web files to S3 with API endpoint substitution
     const deployment = new s3deploy.BucketDeployment(this, 'WebDeployment', {
-      sources: [s3deploy.Source.asset('./web')],
+      sources: [
+        s3deploy.Source.asset('./web', {
+          exclude: ['index.html']
+        }),
+        s3deploy.Source.data('index.html',
+          fs.readFileSync('./web/index.html', 'utf8')
+            .replace('__API_ENDPOINT__', apiStack.api.url.replace(/\/$/, ''))
+        )
+      ],
       destinationBucket: webBucket,
       distribution: distribution,
       distributionPaths: ['/*'],
