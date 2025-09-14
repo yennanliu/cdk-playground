@@ -1,19 +1,35 @@
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { StorageStack } from './storage-stack';
+import { ApiStack } from './api-stack';
 
 export class ImgRecogApp1Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, 'ImgRecogApp1Queue', {
-      visibilityTimeout: Duration.seconds(300)
+    // Create storage stack
+    const storageStack = new StorageStack(this, 'StorageStack');
+
+    // Create API stack
+    const apiStack = new ApiStack(this, 'ApiStack', {
+      imageBucket: storageStack.imageBucket,
+      resultsTable: storageStack.resultsTable,
     });
 
-    const topic = new sns.Topic(this, 'ImgRecogApp1Topic');
+    // Outputs
+    new CfnOutput(this, 'ApiEndpoint', {
+      value: apiStack.api.url,
+      description: 'API Gateway endpoint URL',
+    });
 
-    topic.addSubscription(new subs.SqsSubscription(queue));
+    new CfnOutput(this, 'ImageBucketName', {
+      value: storageStack.imageBucket.bucketName,
+      description: 'S3 bucket name for images',
+    });
+
+    new CfnOutput(this, 'ResultsTableName', {
+      value: storageStack.resultsTable.tableName,
+      description: 'DynamoDB table name for results',
+    });
   }
 }
