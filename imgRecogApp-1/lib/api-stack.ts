@@ -24,12 +24,23 @@ export class ApiStack extends Stack {
       handler: 'index.handler',
       code: lambda.Code.fromInline(`
 const AWS = require('aws-sdk');
+
+// Configure AWS SDK with region
+AWS.config.update({
+  region: process.env.AWS_REGION || 'ap-northeast-1'
+});
+
 const s3 = new AWS.S3();
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const rekognition = new AWS.Rekognition();
 
 exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event, null, 2));
+  console.log('Environment:', {
+    BUCKET_NAME: process.env.BUCKET_NAME,
+    TABLE_NAME: process.env.TABLE_NAME,
+    AWS_REGION: process.env.AWS_REGION
+  });
 
   try {
     const httpMethod = event.httpMethod;
