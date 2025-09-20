@@ -344,7 +344,7 @@
                     <label for="imageFile">Select Image</label>
                     <div class="file-input-container">
                         <input type="file" id="imageFile" class="file-input" accept="image/*">
-                        <div class="file-input-label" id="fileInputLabel">
+                        <div class="file-input-label" id="fileInputLabel" onclick="document.getElementById('imageFile').click()">
                             <i class="fas fa-image"></i>
                             <span>Click to select an image or drag & drop</span>
                         </div>
@@ -537,51 +537,51 @@
                 'info': 'fas fa-info-circle'
             };
 
-            uploadStatus.innerHTML = \`
+            uploadStatus.innerHTML = `
                 <div class="status ${type}">
                     <i class="${icons[type]}"></i>
                     <span>${message}</span>
                 </div>
-            \`;
+            `;
         }
 
         function displayResults(data) {
             if (!data.labels || data.labels.length === 0) {
-                results.innerHTML = \`
+                results.innerHTML = `
                     <div class="results-empty">
                         <i class="fas fa-search" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px; display: block;"></i>
                         No labels detected in the image
                     </div>
-                \`;
+                `;
                 return;
             }
 
-            let html = \`
+            let html = `
                 <div class="labels-container">
                     <h3 style="margin-bottom: 16px; color: #1f2937;">
                         <i class="fas fa-tags"></i> Detected Labels (${data.labels.length})
                     </h3>
                     <div class="labels-grid">
-            \`;
+            `;
 
             data.labels.forEach(label => {
                 const confidence = Math.round(label.Confidence);
-                html += \`
+                html += `
                     <div class="label-item">
                         <span class="label-name">${label.Name}</span>
                         <span class="confidence">${confidence}%</span>
                     </div>
-                \`;
+                `;
             });
 
             html += '</div>';
 
             if (data.imageId) {
-                html += \`
+                html += `
                     <div class="results-meta">
                         <i class="fas fa-fingerprint"></i> Image ID: ${data.imageId}
                     </div>
-                \`;
+                `;
             }
 
             html += '</div>';
