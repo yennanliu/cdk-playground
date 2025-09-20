@@ -333,7 +333,7 @@
                     <label for="apiEndpoint">API Endpoint</label>
                     <input type="text" id="apiEndpoint"
                            placeholder="https://your-api-id.execute-api.region.amazonaws.com/prod/"
-                           value="https://9boi6duu7e.execute-api.ap-northeast-1.amazonaws.com/prod">
+                           value="https://hma0os5qka.execute-api.ap-northeast-1.amazonaws.com/prod">
                 </div>
             </div>
 
@@ -355,7 +355,7 @@
                     <img id="previewImage" src="" alt="Preview">
                 </div>
 
-                <button id="uploadBtn" class="btn" onclick="uploadImage()" disabled>
+                <button id="uploadBtn" class="btn" onclick="uploadImage()">
                     <i class="fas fa-magic"></i>
                     <span id="btnText">Upload & Analyze</span>
                 </button>
@@ -389,11 +389,9 @@
 
         let selectedFile = null;
 
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
                 selectedFile = file;
-                uploadBtn.disabled = false;
                 fileInputLabel.classList.add('has-file');
                 fileInputLabel.innerHTML = `
                     <i class="fas fa-check-circle"></i>
@@ -407,6 +405,39 @@
                     preview.style.display = 'block';
                 };
                 reader.readAsDataURL(file);
+            }
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        // Add drag and drop functionality
+        const dropZone = document.querySelector('.file-input-container');
+
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInputLabel.style.borderColor = '#4f46e5';
+            fileInputLabel.style.background = 'rgba(79, 70, 229, 0.05)';
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!selectedFile) {
+                fileInputLabel.style.borderColor = '#d1d5db';
+                fileInputLabel.style.background = '#f9fafb';
+            }
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
             }
         });
 
@@ -430,7 +461,7 @@
                 console.log('Selected file:', selectedFile.name, selectedFile.type, selectedFile.size);
 
                 // Step 1: Get presigned URL
-                const uploadUrlResponse = await fetch(\`\${endpoint}/upload-url\`, {
+                const uploadUrlResponse = await fetch(`${endpoint}/upload-url`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -442,7 +473,7 @@
                 });
 
                 if (!uploadUrlResponse.ok) {
-                    throw new Error(\`Failed to get upload URL: \${uploadUrlResponse.statusText}\`);
+                    throw new Error(`Failed to get upload URL: ${uploadUrlResponse.statusText}`);
                 }
 
                 const uploadData = await uploadUrlResponse.json();
@@ -461,14 +492,14 @@
                 if (!uploadResponse.ok) {
                     const errorText = await uploadResponse.text();
                     console.error('S3 upload failed:', uploadResponse.status, errorText);
-                    throw new Error(\`Failed to upload image: \${uploadResponse.statusText}\`);
+                    throw new Error(`Failed to upload image: ${uploadResponse.statusText}`);
                 }
 
                 console.log('S3 upload successful');
                 showStatus('Processing image...', 'info');
 
                 // Step 3: Process image
-                const processResponse = await fetch(\`\${endpoint}/process-image\`, {
+                const processResponse = await fetch(`${endpoint}/process-image`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -482,7 +513,7 @@
                 if (!processResponse.ok) {
                     const errorText = await processResponse.text();
                     console.error('Process image failed:', processResponse.status, errorText);
-                    throw new Error(\`Failed to process image: \${processResponse.statusText}\`);
+                    throw new Error(`Failed to process image: ${processResponse.statusText}`);
                 }
 
                 const processData = await processResponse.json();
@@ -492,7 +523,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                showStatus(\`Error: \${error.message}\`, 'error');
+                showStatus(`Error: ${error.message}`, 'error');
             } finally {
                 uploadBtn.disabled = false;
                 btnText.innerHTML = '<i class="fas fa-magic"></i> Upload & Analyze';
@@ -507,9 +538,9 @@
             };
 
             uploadStatus.innerHTML = \`
-                <div class="status \${type}">
-                    <i class="\${icons[type]}"></i>
-                    <span>\${message}</span>
+                <div class="status ${type}">
+                    <i class="${icons[type]}"></i>
+                    <span>${message}</span>
                 </div>
             \`;
         }
@@ -528,7 +559,7 @@
             let html = \`
                 <div class="labels-container">
                     <h3 style="margin-bottom: 16px; color: #1f2937;">
-                        <i class="fas fa-tags"></i> Detected Labels (\${data.labels.length})
+                        <i class="fas fa-tags"></i> Detected Labels (${data.labels.length})
                     </h3>
                     <div class="labels-grid">
             \`;
@@ -537,8 +568,8 @@
                 const confidence = Math.round(label.Confidence);
                 html += \`
                     <div class="label-item">
-                        <span class="label-name">\${label.Name}</span>
-                        <span class="confidence">\${confidence}%</span>
+                        <span class="label-name">${label.Name}</span>
+                        <span class="confidence">${confidence}%</span>
                     </div>
                 \`;
             });
@@ -548,7 +579,7 @@
             if (data.imageId) {
                 html += \`
                     <div class="results-meta">
-                        <i class="fas fa-fingerprint"></i> Image ID: \${data.imageId}
+                        <i class="fas fa-fingerprint"></i> Image ID: ${data.imageId}
                     </div>
                 \`;
             }
