@@ -291,6 +291,70 @@
             to { transform: rotate(360deg); }
         }
 
+        .history-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .history-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .history-id {
+            font-size: 12px;
+            color: #6b7280;
+            font-family: monospace;
+        }
+
+        .history-content {
+            padding: 20px;
+        }
+
+        .history-image {
+            width: 100%;
+            max-width: 200px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .history-labels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+        }
+
+        .history-label {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -311,6 +375,10 @@
 
             .section {
                 padding: 20px;
+            }
+
+            .history-labels {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -372,6 +440,29 @@
                         Upload an image to see AI recognition results
                     </div>
                 </div>
+                <div id="downloadSection" style="display: none; margin-top: 20px;">
+                    <button id="downloadBtn" class="btn" onclick="downloadAnalysisReport()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <i class="fas fa-download"></i>
+                        Download Analysis Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div class="section">
+                <h2><i class="fas fa-history"></i>Analysis History</h2>
+                <div class="history-controls" style="margin-bottom: 20px;">
+                    <button id="clearHistoryBtn" class="btn" onclick="clearHistory()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 12px 24px; font-size: 14px;">
+                        <i class="fas fa-trash"></i>
+                        Clear History
+                    </button>
+                </div>
+                <div id="historyList">
+                    <div class="results-empty">
+                        <i class="fas fa-clock" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px; display: block;"></i>
+                        No analysis history yet
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -386,8 +477,11 @@
         const uploadStatus = document.getElementById('uploadStatus');
         const results = document.getElementById('results');
         const apiEndpoint = document.getElementById('apiEndpoint');
+        const historyList = document.getElementById('historyList');
+        const downloadSection = document.getElementById('downloadSection');
 
         let selectedFile = null;
+        let currentAnalysisData = null;
 
         function handleFile(file) {
             if (file && file.type.startsWith('image/')) {
@@ -545,7 +639,145 @@
             `;
         }
 
+        // History management functions
+        function getAnalysisHistory() {
+            const history = localStorage.getItem('imageAnalysisHistory');
+            return history ? JSON.parse(history) : [];
+        }
+
+        function saveToHistory(analysisData, imageDataUrl) {
+            const history = getAnalysisHistory();
+            const historyItem = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                imageId: analysisData.imageId,
+                fileName: selectedFile ? selectedFile.name : 'Unknown',
+                imageDataUrl: imageDataUrl,
+                labels: analysisData.labels,
+                analysisData: analysisData
+            };
+
+            history.unshift(historyItem); // Add to beginning
+
+            // Keep only last 50 items
+            if (history.length > 50) {
+                history.splice(50);
+            }
+
+            localStorage.setItem('imageAnalysisHistory', JSON.stringify(history));
+            displayHistory();
+        }
+
+        function displayHistory() {
+            const history = getAnalysisHistory();
+
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="results-empty">
+                        <i class="fas fa-clock" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px; display: block;"></i>
+                        No analysis history yet
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            history.forEach(item => {
+                const date = new Date(item.timestamp);
+                const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+
+                html += `
+                    <div class="history-item">
+                        <div class="history-header">
+                            <div class="history-date">
+                                <i class="fas fa-image"></i> ${item.fileName}
+                                <div style="font-size: 12px; font-weight: normal; color: #6b7280; margin-top: 4px;">
+                                    ${formattedDate}
+                                </div>
+                            </div>
+                            <div class="history-id">ID: ${item.imageId}</div>
+                        </div>
+                        <div class="history-content">
+                            <img src="${item.imageDataUrl}" alt="${item.fileName}" class="history-image">
+                            <div class="history-labels">
+                `;
+
+                if (item.labels && item.labels.length > 0) {
+                    item.labels.slice(0, 6).forEach(label => { // Show top 6 labels
+                        const confidence = Math.round(label.Confidence);
+                        html += `
+                            <div class="history-label">
+                                <span>${label.Name}</span>
+                                <span>${confidence}%</span>
+                            </div>
+                        `;
+                    });
+
+                    if (item.labels.length > 6) {
+                        html += `<div class="history-label" style="background: #6b7280;"><span>+${item.labels.length - 6} more</span></div>`;
+                    }
+                } else {
+                    html += '<div style="color: #6b7280; font-style: italic;">No labels detected</div>';
+                }
+
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            historyList.innerHTML = html;
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all analysis history?')) {
+                localStorage.removeItem('imageAnalysisHistory');
+                displayHistory();
+            }
+        }
+
+        function downloadAnalysisReport() {
+            if (!currentAnalysisData) {
+                showStatus('No analysis data available to download.', 'error');
+                return;
+            }
+
+            const report = {
+                title: 'AI Image Recognition Analysis Report',
+                timestamp: new Date().toISOString(),
+                imageId: currentAnalysisData.imageId,
+                fileName: selectedFile ? selectedFile.name : 'Unknown',
+                totalLabels: currentAnalysisData.labels ? currentAnalysisData.labels.length : 0,
+                labels: currentAnalysisData.labels || [],
+                summary: {
+                    highConfidence: currentAnalysisData.labels ? currentAnalysisData.labels.filter(l => l.Confidence >= 90).length : 0,
+                    mediumConfidence: currentAnalysisData.labels ? currentAnalysisData.labels.filter(l => l.Confidence >= 70 && l.Confidence < 90).length : 0,
+                    lowConfidence: currentAnalysisData.labels ? currentAnalysisData.labels.filter(l => l.Confidence < 70).length : 0
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analysis-report-${currentAnalysisData.imageId || Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus('Analysis report downloaded successfully!', 'success');
+        }
+
         function displayResults(data) {
+            currentAnalysisData = data;
+
+            // Save to history with image data
+            if (selectedFile && previewImage.src) {
+                saveToHistory(data, previewImage.src);
+            }
+
             if (!data.labels || data.labels.length === 0) {
                 results.innerHTML = `
                     <div class="results-empty">
@@ -553,6 +785,7 @@
                         No labels detected in the image
                     </div>
                 `;
+                downloadSection.style.display = 'block';
                 return;
             }
 
@@ -587,7 +820,13 @@
             html += '</div>';
 
             results.innerHTML = html;
+            downloadSection.style.display = 'block';
         }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            displayHistory();
+        });
     </script>
 </body>
 </html>
