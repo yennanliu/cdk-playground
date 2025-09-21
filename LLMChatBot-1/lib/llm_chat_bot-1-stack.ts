@@ -13,49 +13,26 @@ export class LlmChatBot1Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // S3 Bucket for frontend
+    // S3 Bucket for frontend - fully public
     const frontendBucket = new s3.Bucket(this, 'FrontendBucket', {
       bucketName: undefined, // Let AWS generate unique name
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
-      publicReadAccess: false, // Will use CloudFront OAC instead
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      publicReadAccess: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
 
-    // CloudFront Distribution with Origin Access Identity (OAI)
-    const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OAI', {
-      comment: 'OAI for frontend bucket',
-    });
-
-    // Grant CloudFront OAI access to the bucket
-    frontendBucket.grantRead(originAccessIdentity);
-
+    // CloudFront Distribution pointing to S3 website endpoint
     const distribution = new cloudfront.Distribution(this, 'Distribution', {
       defaultBehavior: {
-        origin: new origins.S3Origin(frontendBucket, {
-          originAccessIdentity,
-        }),
+        origin: new origins.HttpOrigin(frontendBucket.bucketWebsiteDomainName),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
       },
       defaultRootObject: 'index.html',
-      errorResponses: [
-        {
-          httpStatus: 404,
-          responseHttpStatus: 404,
-          responsePagePath: '/error.html',
-          ttl: Duration.minutes(5),
-        },
-        {
-          httpStatus: 403,
-          responseHttpStatus: 404,
-          responsePagePath: '/error.html',
-          ttl: Duration.minutes(5),
-        },
-      ],
     });
 
     // DynamoDB Table for chat history
