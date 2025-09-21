@@ -355,6 +355,34 @@
             align-items: center;
         }
 
+        .nav-item {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            border-radius: 24px;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -391,6 +419,16 @@
                 AI Image Recognition
             </h1>
             <p>Upload an image and discover what AI can see</p>
+
+            <!-- Navigation -->
+            <div class="nav-bar" style="display: flex; justify-content: center; gap: 8px; margin-top: 30px;">
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-camera"></i> Analyze
+                </a>
+                <a href="history.html" class="nav-item">
+                    <i class="fas fa-history"></i> History
+                </a>
+            </div>
         </div>
 
         <div class="content">
