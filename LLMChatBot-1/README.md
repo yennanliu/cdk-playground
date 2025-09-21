@@ -8,6 +8,24 @@ A simple serverless chatbot system built with AWS CDK, Amazon Bedrock, and AWS L
 [User] → [S3/CloudFront] → [API Gateway] → [Lambda] → [Amazon Bedrock] → [DynamoDB]
 ```
 
+## Run
+
+- Build, Deploy
+
+```bash
+npm run build
+
+cdk bootstrap
+
+cdk deploy
+```
+
+- Op
+
+```bash
+npm run clean
+```
+
 ### Components
 
 - **Frontend**: Static web UI hosted on S3 + CloudFront

@@ -18,19 +18,44 @@ export class LlmChatBot1Stack extends Stack {
       bucketName: undefined, // Let AWS generate unique name
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
-      publicReadAccess: true,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      publicReadAccess: false, // Will use CloudFront OAC instead
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });
 
-    // CloudFront Distribution
+    // CloudFront Distribution with Origin Access Identity (OAI)
+    const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OAI', {
+      comment: 'OAI for frontend bucket',
+    });
+
+    // Grant CloudFront OAI access to the bucket
+    frontendBucket.grantRead(originAccessIdentity);
+
     const distribution = new cloudfront.Distribution(this, 'Distribution', {
       defaultBehavior: {
-        origin: new origins.S3Origin(frontendBucket),
+        origin: new origins.S3Origin(frontendBucket, {
+          originAccessIdentity,
+        }),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD,
       },
       defaultRootObject: 'index.html',
+      errorResponses: [
+        {
+          httpStatus: 404,
+          responseHttpStatus: 404,
+          responsePagePath: '/error.html',
+          ttl: Duration.minutes(5),
+        },
+        {
+          httpStatus: 403,
+          responseHttpStatus: 404,
+          responsePagePath: '/error.html',
+          ttl: Duration.minutes(5),
+        },
+      ],
     });
 
     // DynamoDB Table for chat history
