@@ -1,0 +1,71 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ecommerce-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/success-codes: 200,302
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+  labels:
+    app: ecommerce
+spec:
+  rules:
+  - host: ecommerce.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ecommerce-frontend-service
+            port:
+              number: 3000
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: ecommerce-backend-service
+            port:
+              number: 8080
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-frontend-nodeport
+  namespace: default
+  labels:
+    app: ecommerce-frontend
+spec:
+  selector:
+    app: ecommerce-frontend
+  ports:
+  - port: 3000
+    targetPort: 3000
+    nodePort: 30080
+    protocol: TCP
+  type: NodePort
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-backend-nodeport
+  namespace: default
+  labels:
+    app: ecommerce-backend
+spec:
+  selector:
+    app: ecommerce-backend
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30081
+    protocol: TCP
+  type: NodePort
