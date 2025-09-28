@@ -137,6 +137,7 @@ export class EcsFeBeApp1Stack extends Stack {
       securityGroup: albSecurityGroup,
     });
 
+    // We'll add the default action after creating the target groups
     const listener = alb.addListener('Listener', {
       port: 80,
       open: true,
@@ -188,17 +189,16 @@ export class EcsFeBeApp1Stack extends Stack {
 
     frontendTargetGroup.addTarget(frontendService);
 
-    // ALB Listener Rules - Path-based routing
+    // Set default action to forward to frontend
+    listener.addAction('default', {
+      action: elbv2.ListenerAction.forward([frontendTargetGroup]),
+    });
+
+    // ALB Listener Rules - Route API paths to backend
     listener.addAction('backend-rule', {
       priority: 100,
       conditions: [elbv2.ListenerCondition.pathPatterns(['/api/*'])],
       action: elbv2.ListenerAction.forward([backendTargetGroup]),
-    });
-
-    listener.addAction('frontend-rule', {
-      priority: 200,
-      conditions: [elbv2.ListenerCondition.pathPatterns(['/*'])],
-      action: elbv2.ListenerAction.forward([frontendTargetGroup]),
     });
 
     // Outputs
