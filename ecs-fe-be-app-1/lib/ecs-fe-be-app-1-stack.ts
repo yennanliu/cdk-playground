@@ -2,7 +2,6 @@ import { Stack, StackProps, RemovalPolicy, CfnOutput } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
@@ -47,16 +46,6 @@ export class EcsFeBeApp1Stack extends Stack {
     });
     rdsSecurityGroup.addIngressRule(ecsSecurityGroup, ec2.Port.tcp(3306), 'Allow MySQL from ECS');
 
-    // ECR Repositories
-    const backendRepo = new ecr.Repository(this, 'BackendRepository', {
-      repositoryName: 'shopping-cart-backend',
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-
-    const frontendRepo = new ecr.Repository(this, 'FrontendRepository', {
-      repositoryName: 'shopping-cart-frontend',
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
 
     // RDS MySQL Database
     const database = new rds.DatabaseInstance(this, 'Database', {
@@ -99,7 +88,7 @@ export class EcsFeBeApp1Stack extends Stack {
     });
 
     backendTaskDefinition.addContainer('backend-container', {
-      image: ecs.ContainerImage.fromEcrRepository(backendRepo, 'latest'),
+      image: ecs.ContainerImage.fromRegistry('yennanliu/shopping-cart-backend:latest'),
       portMappings: [
         {
           containerPort: 8080,
@@ -128,7 +117,7 @@ export class EcsFeBeApp1Stack extends Stack {
     });
 
     frontendTaskDefinition.addContainer('frontend-container', {
-      image: ecs.ContainerImage.fromEcrRepository(frontendRepo, 'latest'),
+      image: ecs.ContainerImage.fromRegistry('yennanliu/shopping-cart-frontend:latest'),
       portMappings: [
         {
           containerPort: 80,
@@ -218,15 +207,6 @@ export class EcsFeBeApp1Stack extends Stack {
       description: 'Application Load Balancer DNS name',
     });
 
-    new CfnOutput(this, 'BackendRepositoryUri', {
-      value: backendRepo.repositoryUri,
-      description: 'Backend ECR repository URI',
-    });
-
-    new CfnOutput(this, 'FrontendRepositoryUri', {
-      value: frontendRepo.repositoryUri,
-      description: 'Frontend ECR repository URI',
-    });
 
     new CfnOutput(this, 'DatabaseEndpoint', {
       value: database.instanceEndpoint.hostname,
