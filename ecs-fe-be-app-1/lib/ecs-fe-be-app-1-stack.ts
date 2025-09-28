@@ -67,17 +67,14 @@ export class EcsFeBeApp1Stack extends Stack {
     // ECS Cluster
     const cluster = new ecs.Cluster(this, 'Cluster', {
       vpc,
-      clusterName: 'shopping-cart-cluster',
     });
 
     // CloudWatch Log Groups
     const backendLogGroup = new logs.LogGroup(this, 'BackendLogGroup', {
-      logGroupName: '/ecs/shopping-cart-backend',
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
     const frontendLogGroup = new logs.LogGroup(this, 'FrontendLogGroup', {
-      logGroupName: '/ecs/shopping-cart-frontend',
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
