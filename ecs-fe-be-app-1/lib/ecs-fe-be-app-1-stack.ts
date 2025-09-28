@@ -98,9 +98,9 @@ export class EcsFeBeApp1Stack extends Stack {
       environment: {
         SPRING_PROFILES_ACTIVE: 'prod',
         SERVER_PORT: '8080',
+        SPRING_DATASOURCE_URL: `jdbc:mysql://${database.instanceEndpoint.hostname}:${database.instanceEndpoint.port}/shoppingcart`,
       },
       secrets: {
-        SPRING_DATASOURCE_URL: ecs.Secret.fromSecretsManager(database.secret!, 'endpoint'),
         SPRING_DATASOURCE_USERNAME: ecs.Secret.fromSecretsManager(database.secret!, 'username'),
         SPRING_DATASOURCE_PASSWORD: ecs.Secret.fromSecretsManager(database.secret!, 'password'),
       },
