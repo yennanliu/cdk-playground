@@ -184,7 +184,18 @@ Projects use various CDK versions. Check `package.json` for the specific version
 
 ### MySQL Version
 Recent fixes address MySQL version compatibility (see commit `a357380`).
-- ALWAYS fix TS code format, and remove the compiled js code when edit, build CDK code, refer below:
 
-    "clean": "find lib -name '*.js' -delete && find lib -name '*.d.ts' -delete && find lib -name '*.js.map' -delete && find bin -name '*.js' -delete && find bin -name '*.d.ts' -delete && find bin -name '*.js.map' -delete",
-    "clean:all": "npm run clean && rm -rf node_modules cdk.out"
+### Development Guide
+
+- ALWAYS fix TS code format, and remove the compiled JS code (`*.js`, `*.d.ts`) when edit, build CDK code, or consider using below package.json setting:
+
+```json
+"scripts": {
+  "build": "tsc",
+  "watch": "tsc -w",
+  "test": "jest",
+  "cdk": "cdk",
+  "clean": "find lib -name '*.js' -delete && find lib -name '*.d.ts' -delete && find lib -name '*.js.map' -delete && find bin -name '*.js' -delete && find bin -name '*.d.ts' -delete && find bin -name '*.js.map' -delete",
+  "clean:all": "npm run clean && rm -rf node_modules cdk.out"
+},
+```
