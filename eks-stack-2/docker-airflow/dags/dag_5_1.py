@@ -5,24 +5,27 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Email configuration - Mailtrap (Testing)
-SMTP_HOST = "sandbox.smtp.mailtrap.io"
+# Email configuration - Brevo (Real emails)
+SMTP_HOST = "smtp-relay.brevo.com"
 SMTP_PORT = 587
-SENDER_EMAIL = ""  # Mailtrap USERNAME (used for authentication)
-SENDER_PASSWORD = ""  # Mailtrap PASSWORD
-RECIPIENT_EMAIL = ""  # Any email (just for testing)
+SMTP_LOGIN = ""  # Brevo SMTP login (for authentication)
+SMTP_PASSWORD = ""  # Brevo SMTP key
+SENDER_EMAIL = ""  # Must be verified in Brevo (used in "From" field)
+RECIPIENT_EMAIL = ""  # Real recipient email
 
 def send_email():
     """
-    Send a test email using Mailtrap SMTP.
+    Send a real email using Brevo SMTP.
 
-    Note: Mailtrap is a testing service - emails won't actually be sent.
-    View all test emails at: https://mailtrap.io/inboxes
+    Note: This will send REAL emails to actual recipients!
 
     Setup:
-    1. Sign up at https://mailtrap.io (free)
-    2. Get SMTP credentials from your inbox settings
-    3. Update SMTP_HOST, SENDER_PASSWORD above
+    1. Sign up at https://app.brevo.com/ (free tier: 300 emails/day)
+    2. Go to SMTP & API: https://app.brevo.com/settings/keys/smtp
+    3. Create an SMTP key
+    4. Update SENDER_EMAIL and SENDER_PASSWORD above
+
+    IMPORTANT: SENDER_EMAIL must be verified in Brevo!
     """
     try:
         # Create message
@@ -42,14 +45,14 @@ def send_email():
         """
         message.attach(MIMEText(body, "plain"))
 
-        # Connect to Mailtrap SMTP server
+        # Connect to Brevo SMTP server
         print(f"Connecting to {SMTP_HOST}:{SMTP_PORT}...")
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()  # Enable TLS encryption
 
-        # Login with Mailtrap credentials
-        print(f"Logging in to Mailtrap...")
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        # Login with Brevo credentials (SMTP login + SMTP key)
+        print(f"Logging in to Brevo with {SMTP_LOGIN}...")
+        server.login(SMTP_LOGIN, SMTP_PASSWORD)
 
         # Send email
         print(f"Sending email to {RECIPIENT_EMAIL}...")
@@ -64,11 +67,11 @@ def send_email():
         raise
 
 with DAG(
-    dag_id="send_email_dag",
+    dag_id="send_email_dag_v2",
     start_date=datetime(2023, 1, 1),
     schedule_interval="@daily",  # Run once per day
     catchup=False,
-    description="Simple DAG to send test email using Mailtrap SMTP"
+    description="Simple DAG to send real email using Brevo SMTP"
 ) as dag:
     email_task = PythonOperator(
         task_id="send_email",
