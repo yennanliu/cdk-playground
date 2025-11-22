@@ -6,15 +6,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # Email configuration - Mailtrap (Testing)
-SMTP_HOST = "sandbox.smtp.mailtrap.io"  # Replace with your Mailtrap host
+SMTP_HOST = "sandbox.smtp.mailtrap.io"
 SMTP_PORT = 587
-SENDER_EMAIL = "test@example.com"  # Can be any email for Mailtrap
-SENDER_PASSWORD = "your-mailtrap-password"  # Replace with Mailtrap password from credentials
-RECIPIENT_EMAIL = "recipient@example.com"  # Can be any email for Mailtrap
-
-# Mailtrap Credentials (get from https://mailtrap.io/inboxes)
-# Username: your-mailtrap-username
-# Password: your-mailtrap-password
+SENDER_EMAIL = ""  # Mailtrap USERNAME (used for authentication)
+SENDER_PASSWORD = ""  # Mailtrap PASSWORD
+RECIPIENT_EMAIL = ""  # Any email (just for testing)
 
 def send_email():
     """
