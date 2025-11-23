@@ -1,0 +1,218 @@
+from datetime import datetime
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import feedparser
+import os
+from openai import OpenAI
+
+# Email configuration - Brevo (Real emails)
+SMTP_HOST = "smtp-relay.brevo.com"
+SMTP_PORT = 587
+SMTP_LOGIN = ""  # Brevo SMTP login (for authentication)
+SMTP_PASSWORD = ""  # Brevo SMTP key
+SENDER_EMAIL = ""  # Must be verified in Brevo (used in "From" field)
+RECIPIENT_EMAIL = ""  # Real recipient email
+
+# Stock tickers to analyze
+STOCK_TICKERS = ['TSLA', 'PLTR', 'GOOGL']
+NUM_ARTICLES_PER_STOCK = 5
+
+
+def fetch_stock_news(ticker, num_articles=5):
+    """
+    Fetch latest news for a specific stock ticker from Google News RSS
+
+    Args:
+        ticker: Stock ticker symbol (e.g., 'TSLA', 'PLTR')
+        num_articles: Number of articles to fetch
+
+    Returns:
+        List of article dictionaries
+    """
+    url = f'https://news.google.com/rss/search?q={ticker}+stock&hl=en-US&gl=US&ceid=US:en'
+
+    feed = feedparser.parse(url)
+
+    articles = []
+    for entry in feed.entries[:num_articles]:
+        article = {
+            'ticker': ticker,
+            'title': entry.title,
+            'link': entry.link,
+            'published': entry.published if 'published' in entry else 'N/A',
+            'summary': entry.summary if 'summary' in entry else entry.title
+        }
+        articles.append(article)
+
+    return articles
+
+
+def summarize_stock_news(ticker, articles):
+    """
+    Generate an AI summary for stock news using OpenAI
+
+    Args:
+        ticker: Stock ticker symbol
+        articles: List of article dictionaries
+
+    Returns:
+        Summary string from OpenAI
+    """
+    # Get OpenAI API key from environment
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        return f"ERROR: OPENAI_API_KEY not found in environment for {ticker}"
+
+    client = OpenAI(api_key=api_key)
+
+    # Combine all article titles and summaries
+    news_text = "\n\n".join([
+        f"Article {i+1}: {article['title']}\n{article['summary']}"
+        for i, article in enumerate(articles)
+    ])
+
+    # Call OpenAI API with stock-specific prompt
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a financial analyst assistant that summarizes stock news. Provide concise, objective summaries highlighting key developments, market sentiment, and potential impacts."
+            },
+            {
+                "role": "user",
+                "content": f"Please provide a brief summary of recent news for {ticker} stock based on these articles:\n\n{news_text}"
+            }
+        ],
+        max_tokens=500,
+        temperature=0.7
+    )
+
+    return response.choices[0].message.content
+
+
+def fetch_and_summarize_stocks(**context):
+    """
+    Fetch stock news and generate AI summaries for all stocks.
+    Returns the combined analysis.
+    """
+    all_summaries = []
+
+    for ticker in STOCK_TICKERS:
+        print(f"Fetching news for {ticker}...")
+
+        try:
+            # Fetch news articles
+            articles = fetch_stock_news(ticker, NUM_ARTICLES_PER_STOCK)
+            print(f"Found {len(articles)} articles for {ticker}")
+
+            # Generate AI summary
+            print(f"Generating AI summary for {ticker}...")
+            summary = summarize_stock_news(ticker, articles)
+
+            # Format the summary
+            stock_summary = f"""
+{'='*60}
+{ticker} - AI SUMMARY
+{'='*60}
+{summary}
+
+"""
+            all_summaries.append(stock_summary)
+
+        except Exception as e:
+            error_msg = f"Error processing {ticker}: {str(e)}"
+            print(error_msg)
+            all_summaries.append(f"\n{ticker}: {error_msg}\n")
+
+    # Combine all summaries
+    combined_summary = "\n".join(all_summaries)
+
+    # Push to XCom for the email task
+    return combined_summary
+
+
+def send_stock_news_email(**context):
+    """
+    Send stock news summary email using Brevo SMTP.
+    Fetches the summary from the previous task.
+    """
+    # Get the stock summary from XCom (passed from previous task)
+    ti = context['ti']
+    stock_summary = ti.xcom_pull(task_ids='fetch_and_summarize_stocks')
+
+    if not stock_summary:
+        stock_summary = "No stock news summary available"
+
+    try:
+        # Create message
+        message = MIMEMultipart()
+        message["From"] = SENDER_EMAIL
+        message["To"] = RECIPIENT_EMAIL
+        message["Subject"] = f"Daily Stock News Summary - {datetime.now().strftime('%Y-%m-%d')}"
+
+        # Email body with stock summary
+        body = f"""
+Hello!
+
+Here is your daily stock news summary for {', '.join(STOCK_TICKERS)}:
+
+{stock_summary}
+
+---
+This email was automatically generated by your Airflow DAG.
+Powered by OpenAI GPT-4o-mini.
+        """
+        message.attach(MIMEText(body, "plain"))
+
+        # Connect to Brevo SMTP server
+        print(f"Connecting to {SMTP_HOST}:{SMTP_PORT}...")
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+        server.starttls()  # Enable TLS encryption
+
+        # Login with Brevo credentials
+        print(f"Logging in to Brevo with {SMTP_LOGIN}...")
+        server.login(SMTP_LOGIN, SMTP_PASSWORD)
+
+        # Send email
+        print(f"Sending stock news summary email to {RECIPIENT_EMAIL}...")
+        server.send_message(message)
+
+        # Close connection
+        server.quit()
+        print("Stock news summary email sent successfully!")
+
+    except Exception as e:
+        error_msg = f"Failed to send email: {str(e)}"
+        print(error_msg)
+        raise
+
+
+with DAG(
+    dag_id="stock_news_summary_email_dag",
+    start_date=datetime(2023, 1, 1),
+    schedule_interval="0 9 * * 1-5",  # Run at 9 AM on weekdays (Mon-Fri)
+    catchup=False,
+    description="Fetch US stock news, summarize with OpenAI, and send via email",
+    tags=['stocks', 'email', 'openai', 'news']
+) as dag:
+
+    # Task 1: Fetch stock news and generate AI summaries
+    fetch_task = PythonOperator(
+        task_id="fetch_and_summarize_stocks",
+        python_callable=fetch_and_summarize_stocks,
+        provide_context=True
+    )
+
+    # Task 2: Send the summary via email
+    email_task = PythonOperator(
+        task_id="send_stock_news_email",
+        python_callable=send_stock_news_email,
+        provide_context=True
+    )
+
+    # Define task dependencies
+    fetch_task >> email_task
