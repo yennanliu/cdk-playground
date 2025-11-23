@@ -13,6 +13,7 @@ SMTP_PASSWORD = ""  # Brevo SMTP key
 SENDER_EMAIL = ""  # Must be verified in Brevo (used in "From" field)
 RECIPIENT_EMAIL = ""  # Real recipient email
 
+
 def send_email():
     """
     Send a real email using Brevo SMTP.
@@ -67,7 +68,7 @@ def send_email():
         raise
 
 with DAG(
-    dag_id="send_email_dag_v2",
+    dag_id="send_email_dag_v3",
     start_date=datetime(2023, 1, 1),
     schedule_interval="@daily",  # Run once per day
     catchup=False,

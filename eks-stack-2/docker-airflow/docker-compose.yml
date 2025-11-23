@@ -13,6 +13,7 @@ x-airflow-common:
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     OPENAI_API_KEY: ${OPENAI_API_KEY}
+    SMTP_LOGIN: ${SMTP_LOGIN}
     SENDER_EMAIL: ${SENDER_EMAIL}
     SENDER_PASSWORD: ${SENDER_PASSWORD}
     RECIPIENT_EMAIL: ${RECIPIENT_EMAIL}

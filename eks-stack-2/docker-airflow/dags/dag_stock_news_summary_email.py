@@ -17,6 +17,14 @@ STOCK_TICKERS = ['TSLA', 'PLTR', 'GOOGL']
 NUM_ARTICLES_PER_STOCK = 5
 
 
+SMTP_HOST = "smtp-relay.brevo.com"
+SMTP_PORT = 587
+SMTP_LOGIN = ""  # Brevo SMTP login (for authentication)
+SMTP_PASSWORD = ""  # Brevo SMTP key
+SENDER_EMAIL = ""  # Must be verified in Brevo (used in "From" field)
+RECIPIENT_EMAIL = ""  # Real recipient email
+
+
 def fetch_stock_news(ticker, num_articles=5):
     """
     Fetch latest news for a specific stock ticker from Google News RSS
@@ -136,14 +144,6 @@ def send_stock_news_email(**context):
     Send stock news summary email using Brevo SMTP.
     Fetches the summary from the previous task.
     """
-    # Load email credentials from environment (at runtime, not parse time)
-    smtp_login = os.getenv('SENDER_EMAIL', '')
-    smtp_password = os.getenv('SENDER_PASSWORD', '')
-    sender_email = os.getenv('SENDER_EMAIL', '')
-    recipient_email = os.getenv('RECIPIENT_EMAIL', '')
-
-    print(f"Email config loaded - sender: {sender_email}, recipient: {recipient_email}")
-
     # Get the stock summary from XCom (passed from previous task)
     ti = context['ti']
     stock_summary = ti.xcom_pull(task_ids='fetch_and_summarize_stocks')
@@ -154,8 +154,8 @@ def send_stock_news_email(**context):
     try:
         # Create message
         message = MIMEMultipart()
-        message["From"] = sender_email
-        message["To"] = recipient_email
+        message["From"] = SENDER_EMAIL
+        message["To"] = RECIPIENT_EMAIL
         message["Subject"] = f"Daily Stock News Summary - {datetime.now().strftime('%Y-%m-%d')}"
 
         # Email body with stock summary
@@ -177,28 +177,25 @@ Powered by OpenAI GPT-4o-mini.
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()  # Enable TLS encryption
 
-        # Login with Brevo credentials (ensure strings, not bytes)
-        login = str(smtp_login) if smtp_login else ""
-        password = str(smtp_password) if smtp_password else ""
-        print(f"Logging in to Brevo with {login[:10]}...")
-        server.login(login, password)
+        # Login with Brevo credentials (SMTP login + SMTP key)
+        print(f"Logging in to Brevo with {SMTP_LOGIN}...")
+        server.login(SMTP_LOGIN, SMTP_PASSWORD)
 
         # Send email
-        print(f"Sending stock news summary email to {recipient_email}...")
+        print(f"Sending email to {RECIPIENT_EMAIL}...")
         server.send_message(message)
 
         # Close connection
         server.quit()
-        print("Stock news summary email sent successfully!")
+        print("Email sent successfully!")
 
     except Exception as e:
-        error_msg = f"Failed to send email: {str(e)}"
-        print(error_msg)
+        print(f"Failed to send email: {str(e)}")
         raise
 
 
 with DAG(
-    dag_id="stock_news_summary_email_dag_v2",
+    dag_id="stock_news_summary_email_dag_v4",
     start_date=datetime(2023, 1, 1),
     schedule_interval="0 9 * * 1-5",  # Run at 9 AM on weekdays (Mon-Fri)
     catchup=False,
@@ -222,3 +219,4 @@ with DAG(
 
     # Define task dependencies
     fetch_task >> email_task
+    #email_task
