@@ -7,7 +7,7 @@ echo "This may take a few minutes on first run..."
 # Check if .env exists, if not create from example
 if [ ! -f .env ]; then
     echo "Creating .env file from .env.example..."
-    cp .env.example .env
+    #cp .env.example .env
     echo "Please edit .env file with your settings"
 fi
 
