@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir \
     openai==1.54.0 \
     python-dotenv==1.0.0 \
     requests==2.31.0 \
+    multitasking==0.0.11 \
     yfinance==0.2.48 \
     plotly==5.24.1 \
     kaleido==0.2.1
