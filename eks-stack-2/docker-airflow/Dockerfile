@@ -13,4 +13,8 @@ USER airflow
 RUN pip install --no-cache-dir \
     feedparser==6.0.10 \
     openai==1.54.0 \
-    python-dotenv==1.0.0
+    python-dotenv==1.0.0 \
+    requests==2.31.0 \
+    yfinance==0.2.48 \
+    plotly==5.24.1 \
+    kaleido==0.2.1
