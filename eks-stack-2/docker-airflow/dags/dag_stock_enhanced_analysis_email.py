@@ -12,14 +12,29 @@ import yfinance as yf
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import io
+import time
+import traceback
+import requests
+import logging
+
+# Configure yfinance logging
+logging.getLogger('yfinance').setLevel(logging.WARNING)
 
 # Email configuration - using environment variables
+# SMTP_HOST = "smtp-relay.brevo.com"
+# SMTP_PORT = 587
+# SMTP_LOGIN = os.getenv('SMTP_LOGIN', '')
+# SMTP_PASSWORD = os.getenv('SENDER_PASSWORD', '')
+# SENDER_EMAIL = os.getenv('SENDER_EMAIL', '')
+# RECIPIENT_EMAIL = os.getenv('RECIPIENT_EMAIL', '')
+
 SMTP_HOST = "smtp-relay.brevo.com"
 SMTP_PORT = 587
-SMTP_LOGIN = os.getenv('SMTP_LOGIN', '')
-SMTP_PASSWORD = os.getenv('SENDER_PASSWORD', '')
-SENDER_EMAIL = os.getenv('SENDER_EMAIL', '')
-RECIPIENT_EMAIL = os.getenv('RECIPIENT_EMAIL', '')
+SMTP_LOGIN = ""  # Brevo SMTP login (for authentication)
+SMTP_PASSWORD = ""  # Brevo SMTP key
+SENDER_EMAIL = ""  # Must be verified in Brevo (used in "From" field)
+RECIPIENT_EMAIL = ""  # Real recipient email
+
 
 # Stock tickers to analyze
 STOCK_TICKERS = ['TSLA', 'PLTR', 'GOOGL']
@@ -56,29 +71,66 @@ def fetch_stock_news(ticker, num_articles=5):
     return articles
 
 
-def fetch_stock_price_data(ticker, period='1mo'):
+def fetch_stock_price_data(ticker, period='1mo', max_retries=3):
     """
-    Fetch historical stock price data
+    Fetch historical stock price data with retry logic
 
     Args:
         ticker: Stock ticker symbol
         period: Time period ('1d', '5d', '1mo', '3mo', '6mo', '1y', etc.)
+        max_retries: Maximum number of retry attempts
 
     Returns:
         Dictionary with stock price data
     """
-    stock = yf.Ticker(ticker)
-    data = stock.history(period=period)
+    for attempt in range(max_retries):
+        try:
+            print(f"Fetching data for {ticker} (attempt {attempt + 1}/{max_retries})...")
 
-    # Get current info
-    info = stock.info
-    current_price = info.get('currentPrice', data['Close'].iloc[-1] if len(data) > 0 else 'N/A')
+            # Add user agent to avoid being blocked
+            stock = yf.Ticker(ticker)
 
-    return {
-        'data': data,
-        'current_price': current_price,
-        'info': info
-    }
+            # Fetch historical data
+            data = stock.history(period=period)
+
+            if data.empty:
+                print(f"Warning: No historical data returned for {ticker}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 * (attempt + 1))  # Exponential backoff
+                    continue
+                raise ValueError(f"No historical data available for {ticker}")
+
+            # Get current info - use fast_info to avoid rate limiting
+            try:
+                info = stock.info
+                current_price = info.get('currentPrice') or info.get('regularMarketPrice')
+                company_name = info.get('longName', ticker)
+                market_cap = info.get('marketCap', 'N/A')
+            except Exception as e:
+                print(f"Warning: Could not fetch full info for {ticker}, using history data: {str(e)}")
+                current_price = data['Close'].iloc[-1] if len(data) > 0 else None
+                company_name = ticker
+                market_cap = 'N/A'
+
+            if current_price is None:
+                current_price = data['Close'].iloc[-1] if len(data) > 0 else 0
+
+            return {
+                'data': data,
+                'current_price': current_price,
+                'info': {
+                    'longName': company_name,
+                    'marketCap': market_cap,
+                    'currentPrice': current_price
+                }
+            }
+
+        except Exception as e:
+            print(f"Error fetching data for {ticker} (attempt {attempt + 1}/{max_retries}): {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(2 * (attempt + 1))  # Exponential backoff
+            else:
+                raise
 
 
 def create_stock_chart_image(ticker, stock_data, period='1mo'):
@@ -271,9 +323,9 @@ def fetch_and_analyze_stocks(**context):
     """
     all_analyses = []
 
-    for ticker in STOCK_TICKERS:
+    for i, ticker in enumerate(STOCK_TICKERS):
         print(f"\n{'='*60}")
-        print(f"Processing {ticker}...")
+        print(f"Processing {ticker}... ({i+1}/{len(STOCK_TICKERS)})")
         print(f"{'='*60}")
 
         try:
@@ -281,9 +333,15 @@ def fetch_and_analyze_stocks(**context):
             all_analyses.append(analysis)
             print(f"✓ Successfully analyzed {ticker}")
 
+            # Add delay between stocks to avoid rate limiting
+            if i < len(STOCK_TICKERS) - 1:
+                print(f"⏱ Waiting 3 seconds before next stock...")
+                time.sleep(3)
+
         except Exception as e:
             error_msg = f"Error processing {ticker}: {str(e)}"
             print(error_msg)
+            print(f"Full traceback:\n{traceback.format_exc()}")
             all_analyses.append({
                 'ticker': ticker,
                 'error': error_msg

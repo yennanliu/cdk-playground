@@ -25,7 +25,6 @@ SENDER_EMAIL = ""  # Must be verified in Brevo (used in "From" field)
 RECIPIENT_EMAIL = ""  # Real recipient email
 
 
-
 def fetch_stock_news(ticker, num_articles=5):
     """
     Fetch latest news for a specific stock ticker from Google News RSS
