@@ -1,19 +1,146 @@
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import * as sns from 'aws-cdk-lib/aws-sns';
-import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { Duration, Stack, StackProps, RemovalPolicy, CfnOutput } from 'aws-cdk-lib';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as sagemaker from 'aws-cdk-lib/aws-sagemaker';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
+import * as path from 'path';
 
 export class SagemakerStack1Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const queue = new sqs.Queue(this, 'SagemakerStack1Queue', {
-      visibilityTimeout: Duration.seconds(300)
+    // S3 bucket for model artifacts
+    const modelBucket = new s3.Bucket(this, 'ModelBucket', {
+      bucketName: `sagemaker-house-price-model-${this.account}`,
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      versioned: true,
     });
 
-    const topic = new sns.Topic(this, 'SagemakerStack1Topic');
+    // SageMaker execution role
+    const sagemakerRole = new iam.Role(this, 'SageMakerRole', {
+      assumedBy: new iam.ServicePrincipal('sagemaker.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSageMakerFullAccess'),
+      ],
+    });
 
-    topic.addSubscription(new subs.SqsSubscription(queue));
+    // Grant S3 access to SageMaker role
+    modelBucket.grantRead(sagemakerRole);
+
+    // SageMaker Model
+    // Using AWS Deep Learning Container for sklearn
+    const region = this.region;
+    const sklearnImageUri = `763104351884.dkr.ecr.${region}.amazonaws.com/sklearn-inference:1.2-1-cpu-py3`;
+
+    const model = new sagemaker.CfnModel(this, 'HousePriceModel', {
+      executionRoleArn: sagemakerRole.roleArn,
+      primaryContainer: {
+        image: sklearnImageUri,
+        modelDataUrl: `s3://${modelBucket.bucketName}/model.tar.gz`,
+        environment: {
+          SAGEMAKER_PROGRAM: 'inference.py',
+          SAGEMAKER_SUBMIT_DIRECTORY: `/opt/ml/model/code`,
+        },
+      },
+    });
+
+    // SageMaker Endpoint Configuration
+    const endpointConfig = new sagemaker.CfnEndpointConfig(this, 'EndpointConfig', {
+      productionVariants: [
+        {
+          modelName: model.attrModelName,
+          variantName: 'AllTraffic',
+          initialInstanceCount: 1,
+          instanceType: 'ml.t2.medium',
+          initialVariantWeight: 1.0,
+        },
+      ],
+    });
+    endpointConfig.addDependency(model);
+
+    // SageMaker Endpoint
+    const endpoint = new sagemaker.CfnEndpoint(this, 'HousePriceEndpoint', {
+      endpointConfigName: endpointConfig.attrEndpointConfigName,
+      endpointName: 'house-price-predictor',
+    });
+    endpoint.addDependency(endpointConfig);
+
+    // Lambda function for API handler
+    const predictLambda = new lambda.Function(this, 'PredictHandler', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'predict-handler.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda'), {
+        bundling: {
+          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
+          command: [
+            'bash',
+            '-c',
+            'npm ci && npm run build && cp -r node_modules package.json *.js /asset-output/',
+          ],
+          user: 'root',
+        },
+      }),
+      timeout: Duration.seconds(30),
+      environment: {
+        ENDPOINT_NAME: endpoint.endpointName!,
+        AWS_REGION: region,
+      },
+      logRetention: logs.RetentionDays.ONE_WEEK,
+    });
+
+    // Grant Lambda permission to invoke SageMaker endpoint
+    predictLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sagemaker:InvokeEndpoint'],
+        resources: [endpoint.ref],
+      })
+    );
+
+    // API Gateway
+    const api = new apigateway.RestApi(this, 'HousePriceApi', {
+      restApiName: 'House Price Prediction API',
+      description: 'API for house price predictions using SageMaker',
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key'],
+      },
+      deployOptions: {
+        stageName: 'prod',
+        loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        dataTraceEnabled: true,
+      },
+    });
+
+    // Add /predict endpoint
+    const predict = api.root.addResource('predict');
+    predict.addMethod('POST', new apigateway.LambdaIntegration(predictLambda));
+
+    // Outputs
+    new CfnOutput(this, 'ModelBucketName', {
+      value: modelBucket.bucketName,
+      description: 'S3 bucket for model artifacts',
+    });
+
+    new CfnOutput(this, 'SageMakerEndpointName', {
+      value: endpoint.endpointName!,
+      description: 'SageMaker endpoint name',
+    });
+
+    new CfnOutput(this, 'ApiUrl', {
+      value: api.url,
+      description: 'API Gateway URL',
+    });
+
+    new CfnOutput(this, 'PredictEndpoint', {
+      value: `${api.url}predict`,
+      description: 'Full prediction endpoint URL',
+    });
   }
 }

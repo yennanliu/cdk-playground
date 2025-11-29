@@ -3,6 +3,8 @@
 ## Project Overview
 Build a simple, production-ready ML API using AWS SageMaker for real-time inference. This implementation focuses on simplicity while maintaining best practices.
 
+**AWS Region**: `ap-northeast-1` (Tokyo)
+
 ---
 
 ## Use Case: House Price Prediction
@@ -129,7 +131,7 @@ POST /predict
    **b. SageMaker Model**:
    ```typescript
    - Use sklearn container image from AWS Deep Learning Containers
-   - Image URI: sklearn inference container for region
+   - Image URI: 763104351884.dkr.ecr.ap-northeast-1.amazonaws.com/sklearn-inference:1.2-1-cpu-py3
    - Model data location: S3 URI
    - Execution role with S3 read access
    ```

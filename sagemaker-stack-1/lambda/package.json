@@ -1,0 +1,17 @@
+{
+  "name": "sagemaker-lambda",
+  "version": "1.0.0",
+  "description": "Lambda function for SageMaker inference",
+  "main": "predict-handler.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -f *.js *.d.ts *.js.map"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sagemaker-runtime": "^3.478.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3"
+  }
+}
