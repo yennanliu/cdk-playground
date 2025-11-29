@@ -32,6 +32,20 @@ export class SagemakerStack1Stack extends Stack {
     // Grant S3 access to SageMaker role
     modelBucket.grantRead(sagemakerRole);
 
+    // Grant access to AWS Deep Learning Container images in ECR
+    sagemakerRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'ecr:GetDownloadUrlForLayer',
+          'ecr:BatchGetImage',
+          'ecr:BatchCheckLayerAvailability',
+          'ecr:GetAuthorizationToken',
+        ],
+        resources: ['*'],
+      })
+    );
+
     // SageMaker Model
     // Using AWS Deep Learning Container for sklearn
     const region = this.region;
