@@ -33,23 +33,30 @@ export class SagemakerStack1Stack extends Stack {
     modelBucket.grantRead(sagemakerRole);
 
     // Grant access to AWS Deep Learning Container images in ECR
+    // Note: AWS DLC images require specific ECR permissions
     sagemakerRole.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: [
+          'ecr:GetAuthorizationToken',
+          'ecr:BatchCheckLayerAvailability',
           'ecr:GetDownloadUrlForLayer',
           'ecr:BatchGetImage',
-          'ecr:BatchCheckLayerAvailability',
-          'ecr:GetAuthorizationToken',
         ],
         resources: ['*'],
       })
     );
 
+    // Also add the AmazonEC2ContainerRegistryReadOnly policy for ECR access
+    sagemakerRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly')
+    );
+
     // SageMaker Model
     // Using AWS Deep Learning Container for sklearn
     const region = this.region;
-    const sklearnImageUri = `763104351884.dkr.ecr.${region}.amazonaws.com/sklearn-inference:1.2-1-cpu-py3`;
+    // Using sklearn 1.0-1 which is more widely available
+    const sklearnImageUri = `763104351884.dkr.ecr.${region}.amazonaws.com/sklearn-inference:1.0-1-cpu-py3`;
 
     const model = new sagemaker.CfnModel(this, 'HousePriceModel', {
       executionRoleArn: sagemakerRole.roleArn,
