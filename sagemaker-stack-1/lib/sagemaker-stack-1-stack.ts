@@ -54,8 +54,11 @@ export class SagemakerStack1Stack extends Stack {
 
     // SageMaker Model
     // Using AWS Deep Learning Container for sklearn
+    // The image repository policy is managed by AWS and allows SageMaker access
     const region = this.region;
-    // Using sklearn 1.0-1 which is more widely available
+    const accountId = this.account;
+
+    // Use the official AWS DLC image with repository policy reference
     const sklearnImageUri = `763104351884.dkr.ecr.${region}.amazonaws.com/sklearn-inference:1.0-1-cpu-py3`;
 
     const model = new sagemaker.CfnModel(this, 'HousePriceModel', {
@@ -67,7 +70,12 @@ export class SagemakerStack1Stack extends Stack {
           SAGEMAKER_PROGRAM: 'inference.py',
           SAGEMAKER_SUBMIT_DIRECTORY: `/opt/ml/model/code`,
         },
+        // Specify that this image uses ECR for authentication
+        imageConfig: {
+          repositoryAccessMode: 'Platform',
+        },
       },
+      enableNetworkIsolation: false,
     });
 
     // SageMaker Endpoint Configuration
