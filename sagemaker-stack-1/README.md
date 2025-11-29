@@ -115,12 +115,12 @@ Trains sklearn model and creates `model/build/model.tar.gz`.
 #### 3. Install Node Dependencies
 ```bash
 npm install
-cd lambda && npm install && cd ..
+cd lambda && npm install && npm run build && cd ..
 ```
 
 #### 4. Build and Deploy Infrastructure
 ```bash
-npm run build
+npm run build  # Build CDK TypeScript code
 cdk bootstrap  # First time only
 cdk deploy
 ```

@@ -71,20 +71,11 @@ export class SagemakerStack1Stack extends Stack {
     endpoint.addDependency(endpointConfig);
 
     // Lambda function for API handler
+    // Note: Lambda code must be built first with: cd lambda && npm run build
     const predictLambda = new lambda.Function(this, 'PredictHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'predict-handler.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda'), {
-        bundling: {
-          image: lambda.Runtime.NODEJS_20_X.bundlingImage,
-          command: [
-            'bash',
-            '-c',
-            'npm ci && npm run build && cp -r node_modules package.json *.js /asset-output/',
-          ],
-          user: 'root',
-        },
-      }),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
       timeout: Duration.seconds(30),
       environment: {
         ENDPOINT_NAME: endpoint.endpointName!,

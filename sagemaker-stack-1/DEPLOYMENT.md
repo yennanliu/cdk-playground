@@ -60,9 +60,10 @@ Expected output:
 # Install CDK dependencies
 npm install
 
-# Install Lambda dependencies
+# Install Lambda dependencies and build
 cd lambda
 npm install
+npm run build
 cd ..
 ```
 
