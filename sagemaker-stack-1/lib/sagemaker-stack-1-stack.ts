@@ -88,7 +88,7 @@ export class SagemakerStack1Stack extends Stack {
       timeout: Duration.seconds(30),
       environment: {
         ENDPOINT_NAME: endpoint.endpointName!,
-        AWS_REGION: region,
+        // AWS_REGION is automatically set by Lambda runtime
       },
       logRetention: logs.RetentionDays.ONE_WEEK,
     });
