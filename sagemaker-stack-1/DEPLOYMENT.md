@@ -6,9 +6,24 @@ This guide walks you through deploying a simple house price prediction ML API us
 
 - AWS CLI configured with credentials
 - Node.js 20+ and npm installed
-- Python 3.10+ installed
+- **uv** (Python package manager) - https://docs.astral.sh/uv/
 - AWS CDK CLI installed (`npm install -g aws-cdk`)
 - AWS account with permissions for SageMaker, Lambda, API Gateway, S3, IAM
+
+### Installing uv
+
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# macOS with Homebrew
+brew install uv
+
+# Verify installation
+uv --version
+```
+
+**Note**: `uv` will automatically install the correct Python version (3.10) for this project.
 
 ## Architecture
 
@@ -20,7 +35,26 @@ Client → API Gateway → Lambda → SageMaker Endpoint → ML Model (sklearn)
 
 ## Step-by-Step Deployment
 
-### 1. Install Dependencies
+### 1. Setup Python Environment
+
+```bash
+# This will:
+# - Install uv (if not already installed)
+# - Install Python 3.10
+# - Create a virtual environment at .venv
+# - Install all Python dependencies
+./scripts/setup-python-env.sh
+```
+
+Expected output:
+```
+✓ uv is installed
+✓ Python 3.10 installed
+✓ Virtual environment created at .venv
+✓ Dependencies installed
+```
+
+### 2. Install Node.js Dependencies
 
 ```bash
 # Install CDK dependencies
@@ -32,7 +66,7 @@ npm install
 cd ..
 ```
 
-### 2. Train and Package the Model
+### 3. Train and Package the Model
 
 ```bash
 # Run the training script
@@ -40,7 +74,7 @@ cd ..
 ```
 
 This will:
-- Install Python dependencies (sklearn, pandas, numpy)
+- Activate the virtual environment
 - Train the Linear Regression model on synthetic house data
 - Package the model as `model/build/model.tar.gz`
 
@@ -53,7 +87,7 @@ Model Performance:
 ✓ Model packaged successfully: model/build/model.tar.gz
 ```
 
-### 3. Bootstrap CDK (First Time Only)
+### 4. Bootstrap CDK (First Time Only)
 
 ```bash
 # Bootstrap CDK for ap-northeast-1 region
@@ -62,7 +96,7 @@ cdk bootstrap aws://ACCOUNT-ID/ap-northeast-1
 
 Replace `ACCOUNT-ID` with your AWS account ID.
 
-### 4. Get Your AWS Account ID
+### 5. Get Your AWS Account ID
 
 ```bash
 aws sts get-caller-identity --query Account --output text
@@ -70,9 +104,15 @@ aws sts get-caller-identity --query Account --output text
 
 Note this account ID - you'll need it for the S3 bucket name.
 
-### 5. Upload Model to S3
+### 6. Build TypeScript
 
-After deploying the stack (step 6), you'll get a bucket name. Upload the model:
+```bash
+npm run build
+```
+
+### 7. Upload Model to S3
+
+After deploying the stack (step 8), you'll get a bucket name. Upload the model:
 
 ```bash
 # The bucket name will be: sagemaker-house-price-model-{ACCOUNT_ID}
@@ -81,12 +121,9 @@ aws s3 cp model/build/model.tar.gz s3://sagemaker-house-price-model-YOUR_ACCOUNT
 
 **IMPORTANT**: You must upload the model BEFORE the SageMaker endpoint fully initializes, or upload it first if you synthesize the stack first.
 
-### 6. Deploy CDK Stack
+### 8. Deploy CDK Stack
 
 ```bash
-# Build TypeScript
-npm run build
-
 # Review changes
 cdk diff
 
@@ -96,7 +133,7 @@ cdk deploy
 
 **Deployment time**: 5-10 minutes (SageMaker endpoint takes longest)
 
-### 7. Get API Endpoint
+### 9. Get API Endpoint
 
 After deployment completes, you'll see outputs:
 

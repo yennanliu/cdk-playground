@@ -13,24 +13,30 @@ This project implements a house price prediction service using:
 
 ## Quick Start
 
-### 1. Train and Package Model
+### 1. Setup Python Environment
+```bash
+./scripts/setup-python-env.sh
+```
+
+### 2. Train and Package Model
 ```bash
 ./scripts/train-and-package-model.sh
 ```
 
-### 2. Deploy Infrastructure
+### 3. Deploy Infrastructure
 ```bash
 npm install
+cd lambda && npm install && cd ..
 npm run build
 cdk deploy
 ```
 
-### 3. Upload Model to S3
+### 4. Upload Model to S3
 ```bash
 aws s3 cp model/build/model.tar.gz s3://sagemaker-house-price-model-YOUR_ACCOUNT_ID/model.tar.gz
 ```
 
-### 4. Test API
+### 5. Test API
 ```bash
 curl -X POST https://YOUR-API-URL/prod/predict \
   -H "Content-Type: application/json" \
@@ -77,8 +83,17 @@ Run `cdk destroy` when not in use to avoid charges.
 
 - AWS CLI configured
 - Node.js 20+
-- Python 3.10+
+- **uv** (Python package manager) - Automatically installs Python 3.10
 - AWS CDK CLI
+
+### Installing uv
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# macOS with Homebrew
+brew install uv
+```
 
 ## Useful Commands
 
@@ -86,3 +101,9 @@ Run `cdk destroy` when not in use to avoid charges.
 * `cdk deploy` - Deploy stack
 * `cdk destroy` - Clean up resources
 * `./scripts/test-api.sh <API_URL>` - Test the deployed API
+
+
+
+## Ref
+
+- https://github.com/aws/amazon-sagemaker-examples/blob/main/sagemaker-python-sdk/pytorch_mnist/pytorch_mnist.ipynb
