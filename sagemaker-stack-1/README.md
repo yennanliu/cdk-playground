@@ -1,15 +1,88 @@
-# Welcome to your CDK TypeScript project
+# SageMaker ML API - House Price Prediction
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`SagemakerStack1Stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+A simple, production-ready ML API built with AWS SageMaker, Lambda, and API Gateway. This project demonstrates how to deploy a scikit-learn machine learning model as a serverless REST API on AWS.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Overview
 
-## Useful commands
+This project implements a house price prediction service using:
+- **ML Model**: Scikit-learn Linear Regression
+- **Inference**: AWS SageMaker real-time endpoint
+- **API Layer**: Lambda + API Gateway
+- **Infrastructure**: AWS CDK (TypeScript)
+- **Region**: ap-northeast-1 (Tokyo)
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
+## Quick Start
+
+### 1. Train and Package Model
+```bash
+./scripts/train-and-package-model.sh
+```
+
+### 2. Deploy Infrastructure
+```bash
+npm install
+npm run build
+cdk deploy
+```
+
+### 3. Upload Model to S3
+```bash
+aws s3 cp model/build/model.tar.gz s3://sagemaker-house-price-model-YOUR_ACCOUNT_ID/model.tar.gz
+```
+
+### 4. Test API
+```bash
+curl -X POST https://YOUR-API-URL/prod/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "sqft": 2000,
+    "year_built": 2015
+  }'
+```
+
+## Documentation
+
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide with troubleshooting
+- **[docs/ml-api-implementation-plan.md](./docs/ml-api-implementation-plan.md)** - Detailed implementation plan and architecture
+
+## Project Structure
+
+```
+├── lib/                           # CDK infrastructure code
+├── lambda/                        # API handler function
+├── model/                         # ML model training and inference
+│   ├── data/house_data.csv       # Training data
+│   ├── train.py                  # Training script
+│   └── inference.py              # SageMaker inference handler
+└── scripts/                       # Helper scripts
+```
+
+## Architecture
+
+```
+Client → API Gateway → Lambda → SageMaker Endpoint → sklearn Model
+                                       ↓
+                                 S3 (model.tar.gz)
+```
+
+## Cost
+
+**~$50-60/month** for development (mostly SageMaker endpoint on ml.t2.medium)
+
+Run `cdk destroy` when not in use to avoid charges.
+
+## Requirements
+
+- AWS CLI configured
+- Node.js 20+
+- Python 3.10+
+- AWS CDK CLI
+
+## Useful Commands
+
+* `npm run build` - Compile TypeScript
+* `cdk deploy` - Deploy stack
+* `cdk destroy` - Clean up resources
+* `./scripts/test-api.sh <API_URL>` - Test the deployed API
