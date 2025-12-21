@@ -100,13 +100,15 @@ curl -X POST https://YOUR-API-URL/update \
 
 ## Development Commands
 
-* `npm run build`   - Compile TypeScript
-* `npm run watch`   - Watch mode
-* `npm run test`    - Run tests
-* `cdk deploy`      - Deploy stack
-* `cdk diff`        - Show changes
-* `cdk synth`       - Generate CloudFormation
-* `cdk destroy`     - Remove stack
+* `npm run build`     - Compile TypeScript
+* `npm run watch`     - Watch mode
+* `npm run test`      - Run tests
+* `npm run clean`     - Remove compiled .js/.d.ts files
+* `npm run clean:all` - Clean + remove node_modules/cdk.out
+* `cdk deploy`        - Deploy stack
+* `cdk diff`          - Show changes
+* `cdk synth`         - Generate CloudFormation
+* `cdk destroy`       - Remove stack
 
 ## Project Structure
 
