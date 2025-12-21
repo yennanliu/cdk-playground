@@ -1,0 +1,129 @@
+================================================
+RESUME UPDATER - TEST RESULTS
+================================================
+Timestamp: Sun 21 Dec 2025 16:45:14 CST
+Resume File: data/resume_1.txt
+Job Description: data/jd_1.txt
+API URL: https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/
+
+================================================
+UPDATED RESUME:
+================================================
+Here's the updated resume, optimized for the Junior Full-Stack Developer position at CloudStream Tech Solutions:
+
+## 2. Updated Resume
+
+**Name:** Jordan Smith
+**Email:** j.smith_dev@email.com
+**Phone:** (555) 012-3456
+**LinkedIn:** [linkedin.com/in/jsmith-dev](https://www.google.com/search?q=https://linkedin.com/in/jsmith-dev)
+
+**Summary:**
+Motivated Full-Stack Developer with 2 years of experience building scalable web applications. Proven track record in developing responsive UI components and optimizing backend performance using cloud technologies. Passionate about leveraging modern cloud infrastructure and integrating AI-driven features to solve complex problems.
+
+**Technical Skills:**
+
+* **Languages:** JavaScript (ES6+), Python, SQL, HTML/CSS
+* **Frameworks:** React.js, Node.js (Express.js), Flask
+* **Cloud/Tools:** AWS (Lambda, API Gateway, S3), Git, PostgreSQL, Postman
+
+**Professional Experience:**
+
+**Associate Developer | Innovate Web Corp**
+*Jan 2023 – Present*
+
+* Developed and maintained a customer dashboard using React.js, improving user engagement by 15%
+* Built and optimized RESTful APIs using Node.js and Python, enhancing application performance
+* Collaborated with senior engineers to transition a monolithic API to a microservices architecture using AWS Lambda and API Gateway
+* Participated in agile sprint planning and code reviews, contributing to improved team productivity
+
+**Junior Web Intern | StartUp Hub**
+*May 2022 – Dec 2022*
+
+* Assisted in developing and maintaining web applications using JavaScript and custom CSS
+* Conducted unit testing for new features, reducing production bugs by 10%
+* Gained hands-on experience with Git version control and collaborative development practices
+
+**Education:**
+B.S. in Computer Science | State University | Graduated 2022
+
+**Additional:**
+* Actively learning about AI integration in cloud applications, with a focus on Amazon Bedrock and OpenAI API
+* Strong communication skills and a proven "can-do" attitude in fast-paced development environments
+
+================================================
+METADATA:
+================================================
+{
+  "originalLength": 1350,
+  "updatedLength": 2033,
+  "timestamp": "2025-12-21T08:45:14.108Z"
+}
+
+================================================
+ORIGINAL RESUME:
+================================================
+## 2. Dummy Resume
+
+**Name:** Jordan Smith
+**Email:** j.smith_dev@email.com
+**Phone:** (555) 012-3456
+**LinkedIn:** [linkedin.com/in/jsmith-dev](https://www.google.com/search?q=https://linkedin.com/in/jsmith-dev)
+
+**Summary:**
+Detail-oriented Software Developer with 2 years of experience building web applications. Proven track record in optimizing backend performance and implementing responsive UI components. Highly interested in the intersection of Cloud Computing and Generative AI.
+
+**Technical Skills:**
+
+* **Languages:** JavaScript, Python, SQL, HTML/CSS.
+* **Frameworks:** React, Express.js, Flask.
+* **Cloud/Tools:** AWS (Lambda, API Gateway), Git, PostgreSQL, Postman.
+
+**Professional Experience:**
+
+**Associate Developer | Innovate Web Corp**
+*Jan 2023 – Present*
+
+* Developed a customer dashboard using React that improved user engagement by 15%.
+* Wrote Python scripts to automate data migration from legacy systems to AWS S3.
+* Collaborated with senior engineers to transition a monolithic API to a microservices architecture using AWS Lambda.
+
+**Junior Web Intern | StartUp Hub**
+*May 2022 – Dec 2022*
+
+* Maintained existing WordPress sites and assisted in custom CSS/JS styling.
+* Conducted unit testing for new features, reducing production bugs by 10%.
+
+**Education:**
+B.S. in Computer Science | State University | Graduated 2022
+
+================================================
+JOB DESCRIPTION:
+================================================
+## 1. Dummy Job Description (JD)
+
+**Job Title:** Junior Full-Stack Developer
+**Location:** Remote (US Based)
+**Company:** CloudStream Tech Solutions
+
+**About the Role:**
+We are looking for a motivated Junior Full-Stack Developer to join our engineering team. You will assist in building scalable web applications and integrating AI-driven features using AWS. This is a great role for someone who loves solving complex problems and is eager to learn modern cloud infrastructure.
+
+**Key Responsibilities:**
+
+* Develop and maintain front-end interfaces using React.js.
+* Build and optimize RESTful APIs using Node.js and Python.
+* Assist in deploying serverless functions via AWS Lambda.
+* Participate in code reviews and agile sprint planning.
+
+**Required Skills:**
+
+* 1-2 years of experience with JavaScript (ES6+) and Python.
+* Familiarity with AWS (specifically Lambda, S3, or DynamoDB).
+* Understanding of Git version control.
+* Strong communication skills and a "can-do" attitude.
+
+**Bonus Points:**
+
+* Experience with Amazon Bedrock or OpenAI API.
+* Knowledge of Docker and containerization.
