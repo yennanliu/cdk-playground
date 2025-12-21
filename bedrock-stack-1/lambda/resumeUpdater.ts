@@ -2,8 +2,9 @@ import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedroc
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 // AWS_REGION is automatically provided by Lambda runtime
+// Defaults to ap-northeast-1 if not set
 const bedrockClient = new BedrockRuntimeClient({
-  region: process.env.AWS_REGION || 'us-east-1'
+  region: process.env.AWS_REGION || 'ap-northeast-1'
 });
 
 interface UpdateRequest {

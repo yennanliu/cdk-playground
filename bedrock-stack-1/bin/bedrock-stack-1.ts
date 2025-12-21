@@ -3,4 +3,9 @@ import * as cdk from 'aws-cdk-lib';
 import { BedrockStack1Stack } from '../lib/bedrock-stack-1-stack';
 
 const app = new cdk.App();
-new BedrockStack1Stack(app, 'BedrockStack1Stack');
+new BedrockStack1Stack(app, 'BedrockStack1Stack', {
+  env: {
+    region: process.env.CDK_DEFAULT_REGION || 'ap-northeast-1',
+    account: process.env.CDK_DEFAULT_ACCOUNT
+  }
+});

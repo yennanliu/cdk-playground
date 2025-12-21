@@ -11,6 +11,16 @@ Takes your resume and a job description, then uses AI to:
 - Maintain truthfulness (no fabrication)
 - Preserve structure and formatting
 
+## Cmd
+
+```bash
+# default
+bash test-with-data.sh
+
+# custom input
+bash test-with-data.sh -r data/resume_1.txt -j data/jd_1.txt
+```
+
 ## Architecture
 
 ```
@@ -25,14 +35,14 @@ Client → API Gateway → Lambda → Amazon Bedrock (Claude Sonnet) → Updated
 ## Prerequisites
 
 1. **AWS Region**
-   - Deploy to **us-east-1** (recommended - best model availability)
-   - Alternative: us-west-2, ap-northeast-1 (Tokyo)
-   - Set your region: `export AWS_REGION=us-east-1`
+   - Deploy to **ap-northeast-1** (Tokyo) - default region for this stack
+   - Alternative: us-east-1, us-west-2
+   - Set your region: `export AWS_REGION=ap-northeast-1`
 
 2. **Enable Bedrock Model Access**
-   - Go to AWS Bedrock Console (in your target region)
+   - Go to AWS Bedrock Console → ap-northeast-1 region
    - Navigate to Model access
-   - Enable "Claude 3 Sonnet" model
+   - Enable "Claude 3.5 Sonnet" model
    - Wait for approval (usually instant)
 
 3. **Install Dependencies**
