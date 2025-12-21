@@ -23,8 +23,6 @@
   },
   "dependencies": {
     "aws-cdk-lib": "2.202.0",
-    "constructs": "^10.0.0",
-    "@aws-sdk/client-bedrock-runtime": "^3.705.0",
-    "@types/aws-lambda": "^8.10.145"
+    "constructs": "^10.0.0"
   }
 }

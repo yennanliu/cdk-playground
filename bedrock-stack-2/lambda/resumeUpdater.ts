@@ -1,22 +1,29 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { randomUUID } from 'crypto';
 
-// AWS_REGION is automatically provided by Lambda runtime
-// Defaults to ap-northeast-1 if not set
+// AWS clients
 const bedrockClient = new BedrockRuntimeClient({
   region: process.env.AWS_REGION || 'ap-northeast-1'
 });
+const s3Client = new S3Client({ region: process.env.AWS_REGION || 'ap-northeast-1' });
+const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-northeast-1' });
 
 interface UpdateRequest {
-  resumeText: string;
+  resumeText?: string;
+  resumeS3Key?: string;
   jobDescription: string;
   options?: {
     tone?: 'professional' | 'casual' | 'executive';
     format?: 'markdown' | 'plain';
   };
+  userId?: string;
 }
 
 interface UpdateResponse {
+  id: string;
   updatedResume: string;
   originalLength: number;
   updatedLength: number;
@@ -42,19 +49,35 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const request: UpdateRequest = JSON.parse(event.body);
 
     // Validate input
-    if (!request.resumeText || !request.jobDescription) {
+    if (!request.jobDescription) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'jobDescription is required' })
+      };
+    }
+
+    // Get resume text - either from direct input or S3
+    let resumeText = request.resumeText;
+
+    if (request.resumeS3Key && !resumeText) {
+      console.log('Fetching resume from S3:', request.resumeS3Key);
+      resumeText = await getResumeFromS3(request.resumeS3Key);
+    }
+
+    if (!resumeText) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          error: 'Both resumeText and jobDescription are required'
+          error: 'Either resumeText or resumeS3Key must be provided'
         })
       };
     }
 
     // Build prompt for Claude
     const prompt = buildPrompt(
-      request.resumeText,
+      resumeText,
       request.jobDescription,
       request.options
     );
@@ -62,7 +85,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     console.log('Calling Bedrock with prompt length:', prompt.length);
 
     // Call Bedrock with regional inference profile
-    // Using Claude 3.5 Sonnet which works in APAC without marketplace subscription
     const command = new InvokeModelCommand({
       modelId: "apac.anthropic.claude-3-5-sonnet-20240620-v1:0",
       body: JSON.stringify({
@@ -82,12 +104,31 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     console.log('Successfully updated resume');
 
+    // Generate unique ID for this update
+    const updateId = randomUUID();
+    const timestamp = Date.now();
+
+    // Save to DynamoDB history (optional, best effort)
+    try {
+      await saveToHistory({
+        id: updateId,
+        userId: request.userId || 'anonymous',
+        timestamp,
+        originalLength: resumeText.length,
+        updatedLength: updatedResume.length,
+        s3Key: request.resumeS3Key
+      });
+    } catch (error) {
+      console.error('Failed to save history (non-fatal):', error);
+    }
+
     // Prepare response
     const updateResponse: UpdateResponse = {
+      id: updateId,
       updatedResume,
-      originalLength: request.resumeText.length,
+      originalLength: resumeText.length,
       updatedLength: updatedResume.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date(timestamp).toISOString()
     };
 
     return {
@@ -112,6 +153,72 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     };
   }
 };
+
+/**
+ * Fetch resume from S3
+ */
+async function getResumeFromS3(key: string): Promise<string> {
+  const command = new GetObjectCommand({
+    Bucket: process.env.RESUME_BUCKET!,
+    Key: key
+  });
+
+  const response = await s3Client.send(command);
+
+  if (!response.Body) {
+    throw new Error('Failed to read file from S3');
+  }
+
+  // Convert stream to buffer
+  const chunks: Uint8Array[] = [];
+  const stream = response.Body as any;
+
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+
+  const buffer = Buffer.concat(chunks);
+
+  // Handle PDF files (simple text extraction)
+  if (key.toLowerCase().endsWith('.pdf')) {
+    // For now, return raw buffer as text
+    // In production, use pdf-parse library for better extraction
+    return buffer.toString('utf-8');
+  }
+
+  // Handle text files
+  return buffer.toString('utf-8');
+}
+
+/**
+ * Save update to DynamoDB history
+ */
+async function saveToHistory(data: {
+  id: string;
+  userId: string;
+  timestamp: number;
+  originalLength: number;
+  updatedLength: number;
+  s3Key?: string;
+}): Promise<void> {
+  const ttl = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 days TTL
+
+  const command = new PutItemCommand({
+    TableName: process.env.HISTORY_TABLE!,
+    Item: {
+      id: { S: data.id },
+      timestamp: { N: data.timestamp.toString() },
+      userId: { S: data.userId },
+      originalLength: { N: data.originalLength.toString() },
+      updatedLength: { N: data.updatedLength.toString() },
+      s3Key: { S: data.s3Key || '' },
+      ttl: { N: ttl.toString() }
+    }
+  });
+
+  await dynamoClient.send(command);
+  console.log('Saved to history:', data.id);
+}
 
 /**
  * Build the prompt for Claude

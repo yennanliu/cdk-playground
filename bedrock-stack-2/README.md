@@ -23,14 +23,27 @@ bash test-with-data.sh -r data/resume_1.txt -j data/jd_1.txt
 
 ## Architecture
 
+**Architecture 2: With File Upload (Production-Ready)**
+
 ```
-Client → API Gateway → Lambda → Amazon Bedrock (Claude Sonnet) → Updated Resume
+Client → API Gateway → Lambda (parse) → S3 (optional) → Lambda (process) → Bedrock → Response
+                                                                         ↓
+                                                                    DynamoDB (history)
 ```
 
 **Components:**
-- Lambda function with Bedrock integration
-- API Gateway REST API endpoint
-- IAM roles with Bedrock permissions
+- S3 bucket for file uploads with CORS support
+- Lambda for generating presigned upload URLs
+- Lambda for document processing with Bedrock integration
+- DynamoDB for storing update history (30-day TTL)
+- API Gateway REST API with binary support
+- IAM roles with Bedrock, S3, and DynamoDB permissions
+
+**Features:**
+- Direct text input or file upload (PDF/DOCX/TXT)
+- Automatic cleanup (S3: 7 days, DynamoDB: 30 days)
+- Update history tracking
+- Presigned URL for secure uploads
 
 ## Prerequisites
 
@@ -53,12 +66,19 @@ Client → API Gateway → Lambda → Amazon Bedrock (Claude Sonnet) → Updated
 ## Deployment
 
 ```bash
+# Install Lambda dependencies first
+cd lambda
+npm install
+cd ..
+
 # Build and deploy
 npm run build
 cdk deploy
 
-# Note the API URL from output
-# Example: https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/
+# Note the outputs:
+# - ApiUrl: API Gateway endpoint
+# - BucketName: S3 bucket for file uploads
+# - TableName: DynamoDB table for history
 ```
 
 ## Testing
@@ -85,11 +105,28 @@ Test with real resume and job description files. Results are automatically saved
 
 ### Quick Test
 
-Use the simple test script:
+Use the simple test script for direct text input:
 
 ```bash
 ./test-resume-updater.sh https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/
 ```
+
+### File Upload Test
+
+Test the complete file upload flow:
+
+```bash
+# With default data files
+./test-file-upload.sh https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/
+
+# With custom files
+./test-file-upload.sh https://your-api-url/prod/ path/to/resume.txt path/to/job.txt
+```
+
+This script performs the 3-step upload process automatically:
+1. Gets presigned S3 upload URL
+2. Uploads resume file to S3
+3. Processes resume with AI and saves result
 
 ### Manual cURL Test
 
@@ -144,10 +181,39 @@ curl -X POST https://YOUR-API-URL/update \
 - `tone`: `"professional"` (default), `"casual"`, or `"executive"`
 - `format`: `"markdown"` (default) or `"plain"`
 
+### File Upload (3-step process)
+
+```bash
+# Step 1: Get presigned upload URL
+UPLOAD_RESPONSE=$(curl -X POST https://YOUR-API-URL/upload \
+  -H "Content-Type: application/json" \
+  -d '{"fileName": "resume.txt"}')
+
+echo $UPLOAD_RESPONSE
+# {"uploadUrl":"https://s3...","key":"uploads/1234567890-resume.txt","expiresIn":300}
+
+# Step 2: Upload file to S3 using presigned URL
+UPLOAD_URL=$(echo $UPLOAD_RESPONSE | jq -r '.uploadUrl')
+S3_KEY=$(echo $UPLOAD_RESPONSE | jq -r '.key')
+
+curl -X PUT "$UPLOAD_URL" \
+  --upload-file data/resume_1.txt \
+  -H "Content-Type: text/plain"
+
+# Step 3: Process the uploaded resume
+curl -X POST https://YOUR-API-URL/update \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"resumeS3Key\": \"$S3_KEY\",
+    \"jobDescription\": \"Looking for Full Stack Developer with React and Node.js experience...\"
+  }"
+```
+
 ### Response Format
 
 ```json
 {
+  "id": "123e4567-e89b-12d3-a456-426614174000",
   "updatedResume": "Optimized resume text...",
   "originalLength": 250,
   "updatedLength": 380,
@@ -157,8 +223,21 @@ curl -X POST https://YOUR-API-URL/update \
 
 ## Cost Estimation
 
-- **Per update**: ~$0.05 (Bedrock + Lambda + API Gateway)
-- **100 updates/month**: ~$7.30/month
+**Per Resume Update**:
+- Bedrock (Claude Sonnet): ~$0.047
+- Lambda execution: ~$0.00002
+- API Gateway: ~$0.0000035
+- S3 storage (7-day retention): ~$0.000023
+- DynamoDB write: ~$0.0000125
+- **Total**: ~**$0.05 per update**
+
+**Monthly Costs** (100 updates):
+- Bedrock: $4.70
+- Lambda: $0.002
+- API Gateway: $0.35
+- S3: $1.00
+- DynamoDB: $1.25
+- **Total**: ~**$7.30/month**
 
 ## Development Commands
 
@@ -177,12 +256,21 @@ curl -X POST https://YOUR-API-URL/update \
 ```
 bedrock-stack-2/
 ├── lib/
-│   └── bedrock-stack-2-stack.ts    # CDK infrastructure
+│   └── bedrock-stack-2-stack.ts           # CDK infrastructure (S3, DynamoDB, Lambda, API Gateway)
 ├── lambda/
-│   └── resumeUpdater.ts            # Lambda function
+│   ├── resumeUpdater.ts                   # Main Lambda for resume processing
+│   ├── upload.ts                          # Lambda for presigned URL generation
+│   ├── package.json                       # Lambda dependencies
+│   └── tsconfig.json                      # TypeScript config for Lambda
+├── data/
+│   ├── resume_1.txt                       # Sample resume
+│   └── jd_1.txt                           # Sample job description
 ├── doc/
-│   ├── bedrock-ai-app-examples-claude.md       # Bedrock guides
-│   └── resume-updater-evaluation-claude.md     # Design doc
+│   ├── bedrock-ai-app-examples-claude.md  # Bedrock guides
+│   └── resume-updater-evaluation-claude.md # Architecture design doc
+├── test-resume-updater.sh                 # Simple text input test
+├── test-with-data.sh                      # Automated test with data files
+├── test-file-upload.sh                    # File upload flow test
 └── README.md
 ```
 

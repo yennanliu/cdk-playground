@@ -1,0 +1,21 @@
+{
+  "name": "bedrock-stack-2-lambda",
+  "version": "1.0.0",
+  "description": "Lambda functions for Resume Updater",
+  "main": "resumeUpdater.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf *.js *.d.ts *.js.map"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.705.0",
+    "@aws-sdk/client-s3": "^3.705.0",
+    "@aws-sdk/client-dynamodb": "^3.705.0",
+    "@aws-sdk/s3-request-presigner": "^3.705.0",
+    "@types/aws-lambda": "^8.10.145"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.9",
+    "typescript": "^5.6.3"
+  }
+}
