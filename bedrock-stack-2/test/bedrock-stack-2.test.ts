@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as BedrockStack2 from '../lib/bedrock-stack-2-stack';
 
-test('SQS Queue and SNS Topic Created', () => {
+test('Lambda Function Created', () => {
   const app = new cdk.App();
   // WHEN
   const stack = new BedrockStack2.BedrockStack2Stack(app, 'MyTestStack');
@@ -10,8 +10,41 @@ test('SQS Queue and SNS Topic Created', () => {
 
   const template = Template.fromStack(stack);
 
-  template.hasResourceProperties('AWS::SQS::Queue', {
-    VisibilityTimeout: 300
+  template.hasResourceProperties('AWS::Lambda::Function', {
+    Runtime: 'nodejs20.x',
+    Handler: 'resumeUpdater.handler',
+    Timeout: 60,
+    MemorySize: 1024
   });
-  template.resourceCountIs('AWS::SNS::Topic', 1);
+});
+
+test('API Gateway Created', () => {
+  const app = new cdk.App();
+  // WHEN
+  const stack = new BedrockStack2.BedrockStack2Stack(app, 'MyTestStack');
+  // THEN
+
+  const template = Template.fromStack(stack);
+
+  template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
+});
+
+test('Lambda Has Bedrock Permissions', () => {
+  const app = new cdk.App();
+  // WHEN
+  const stack = new BedrockStack2.BedrockStack2Stack(app, 'MyTestStack');
+  // THEN
+
+  const template = Template.fromStack(stack);
+
+  template.hasResourceProperties('AWS::IAM::Policy', {
+    PolicyDocument: {
+      Statement: Match.arrayWith([
+        Match.objectLike({
+          Action: 'bedrock:InvokeModel',
+          Effect: 'Allow'
+        })
+      ])
+    }
+  });
 });

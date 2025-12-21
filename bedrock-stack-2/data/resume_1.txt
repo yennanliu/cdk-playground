@@ -1,0 +1,33 @@
+## 2. Dummy Resume
+
+**Name:** Jordan Smith
+**Email:** j.smith_dev@email.com
+**Phone:** (555) 012-3456
+**LinkedIn:** [linkedin.com/in/jsmith-dev](https://www.google.com/search?q=https://linkedin.com/in/jsmith-dev)
+
+**Summary:**
+Detail-oriented Software Developer with 2 years of experience building web applications. Proven track record in optimizing backend performance and implementing responsive UI components. Highly interested in the intersection of Cloud Computing and Generative AI.
+
+**Technical Skills:**
+
+* **Languages:** JavaScript, Python, SQL, HTML/CSS.
+* **Frameworks:** React, Express.js, Flask.
+* **Cloud/Tools:** AWS (Lambda, API Gateway), Git, PostgreSQL, Postman.
+
+**Professional Experience:**
+
+**Associate Developer | Innovate Web Corp**
+*Jan 2023 – Present*
+
+* Developed a customer dashboard using React that improved user engagement by 15%.
+* Wrote Python scripts to automate data migration from legacy systems to AWS S3.
+* Collaborated with senior engineers to transition a monolithic API to a microservices architecture using AWS Lambda.
+
+**Junior Web Intern | StartUp Hub**
+*May 2022 – Dec 2022*
+
+* Maintained existing WordPress sites and assisted in custom CSS/JS styling.
+* Conducted unit testing for new features, reducing production bugs by 10%.
+
+**Education:**
+B.S. in Computer Science | State University | Graduated 2022
