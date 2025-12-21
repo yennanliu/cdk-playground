@@ -24,12 +24,18 @@ Client → API Gateway → Lambda → Amazon Bedrock (Claude Sonnet) → Updated
 
 ## Prerequisites
 
-1. **Enable Bedrock Model Access**
-   - Go to AWS Bedrock Console → Model access
+1. **AWS Region**
+   - Deploy to **us-east-1** (recommended - best model availability)
+   - Alternative: us-west-2, ap-northeast-1 (Tokyo)
+   - Set your region: `export AWS_REGION=us-east-1`
+
+2. **Enable Bedrock Model Access**
+   - Go to AWS Bedrock Console (in your target region)
+   - Navigate to Model access
    - Enable "Claude 3 Sonnet" model
    - Wait for approval (usually instant)
 
-2. **Install Dependencies**
+3. **Install Dependencies**
    ```bash
    npm install
    ```

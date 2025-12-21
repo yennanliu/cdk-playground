@@ -15,10 +15,7 @@ export class BedrockStack1Stack extends Stack {
       handler: 'resumeUpdater.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
       timeout: Duration.seconds(60),
-      memorySize: 1024,
-      environment: {
-        AWS_REGION: this.region
-      }
+      memorySize: 1024
     });
 
     // Grant Bedrock permissions
