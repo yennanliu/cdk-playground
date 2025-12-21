@@ -1,8 +1,19 @@
 *.js
 !jest.config.js
+!lambda/*.js
 *.d.ts
+*.js.map
 node_modules
 
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# Lambda compiled output (commit these for deployment)
+# lambda/*.js files are needed for deployment, so we allow them
+# But ignore other compiled artifacts
+lambda/*.d.ts
+lambda/*.js.map
+
+# Output directory
+output/

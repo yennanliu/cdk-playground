@@ -4,6 +4,9 @@ import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { randomUUID } from 'crypto';
 
+// Use require for pdf-parse to avoid TypeScript type issues
+const pdfParse = require('pdf-parse');
+
 // AWS clients
 const bedrockClient = new BedrockRuntimeClient({
   region: process.env.AWS_REGION || 'ap-northeast-1'
@@ -179,11 +182,17 @@ async function getResumeFromS3(key: string): Promise<string> {
 
   const buffer = Buffer.concat(chunks);
 
-  // Handle PDF files (simple text extraction)
+  // Handle PDF files with proper parsing
   if (key.toLowerCase().endsWith('.pdf')) {
-    // For now, return raw buffer as text
-    // In production, use pdf-parse library for better extraction
-    return buffer.toString('utf-8');
+    try {
+      console.log('Parsing PDF file...');
+      const data = await pdfParse(buffer);
+      console.log(`PDF parsed: ${data.numpages} pages, ${data.text.length} characters`);
+      return data.text;
+    } catch (error) {
+      console.error('PDF parsing failed:', error);
+      throw new Error('Failed to parse PDF file. Please ensure it is a valid PDF.');
+    }
   }
 
   // Handle text files

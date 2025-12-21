@@ -6,11 +6,15 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:lambda": "cd lambda && npm install && npm run build && cd ..",
+    "build:all": "npm run build:lambda && npm run build",
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "clean": "find lib -name '*.js' -delete && find lib -name '*.d.ts' -delete && find lib -name '*.js.map' -delete && find bin -name '*.js' -delete && find bin -name '*.d.ts' -delete && find bin -name '*.js.map' -delete && find lambda -name '*.js' -delete && find lambda -name '*.d.ts' -delete && find lambda -name '*.js.map' -delete",
-    "clean:all": "npm run clean && rm -rf node_modules cdk.out"
+    "deploy": "npm run build:all && cdk deploy",
+    "clean": "find lib -name '*.js' -delete && find lib -name '*.d.ts' -delete && find lib -name '*.js.map' -delete && find bin -name '*.js' -delete && find bin -name '*.d.ts' -delete && find bin -name '*.js.map' -delete",
+    "clean:lambda": "cd lambda && npm run clean && cd ..",
+    "clean:all": "npm run clean && npm run clean:lambda && rm -rf node_modules cdk.out output"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

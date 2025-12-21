@@ -40,10 +40,12 @@ Client → API Gateway → Lambda (parse) → S3 (optional) → Lambda (process)
 - IAM roles with Bedrock, S3, and DynamoDB permissions
 
 **Features:**
-- Direct text input or file upload (PDF/DOCX/TXT)
+- Direct text input or file upload (PDF/TXT)
+- Real PDF parsing with pdf-parse library
 - Automatic cleanup (S3: 7 days, DynamoDB: 30 days)
 - Update history tracking
 - Presigned URL for secure uploads
+- No Docker required for deployment
 
 ## Prerequisites
 
@@ -66,13 +68,11 @@ Client → API Gateway → Lambda (parse) → S3 (optional) → Lambda (process)
 ## Deployment
 
 ```bash
-# Install Lambda dependencies first
-cd lambda
-npm install
-cd ..
+# Option 1: One-command deploy (recommended)
+npm run deploy
 
-# Build and deploy
-npm run build
+# Option 2: Manual steps
+npm run build:all  # Builds Lambda and CDK
 cdk deploy
 
 # Note the outputs:
@@ -80,6 +80,8 @@ cdk deploy
 # - BucketName: S3 bucket for file uploads
 # - TableName: DynamoDB table for history
 ```
+
+**Note**: Lambda JavaScript files are compiled from TypeScript and committed to the repo for deployment. No Docker needed!
 
 ## Testing
 
@@ -241,15 +243,19 @@ curl -X POST https://YOUR-API-URL/update \
 
 ## Development Commands
 
-* `npm run build`     - Compile TypeScript
-* `npm run watch`     - Watch mode
-* `npm run test`      - Run tests
-* `npm run clean`     - Remove compiled .js/.d.ts files
-* `npm run clean:all` - Clean + remove node_modules/cdk.out
-* `cdk deploy`        - Deploy stack
-* `cdk diff`          - Show changes
-* `cdk synth`         - Generate CloudFormation
-* `cdk destroy`       - Remove stack
+* `npm run deploy`       - Build everything and deploy (recommended)
+* `npm run build:all`    - Build Lambda and CDK
+* `npm run build:lambda` - Build Lambda functions only
+* `npm run build`        - Compile CDK TypeScript
+* `npm run watch`        - Watch mode for CDK
+* `npm run test`         - Run tests
+* `npm run clean`        - Remove compiled CDK files
+* `npm run clean:lambda` - Remove compiled Lambda files
+* `npm run clean:all`    - Clean everything + remove node_modules/cdk.out/output
+* `cdk deploy`           - Deploy stack
+* `cdk diff`             - Show changes
+* `cdk synth`            - Generate CloudFormation
+* `cdk destroy`          - Remove stack
 
 ## Project Structure
 

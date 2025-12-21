@@ -12,7 +12,8 @@
     "@aws-sdk/client-s3": "^3.705.0",
     "@aws-sdk/client-dynamodb": "^3.705.0",
     "@aws-sdk/s3-request-presigner": "^3.705.0",
-    "@types/aws-lambda": "^8.10.145"
+    "@types/aws-lambda": "^8.10.145",
+    "pdf-parse": "^1.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.7.9",
