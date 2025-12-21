@@ -1,0 +1,27 @@
+## 1. Dummy Job Description (JD)
+
+**Job Title:** Junior Full-Stack Developer
+**Location:** Remote (US Based)
+**Company:** CloudStream Tech Solutions
+
+**About the Role:**
+We are looking for a motivated Junior Full-Stack Developer to join our engineering team. You will assist in building scalable web applications and integrating AI-driven features using AWS. This is a great role for someone who loves solving complex problems and is eager to learn modern cloud infrastructure.
+
+**Key Responsibilities:**
+
+* Develop and maintain front-end interfaces using React.js.
+* Build and optimize RESTful APIs using Node.js and Python.
+* Assist in deploying serverless functions via AWS Lambda.
+* Participate in code reviews and agile sprint planning.
+
+**Required Skills:**
+
+* 1-2 years of experience with JavaScript (ES6+) and Python.
+* Familiarity with AWS (specifically Lambda, S3, or DynamoDB).
+* Understanding of Git version control.
+* Strong communication skills and a "can-do" attitude.
+
+**Bonus Points:**
+
+* Experience with Amazon Bedrock or OpenAI API.
+* Knowledge of Docker and containerization.

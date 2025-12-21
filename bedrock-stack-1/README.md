@@ -48,6 +48,38 @@ npm run build
 cdk deploy
 
 # Note the API URL from output
+# Example: https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/
+```
+
+## Testing
+
+### Quick Test
+
+Use the test script with your deployed API URL:
+
+```bash
+./test-resume-updater.sh https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/
+```
+
+### Manual cURL Test
+
+```bash
+curl -X POST https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/update \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resumeText": "John Doe\nSoftware Engineer\n\nExperience:\n- Built web apps with JavaScript",
+    "jobDescription": "Looking for Full Stack Developer with React and Node.js experience"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "updatedResume": "...optimized resume text...",
+  "originalLength": 85,
+  "updatedLength": 250,
+  "timestamp": "2025-12-21T10:30:00.000Z"
+}
 ```
 
 ## Usage
