@@ -53,9 +53,29 @@ cdk deploy
 
 ## Testing
 
+### Automated Test with Data Files (Recommended)
+
+Test with real resume and job description files. Results are automatically saved to `output/` directory:
+
+```bash
+# Use default data files (data/resume_1.txt, data/jd_1.txt)
+./test-with-data.sh
+
+# Use custom files
+./test-with-data.sh -r my_resume.txt -j my_job.txt
+
+# Use custom API URL
+./test-with-data.sh -a https://custom-api-url/prod/
+
+# Show help
+./test-with-data.sh --help
+```
+
+**Output:** Results saved to `output/resume_updated_YYYYMMDD_HHMMSS.txt`
+
 ### Quick Test
 
-Use the test script with your deployed API URL:
+Use the simple test script:
 
 ```bash
 ./test-resume-updater.sh https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/

@@ -1,0 +1,13 @@
+================================================
+RESUME UPDATER - ERROR LOG
+================================================
+Timestamp: Sun 21 Dec 2025 16:42:35 CST
+Resume File: data/resume_1.txt
+Job Description: data/jd_1.txt
+API URL: https://xxihxfmkka.execute-api.ap-northeast-1.amazonaws.com/prod/
+HTTP Status: 500
+
+================================================
+ERROR RESPONSE:
+================================================
+{"error":"Internal server error","message":"Model access is denied due to IAM user or service role is not authorized to perform the required AWS Marketplace actions (aws-marketplace:ViewSubscriptions, aws-marketplace:Subscribe) to enable access to this model. Refer to the Amazon Bedrock documentation for further details. Your AWS Marketplace subscription for this model cannot be completed at this time. If you recently fixed this issue, try again after 5 minutes."}

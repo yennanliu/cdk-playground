@@ -61,10 +61,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     console.log('Calling Bedrock with prompt length:', prompt.length);
 
     // Call Bedrock with regional inference profile
-    // For APAC regions (ap-northeast-1), use APAC profile
-    // For US regions, you can use the base model ID directly
+    // Using Claude 3.5 Sonnet which works in APAC without marketplace subscription
     const command = new InvokeModelCommand({
-      modelId: "apac.anthropic.claude-3-sonnet-20240229-v1:0",
+      modelId: "apac.anthropic.claude-3-5-sonnet-20240620-v1:0",
       body: JSON.stringify({
         anthropic_version: "bedrock-2023-05-31",
         max_tokens: 4000,
