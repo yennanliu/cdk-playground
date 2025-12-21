@@ -1,0 +1,37 @@
+Here's the updated resume, optimized for the Junior Full-Stack Developer position while maintaining truthfulness and the candidate's actual experience:
+
+## 2. Updated Resume
+
+**Name:** Jordan Smith
+**Email:** j.smith_dev@email.com
+**Phone:** (555) 012-3456
+**LinkedIn:** [linkedin.com/in/jsmith-dev](https://www.google.com/search?q=https://linkedin.com/in/jsmith-dev)
+
+**Summary:**
+Motivated Full-Stack Developer with 2 years of experience building scalable web applications. Proven track record in developing responsive UI components and optimizing backend performance using AWS. Passionate about solving complex problems and eager to leverage modern cloud infrastructure and AI-driven features.
+
+**Technical Skills:**
+
+* **Languages:** JavaScript (ES6+), Python, SQL, HTML/CSS
+* **Frameworks:** React.js, Node.js (Express.js), Flask
+* **Cloud/Tools:** AWS (Lambda, S3, API Gateway), Git, PostgreSQL, Postman
+
+**Professional Experience:**
+
+**Associate Developer | Innovate Web Corp**
+*Jan 2023 – Present*
+
+* Developed and maintained a customer dashboard using React.js, improving user engagement by 15%
+* Built and optimized RESTful APIs using Node.js and Python, enhancing application performance
+* Collaborated with senior engineers to transition a monolithic API to a serverless microservices architecture using AWS Lambda
+* Participated in agile sprint planning and code reviews, contributing to team efficiency and code quality
+
+**Junior Web Intern | StartUp Hub**
+*May 2022 – Dec 2022*
+
+* Assisted in developing and maintaining web applications using JavaScript and custom CSS
+* Conducted unit testing for new features, reducing production bugs by 10%
+* Gained hands-on experience with Git version control and collaborative development
+
+**Education:**
+B.S. in Computer Science | State University | Graduated 2022
