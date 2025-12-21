@@ -18,10 +18,13 @@ export class BedrockStack1Stack extends Stack {
       memorySize: 1024
     });
 
-    // Grant Bedrock permissions
+    // Grant Bedrock permissions (for both direct models and inference profiles)
     resumeUpdaterFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
-      resources: ['arn:aws:bedrock:*::foundation-model/anthropic.claude-*']
+      resources: [
+        `arn:aws:bedrock:*::foundation-model/anthropic.claude-*`,
+        `arn:aws:bedrock:*:${this.account}:inference-profile/*`
+      ]
     }));
 
     // API Gateway
