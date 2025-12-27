@@ -64,9 +64,21 @@ export class UrlShortenerAppStack extends Stack {
       timeout: Duration.seconds(10),
     });
 
+    // Lambda function for getting recent URLs
+    const getRecentUrlsFunction = new lambda.Function(this, "GetRecentUrlsFunction", {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "getRecent.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "../dist/lambda")),
+      environment: {
+        TABLE_NAME: urlTable.tableName,
+      },
+      timeout: Duration.seconds(10),
+    });
+
     // Grant Lambda functions access to DynamoDB
     urlTable.grantReadWriteData(shortenUrlFunction);
     urlTable.grantReadData(resolveUrlFunction);
+    urlTable.grantReadData(getRecentUrlsFunction);
 
     // API Gateway for frontend interaction
     const api = new apigateway.RestApi(this, "UrlShortenerApi", {
@@ -90,6 +102,13 @@ export class UrlShortenerAppStack extends Stack {
     resolveParam.addMethod(
       "GET",
       new apigateway.LambdaIntegration(resolveUrlFunction)
+    );
+
+    // Add recent URLs endpoint
+    const recentResource = api.root.addResource("recent");
+    recentResource.addMethod(
+      "GET",
+      new apigateway.LambdaIntegration(getRecentUrlsFunction)
     );
 
     // S3 bucket for hosting the UI
