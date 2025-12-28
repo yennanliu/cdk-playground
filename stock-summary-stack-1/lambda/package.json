@@ -1,0 +1,10 @@
+{
+  "name": "stock-summary-lambda",
+  "version": "1.0.0",
+  "description": "Lambda function for stock news summarization",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "@aws-sdk/client-bedrock-runtime": "^3.712.0"
+  }
+}

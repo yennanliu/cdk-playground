@@ -2,7 +2,6 @@ import { Duration, Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -11,18 +10,14 @@ export class StockSummaryStack1Stack extends Stack {
     super(scope, id, props);
 
     // Lambda function for stock news summarization
-    const summaryFunction = new NodejsFunction(this, 'StockSummaryFunction', {
+    const summaryFunction = new lambda.Function(this, 'StockSummaryFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'handler',
-      entry: path.join(__dirname, '../lambda/index.ts'),
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
       timeout: Duration.seconds(60),
       memorySize: 512,
       environment: {
         BEDROCK_MODEL_ID: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-      },
-      bundling: {
-        externalModules: [],
-        nodeModules: ['axios', '@aws-sdk/client-bedrock-runtime'],
       },
     });
 

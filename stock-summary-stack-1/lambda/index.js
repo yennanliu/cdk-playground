@@ -1,28 +1,15 @@
-import { Handler } from 'aws-lambda';
-import axios from 'axios';
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+const axios = require('axios');
+const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 const MODEL_ID = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-5-sonnet-20241022-v2:0';
 
-interface SummarizeRequest {
-  ticker: string;
-}
-
-interface SummarizeResponse {
-  ticker: string;
-  summary: string[];
-  sentiment: string;
-  sources: string[];
-  timestamp: string;
-}
-
-export const handler: Handler = async (event: any) => {
+exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event, null, 2));
 
   try {
     // Parse request body
-    const body: SummarizeRequest = JSON.parse(event.body || '{}');
+    const body = JSON.parse(event.body || '{}');
     const ticker = body.ticker?.toUpperCase().trim();
 
     // Validate ticker
@@ -123,7 +110,7 @@ If no relevant news is found, return an empty summary array. Be concise and focu
     }
 
     // Build response
-    const result: SummarizeResponse = {
+    const result = {
       ticker,
       summary: summaryData.summary || [],
       sentiment: summaryData.sentiment || 'neutral',
@@ -139,7 +126,7 @@ If no relevant news is found, return an empty summary array. Be concise and focu
       },
       body: JSON.stringify(result),
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error:', error);
 
     return {
