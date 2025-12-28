@@ -1,8 +1,9 @@
 const axios = require('axios');
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 
-const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const MODEL_ID = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-5-sonnet-20241022-v2:0';
+const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'ap-northeast-1' });
+// Use APAC inference profile for ap-northeast-1 region
+const MODEL_ID = process.env.BEDROCK_MODEL_ID || 'apac.anthropic.claude-3-5-sonnet-20240620-v1:0';
 
 exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event, null, 2));
