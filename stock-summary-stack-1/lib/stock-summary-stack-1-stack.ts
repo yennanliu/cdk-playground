@@ -27,8 +27,10 @@ export class StockSummaryStack1Stack extends Stack {
         effect: iam.Effect.ALLOW,
         actions: ['bedrock:InvokeModel'],
         resources: [
-          `arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0`,
-          `arn:aws:bedrock:${this.region}::inference-profile/apac.anthropic.claude-3-5-sonnet-20240620-v1:0`,
+          // Inference profile ARN
+          `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/apac.anthropic.claude-3-5-sonnet-20240620-v1:0`,
+          // Foundation model ARNs - APAC inference profile can route to multiple regions
+          `arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0`,
         ],
       })
     );
