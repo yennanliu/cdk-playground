@@ -41,7 +41,22 @@ After deployment, note the `SummarizeEndpoint` output - this is your API endpoin
 
 ## Usage
 
-### API Request
+### Using the Bash Script (Recommended)
+
+```bash
+# Make script executable (first time only)
+chmod +x get_stock_news_summary.sh
+
+# Get news summary for any stock
+./get_stock_news_summary.sh TSLA
+./get_stock_news_summary.sh AAPL
+./get_stock_news_summary.sh NVDA
+
+# Also works with lowercase
+./get_stock_news_summary.sh msft
+```
+
+### Direct API Request
 
 ```bash
 curl -X POST https://<your-api-id>.execute-api.<region>.amazonaws.com/prod/summarize \
