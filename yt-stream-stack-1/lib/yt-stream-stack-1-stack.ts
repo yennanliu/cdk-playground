@@ -30,9 +30,17 @@ export class YtStreamStack1Stack extends Stack {
       },
     });
 
-    // Use default VPC
-    const vpc = ec2.Vpc.fromLookup(this, 'DefaultVPC', {
-      isDefault: true,
+    // Create a simple VPC with public subnets only (cost-effective)
+    const vpc = new ec2.Vpc(this, 'StreamVPC', {
+      maxAzs: 2,
+      natGateways: 0, // No NAT Gateway to save costs
+      subnetConfiguration: [
+        {
+          cidrMask: 24,
+          name: 'Public',
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+      ],
     });
 
     // Security group for ECS task
@@ -110,6 +118,8 @@ export class YtStreamStack1Stack extends Stack {
         subnetType: ec2.SubnetType.PUBLIC,
       },
       enableExecuteCommand: true, // Enable ECS Exec for debugging
+      minHealthyPercent: 0, // Allow task to stop during deployment (single task)
+      maxHealthyPercent: 100, // Only run 1 task at a time
     });
 
     // Output bucket name

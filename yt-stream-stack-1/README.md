@@ -8,7 +8,7 @@ A simple and elegant AWS CDK stack for running a 24/7 music streaming service on
 - **ECS Fargate**: Runs FFmpeg container serverless
 - **Secrets Manager**: Securely stores YouTube stream key
 - **CloudWatch Logs**: Monitoring and debugging
-- **Default VPC**: Uses existing VPC for simplicity
+- **VPC**: Simple VPC with public subnets only (no NAT Gateway for cost savings)
 
 ## Cost
 
