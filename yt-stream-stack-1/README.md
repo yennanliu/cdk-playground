@@ -2,6 +2,52 @@
 
 A simple and elegant AWS CDK stack for running a 24/7 music streaming service on YouTube using ECS Fargate and FFmpeg.
 
+
+## Deploy cmd
+
+```
+
+Correct Order
+
+1. Deploy the Stack First
+
+# Install dependencies (if not done)
+npm install
+
+# Build TypeScript
+npm run build
+
+# Deploy the stack (this creates the secret)
+cdk deploy
+
+2. Then Update the Secret with Your Key
+
+aws secretsmanager update-secret \
+  --secret-id youtube-stream-key \
+  --secret-string '{"streamKey":"hyqe-vpvz-zccj-qyvq-d0c3"}'
+
+3. Upload Music Files
+
+# Use bucket name from CDK output
+BUCKET_NAME="yt-stream-music-{account}-{region}"
+
+aws s3 cp ./music/ s3://${BUCKET_NAME}/music/ --recursive
+aws s3 cp ./background.jpg s3://${BUCKET_NAME}/background.jpg
+
+4. Restart ECS Service
+
+aws ecs update-service \
+  --cluster yt-stream-cluster \
+  --service youtube-streamer-service \
+  --force-new-deployment
+
+# What the Stack Creates
+
+# Looking at lib/yt-stream-stack-1-stack.ts:28-30, the stack creates the secret with a placeholder:
+# generateSecretString: {
+#   secretStringTemplate: JSON.stringify({ streamKey: 'PLACEHOLDER' }),
+```
+
 ## Architecture
 
 - **S3 Bucket**: Stores music files and background images
