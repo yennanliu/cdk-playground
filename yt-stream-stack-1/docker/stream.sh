@@ -56,9 +56,8 @@ RTMP_URL="rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}"
 echo "Starting FFmpeg stream to YouTube..."
 echo "Stream will loop indefinitely..."
 
-# Start streaming with FFmpeg
+# Start streaming with FFmpeg in an infinite loop
 # -re: Read input at native frame rate
-# -stream_loop -1: Loop indefinitely
 # -f concat: Concatenate input files
 # -safe 0: Allow unsafe file paths
 # -i: Input playlist
@@ -76,24 +75,35 @@ echo "Stream will loop indefinitely..."
 # -ar 44100: Audio sample rate
 # -f flv: Flash Video format for RTMP
 
-ffmpeg -re \
-    -stream_loop -1 \
-    -f concat \
-    -safe 0 \
-    -i "$PLAYLIST_FILE" \
-    -loop 1 \
-    -i /tmp/images/background.jpg \
-    -c:v libx264 \
-    -preset veryfast \
-    -b:v 2000k \
-    -maxrate 2000k \
-    -bufsize 4000k \
-    -pix_fmt yuv420p \
-    -g 60 \
-    -r 30 \
-    -c:a aac \
-    -b:a 128k \
-    -ar 44100 \
-    -ac 2 \
-    -f flv \
-    "$RTMP_URL"
+# Infinite loop to restart stream if it stops
+while true; do
+    echo "Starting stream ($(date))..."
+
+    ffmpeg -re \
+        -f concat \
+        -safe 0 \
+        -i "$PLAYLIST_FILE" \
+        -loop 1 \
+        -i /tmp/images/background.jpg \
+        -c:v libx264 \
+        -preset veryfast \
+        -b:v 2000k \
+        -maxrate 2000k \
+        -bufsize 4000k \
+        -pix_fmt yuv420p \
+        -g 60 \
+        -r 30 \
+        -c:a aac \
+        -b:a 128k \
+        -ar 44100 \
+        -ac 2 \
+        -f flv \
+        "$RTMP_URL"
+
+    EXIT_CODE=$?
+    echo "Stream stopped with exit code: $EXIT_CODE"
+
+    # Wait 5 seconds before restarting to avoid hammering YouTube on errors
+    echo "Restarting in 5 seconds..."
+    sleep 5
+done

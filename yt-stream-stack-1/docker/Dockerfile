@@ -13,5 +13,6 @@ WORKDIR /app
 COPY stream.sh /app/stream.sh
 RUN chmod +x /app/stream.sh
 
-# Default command
-CMD ["/app/stream.sh"]
+# Override entrypoint and run bash script
+ENTRYPOINT []
+CMD ["/bin/bash", "/app/stream.sh"]

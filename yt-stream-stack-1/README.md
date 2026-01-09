@@ -29,10 +29,18 @@ aws secretsmanager update-secret \
 3. Upload Music Files
 
 # Use bucket name from CDK output
-BUCKET_NAME="yt-stream-music-{account}-{region}"
 
-aws s3 cp ./music/ s3://${BUCKET_NAME}/music/ --recursive
-aws s3 cp ./background.jpg s3://${BUCKET_NAME}/background.jpg
+
+
+# Set your bucket name (get from CDK output after deployment)
+BUCKET_NAME="yt-stream-music-187326049035-ap-northeast-1"
+
+# Upload music files
+aws s3 sync yt_asset/music/ s3://${BUCKET_NAME}/music/
+
+# Upload background image (assuming it's in the pic folder)
+aws s3 cp yt_asset/pic/background.jpeg s3://${BUCKET_NAME}/background.jpeg
+
 
 4. Restart ECS Service
 
