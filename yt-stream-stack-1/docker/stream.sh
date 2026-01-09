@@ -41,14 +41,19 @@ if [ "$MUSIC_COUNT" -eq 0 ]; then
     ffmpeg -f lavfi -i "sine=frequency=440:duration=60" -c:a libmp3lame /tmp/music/test-tone.mp3
 fi
 
-# Create playlist file
+# Create playlist file with 1000 repetitions for continuous 24/7 streaming
 echo "Creating playlist..."
 PLAYLIST_FILE="/tmp/playlist.txt"
-find /tmp/music -type f \( -name "*.mp3" -o -name "*.wav" -o -name "*.m4a" \) | sort | while read file; do
-    echo "file '$file'" >> $PLAYLIST_FILE
+rm -f $PLAYLIST_FILE
+
+# Repeat the playlist 1000 times to ensure continuous streaming
+for i in $(seq 1 1000); do
+    find /tmp/music -type f \( -name "*.mp3" -o -name "*.wav" -o -name "*.m4a" \) | sort | while read file; do
+        echo "file '$file'" >> $PLAYLIST_FILE
+    done
 done
 
-echo "Playlist created with $(wc -l < $PLAYLIST_FILE) entries"
+echo "Playlist created with $(wc -l < $PLAYLIST_FILE) entries (looped for 24/7 streaming)"
 
 # YouTube RTMP URL
 RTMP_URL="rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}"
