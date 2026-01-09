@@ -91,6 +91,7 @@ while true; do
         -maxrate 2000k \
         -bufsize 4000k \
         -pix_fmt yuv420p \
+        -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
         -g 60 \
         -r 30 \
         -c:a aac \
