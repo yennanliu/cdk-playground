@@ -2,6 +2,21 @@
 
 A simple and elegant AWS CDK stack for generating AI music using Replicate's MusicGen API.
 
+## Cmd
+
+```bash
+
+# YOUR_ENDPOINT will be shown after deploy success
+
+curl -X POST <YOUR_ENDPOINT> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "upbeat electronic dance music with heavy bass",
+    "duration": 30,
+    "genre": "electronic"
+  }'
+```
+
 ## Architecture
 
 ```
