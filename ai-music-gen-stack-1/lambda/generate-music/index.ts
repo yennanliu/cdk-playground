@@ -54,8 +54,8 @@ export const handler = async (event: LambdaEvent) => {
     const audioBuffer = await downloadFile(audioUrl);
 
     // Upload to S3
-    const fileKey = `music/${uuidv4()}.wav`;
-    await uploadToS3(audioBuffer, fileKey);
+    const fileKey = `music/${uuidv4()}.mp3`;
+    await uploadToS3(audioBuffer, fileKey, 'audio/mpeg');
 
     const s3Url = `https://${MUSIC_BUCKET_NAME}.s3.amazonaws.com/${fileKey}`;
 
@@ -96,7 +96,7 @@ async function generateMusicWithReplicate(prompt: string, duration: number): Pro
       input: {
         prompt: prompt,
         model_version: 'stereo-melody-large',
-        output_format: 'wav',
+        output_format: 'mp3',
         normalization_strategy: 'peak',
         duration: duration,
       },
@@ -228,12 +228,12 @@ async function downloadFile(url: string): Promise<Buffer> {
   });
 }
 
-async function uploadToS3(buffer: Buffer, key: string): Promise<void> {
+async function uploadToS3(buffer: Buffer, key: string, contentType: string = 'audio/mpeg'): Promise<void> {
   const command = new PutObjectCommand({
     Bucket: MUSIC_BUCKET_NAME,
     Key: key,
     Body: buffer,
-    ContentType: 'audio/wav',
+    ContentType: contentType,
   });
 
   await s3Client.send(command);
@@ -267,8 +267,8 @@ async function generateMockMusic(prompt: string, duration: number) {
   buffer.write('data', 36);
   buffer.writeUInt32LE(dataSize, 40);
 
-  const fileKey = `music/${uuidv4()}.wav`;
-  await uploadToS3(buffer, fileKey);
+  const fileKey = `music/${uuidv4()}.mp3`;
+  await uploadToS3(buffer, fileKey, 'audio/mpeg');
 
   const s3Url = `https://${MUSIC_BUCKET_NAME}.s3.amazonaws.com/${fileKey}`;
 
