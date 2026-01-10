@@ -2,6 +2,8 @@
 
 A simple and elegant AWS CDK stack for running a 24/7 music streaming service on YouTube using ECS Fargate and FFmpeg.
 
+[Intro blog](https://yennj12.js.org/yennj12_blog_V4/posts/building-24-7-youtube-streaming-service-aws-cdk-ecs-fargate/)
+
 
 ## Deploy cmd
 
