@@ -64,7 +64,7 @@ export class AiMusicGenStack1Stack extends Stack {
       'POST',
       new apigateway.LambdaIntegration(generateMusicFn, {
         proxy: true,
-        timeout: Duration.minutes(14), // Slightly less than Lambda timeout
+        timeout: Duration.seconds(29), // API Gateway max timeout is 29 seconds
       })
     );
 

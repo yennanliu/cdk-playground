@@ -9,3 +9,5 @@ redis-cluster-1/app/mysite/mysite/__pycache__
 **/**/__pycache__
 .DS_Store
 */cdk.context.json
+ai-music-gen-stack-1/lambda/generate-music/*.d.ts.map
+ai-music-gen-stack-1/lambda/generate-music/*.js.map
