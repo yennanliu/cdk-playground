@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 const s3Client = new S3Client({});
 const MUSIC_BUCKET_NAME = process.env.MUSIC_BUCKET_NAME!;
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+const HUGGINGFACE_API_TOKEN = process.env.HUGGINGFACE_API_TOKEN;
 
 interface GenerateRequest {
   prompt: string;
@@ -41,17 +42,20 @@ export const handler = async (event: LambdaEvent) => {
     const fullPrompt = genre ? `${genre} music: ${prompt}` : prompt;
     console.log('Generating music with prompt:', fullPrompt);
 
-    // Check if Replicate API token is available
-    if (!REPLICATE_API_TOKEN) {
-      console.warn('REPLICATE_API_TOKEN not set. Using mock generation.');
+    let audioBuffer: Buffer;
+
+    // Try HuggingFace first, then Replicate, then mock
+    if (HUGGINGFACE_API_TOKEN) {
+      console.log('Using Hugging Face Inference API');
+      audioBuffer = await generateMusicWithHuggingFace(fullPrompt, duration);
+    } else if (REPLICATE_API_TOKEN) {
+      console.log('Using Replicate API');
+      const audioUrl = await generateMusicWithReplicate(fullPrompt, duration);
+      audioBuffer = await downloadFile(audioUrl);
+    } else {
+      console.warn('No API token set. Using mock generation.');
       return await generateMockMusic(fullPrompt, duration);
     }
-
-    // Call Replicate API
-    const audioUrl = await generateMusicWithReplicate(fullPrompt, duration);
-
-    // Download the generated audio
-    const audioBuffer = await downloadFile(audioUrl);
 
     // Upload to S3
     const fileKey = `music/${uuidv4()}.mp3`;
@@ -146,6 +150,76 @@ async function generateMusicWithReplicate(prompt: string, duration: number): Pro
     });
 
     req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
+
+async function generateMusicWithHuggingFace(prompt: string, duration: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({
+      inputs: prompt,
+      parameters: {
+        duration: duration,
+        guidance_scale: 3.0,
+        temperature: 1.0,
+      },
+    });
+
+    const options = {
+      hostname: 'api-inference.huggingface.co',
+      path: '/models/facebook/musicgen-small',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HUGGINGFACE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+      },
+    };
+
+    console.log('Calling Hugging Face API...');
+
+    const req = https.request(options, (res) => {
+      const chunks: Buffer[] = [];
+
+      res.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+
+      res.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+
+        // Check if response is JSON (error)
+        if (res.headers['content-type']?.includes('application/json')) {
+          try {
+            const errorData = JSON.parse(buffer.toString());
+            console.error('Hugging Face API error:', errorData);
+
+            // Check if model is loading
+            if (errorData.error && errorData.error.includes('loading')) {
+              const estimatedTime = errorData.estimated_time || 20;
+              reject(new Error(`Model is loading. Estimated time: ${estimatedTime} seconds. Please try again in a moment.`));
+            } else {
+              reject(new Error(errorData.error || 'Hugging Face API error'));
+            }
+            return;
+          } catch (e) {
+            reject(new Error(`API error: ${buffer.toString()}`));
+            return;
+          }
+        }
+
+        // Response is audio data
+        console.log(`Received audio data: ${buffer.length} bytes`);
+        resolve(buffer);
+      });
+    });
+
+    req.on('error', (error) => {
+      console.error('Request error:', error);
       reject(error);
     });
 

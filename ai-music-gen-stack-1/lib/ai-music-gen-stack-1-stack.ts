@@ -34,8 +34,9 @@ export class AiMusicGenStack1Stack extends Stack {
       memorySize: 512,
       environment: {
         MUSIC_BUCKET_NAME: musicBucket.bucketName,
-        // Add your Replicate API token via environment variable or Secrets Manager
-        // REPLICATE_API_TOKEN: 'your-token-here'
+        // Add API tokens via environment variable or Secrets Manager
+        // REPLICATE_API_TOKEN: 'your-replicate-token'
+        // HUGGINGFACE_API_TOKEN: 'your-huggingface-token'
       },
     });
 
