@@ -44,14 +44,24 @@ export const handler = async (event: LambdaEvent) => {
 
     let audioBuffer: Buffer;
 
-    // Try HuggingFace first, then Replicate, then mock
-    if (HUGGINGFACE_API_TOKEN) {
+    //  Try Replicate first (most reliable), then HuggingFace, then mock
+    if (REPLICATE_API_TOKEN) {
+      console.log('Using Replicate API');
+      try {
+        const audioUrl = await generateMusicWithReplicate(fullPrompt, duration);
+        audioBuffer = await downloadFile(audioUrl);
+      } catch (error: any) {
+        // If Replicate fails (no credit), try HuggingFace as fallback
+        console.warn('Replicate failed, trying HuggingFace:', error.message);
+        if (HUGGINGFACE_API_TOKEN) {
+          audioBuffer = await generateMusicWithHuggingFace(fullPrompt, duration);
+        } else {
+          throw error;
+        }
+      }
+    } else if (HUGGINGFACE_API_TOKEN) {
       console.log('Using Hugging Face Inference API');
       audioBuffer = await generateMusicWithHuggingFace(fullPrompt, duration);
-    } else if (REPLICATE_API_TOKEN) {
-      console.log('Using Replicate API');
-      const audioUrl = await generateMusicWithReplicate(fullPrompt, duration);
-      audioBuffer = await downloadFile(audioUrl);
     } else {
       console.warn('No API token set. Using mock generation.');
       return await generateMockMusic(fullPrompt, duration);
@@ -160,12 +170,11 @@ async function generateMusicWithReplicate(prompt: string, duration: number): Pro
 
 async function generateMusicWithHuggingFace(prompt: string, duration: number): Promise<Buffer> {
   return new Promise((resolve, reject) => {
+    // MusicGen expects specific format
     const postData = JSON.stringify({
       inputs: prompt,
       parameters: {
-        duration: duration,
-        guidance_scale: 3.0,
-        temperature: 1.0,
+        max_new_tokens: Math.floor(duration * 50), // Approximate tokens for duration
       },
     });
 
