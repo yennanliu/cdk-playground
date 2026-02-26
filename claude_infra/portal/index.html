@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code - Request Development Environment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loader.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .result-item {
+            margin-bottom: 12px;
+        }
+
+        .result-label {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .result-value {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .note {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .features {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .features h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .features ul {
+            list-style: none;
+        }
+
+        .features li {
+            padding: 8px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .features li:before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Claude Code</h1>
+        <p class="subtitle">Request your cloud development environment</p>
+
+        <form id="requestForm">
+            <div class="form-group">
+                <label for="userId">User ID</label>
+                <input type="text" id="userId" name="userId" required
+                       placeholder="e.g., john-doe"
+                       pattern="[a-z0-9-]+"
+                       title="Only lowercase letters, numbers, and hyphens"
+                       autocomplete="username">
+                <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">
+                    This will be your subdomain: userid.example.com
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email (optional)</label>
+                <input type="email" id="email" name="email"
+                       placeholder="your.email@example.com"
+                       autocomplete="email">
+            </div>
+
+            <button type="submit" id="submitBtn">Request Environment</button>
+        </form>
+
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <p style="margin-top: 12px; color: #666;">Provisioning your environment...</p>
+        </div>
+
+        <div class="result" id="result">
+            <h3 id="resultTitle">Environment Ready!</h3>
+
+            <div class="result-item">
+                <div class="result-label">Your URL:</div>
+                <div class="result-value" id="urlValue"></div>
+                <button class="copy-btn" onclick="copyToClipboard('urlValue')">Copy</button>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">Password:</div>
+                <div class="result-value" id="passwordValue"></div>
+                <button class="copy-btn" onclick="copyToClipboard('passwordValue')">Copy</button>
+            </div>
+
+            <div class="note">
+                <strong>Important:</strong> Save your password! It will be shown only once.
+                Your environment will be ready in 1-2 minutes.
+            </div>
+        </div>
+
+        <div class="features">
+            <h3>What you get:</h3>
+            <ul>
+                <li>VS Code in your browser</li>
+                <li>Claude Code CLI pre-installed</li>
+                <li>Persistent workspace storage</li>
+                <li>2 vCPU, 4GB RAM</li>
+                <li>Auto-stops after 8 hours idle</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Replace with your API Gateway endpoint
+        const API_ENDPOINT = 'YOUR_API_GATEWAY_ENDPOINT_HERE';
+
+        document.getElementById('requestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const userId = document.getElementById('userId').value.toLowerCase().trim();
+            const email = document.getElementById('email').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loader');
+            const result = document.getElementById('result');
+
+            // Hide previous results
+            result.classList.remove('show', 'success', 'error');
+
+            // Show loader
+            submitBtn.disabled = true;
+            loader.classList.add('show');
+
+            try {
+                const response = await fetch(`${API_ENDPOINT}/environments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId, email }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success
+                    document.getElementById('resultTitle').textContent = 'Environment Ready!';
+                    document.getElementById('urlValue').textContent = data.url;
+                    document.getElementById('passwordValue').textContent = data.password || 'Check your email';
+                    result.classList.add('show', 'success');
+                } else {
+                    // Error
+                    throw new Error(data.error || 'Failed to provision environment');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('resultTitle').textContent = 'Error';
+                document.getElementById('urlValue').textContent = error.message;
+                document.getElementById('passwordValue').textContent = '';
+                result.classList.add('show', 'error');
+            } finally {
+                loader.classList.remove('show');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                // Show feedback
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+    </script>
+</body>
+</html>
