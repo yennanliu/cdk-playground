@@ -555,7 +555,3 @@ Yes! code-server works on mobile browsers, though the experience is better on de
 - **Claude Code**: https://github.com/anthropics/claude-code
 - **AWS CDK**: https://docs.aws.amazon.com/cdk/
 - **Issues**: Report at your repository's issue tracker
-
-## License
-
-This infrastructure code is part of the Jericho Security project.
