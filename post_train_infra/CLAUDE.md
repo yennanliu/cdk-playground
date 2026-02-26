@@ -265,10 +265,6 @@ When reviewing changes to this stack:
 - `terraform/aws/eks-gpu-nodegroup.tf`: GPU node group configuration
 - `terraform/aws/dfdet-deployment.tf`: Reference GPU deployment pattern
 
-### Other CDK Stacks
-- `jericho-security-stack/`: Main EKS cluster stack (created via CDK, but we import it)
-- `opensearch-logging-stack/`: Reference for IAM role patterns
-
 ## Notes for Claude
 
 - This stack **imports** an existing EKS cluster; it does not create one

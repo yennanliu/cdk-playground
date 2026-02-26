@@ -371,9 +371,6 @@ aws ecr batch-delete-image --repository-name dev-post-train/rag-orchestrator --i
 
 See project root `CLAUDE.md` for development guidelines.
 
-## License
-
-Proprietary - Jericho Security
 
 ## Support
 
