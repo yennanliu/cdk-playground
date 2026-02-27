@@ -7,6 +7,7 @@ on:
     paths:
       - 'README.md'
       - '.github/workflows/deploy-gh-pages.yml'
+      - '.github/templates/page.html'
   workflow_dispatch:
 
 permissions:
@@ -37,13 +38,9 @@ jobs:
           pandoc README.md \
             --from markdown \
             --to html5 \
-            --standalone \
+            --template .github/templates/page.html \
             --metadata title="CDK Playground" \
-            --css https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.6.1/github-markdown.min.css \
             --output _site/index.html
-          # Wrap in github-markdown-body div for styling
-          sed -i 's/<body>/<body><article class="markdown-body" style="max-width:900px;margin:40px auto;padding:20px">/' _site/index.html
-          sed -i 's/<\/body>/<\/article><\/body>/' _site/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
