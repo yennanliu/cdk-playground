@@ -1,0 +1,55 @@
+name: yt-stream-stack-1 CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'yt-stream-stack-1/**'
+      - '.github/workflows/yt-stream-stack-1-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'yt-stream-stack-1/**'
+      - '.github/workflows/yt-stream-stack-1-ci.yml'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: yt-stream-stack-1
+
+jobs:
+  ci:
+    name: Syntax Check / Build / Synth / Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: yt-stream-stack-1/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: CDK Synth (dry run)
+        run: npx cdk synth
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: dummy
+          AWS_SECRET_ACCESS_KEY: dummy
