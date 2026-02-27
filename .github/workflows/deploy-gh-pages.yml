@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'html-nginx/website/**'
+      - 'README.md'
+      - '.github/workflows/deploy-gh-pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -27,13 +28,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Convert README.md to HTML
+        run: |
+          mkdir -p _site
+          pandoc README.md \
+            --from markdown \
+            --to html5 \
+            --standalone \
+            --metadata title="CDK Playground" \
+            --css https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.6.1/github-markdown.min.css \
+            --output _site/index.html
+          # Wrap in github-markdown-body div for styling
+          sed -i 's/<body>/<body><article class="markdown-body" style="max-width:900px;margin:40px auto;padding:20px">/' _site/index.html
+          sed -i 's/<\/body>/<\/article><\/body>/' _site/index.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: html-nginx/website
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
