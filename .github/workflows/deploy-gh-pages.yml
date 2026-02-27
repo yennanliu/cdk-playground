@@ -28,6 +28,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install pandoc
+        run: sudo apt-get install -y pandoc
+
       - name: Convert README.md to HTML
         run: |
           mkdir -p _site
