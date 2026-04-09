@@ -6,20 +6,28 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:lambda": "tsc -p tsconfig.lambda.json",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "clean": "find lib -name '*.js' -delete && find lib -name '*.d.ts' -delete && find lib -name '*.js.map' -delete && find bin -name '*.js' -delete && find bin -name '*.d.ts' -delete && find bin -name '*.js.map' -delete",
+    "clean:all": "npm run clean && rm -rf node_modules cdk.out dist"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "22.7.9",
+    "aws-cdk": "2.1020.2",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
-    "aws-cdk": "2.1020.2",
     "ts-node": "^10.9.2",
     "typescript": "~5.6.3"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1027.0",
+    "@aws-sdk/client-s3": "^3.1027.0",
+    "@aws-sdk/lib-dynamodb": "^3.1027.0",
+    "@aws-sdk/s3-request-presigner": "^3.1027.0",
+    "@types/aws-lambda": "^8.10.161",
     "aws-cdk-lib": "2.202.0",
     "constructs": "^10.0.0"
   }
