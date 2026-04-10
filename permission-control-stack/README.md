@@ -23,6 +23,13 @@ bash scripts/seed-data.sh
 # - ivy
 ```
 
+<p align="center"><img src ="./doc/pic/demo_1.png"></p>
+
+<p align="center"><img src ="./doc/pic/demo_2.png"></p>
+
+<p align="center"><img src ="./doc/pic/demo_3.png"></p>
+
+
 ## Features
 
 - **Hierarchical Organization**: Model your org structure as Departments → Teams → Employees
