@@ -150,23 +150,9 @@ export class PermissionControlStack extends Stack {
 
     new s3deploy.BucketDeployment(this, 'DeployUi', {
       sources: [
-        s3deploy.Source.asset(path.join(__dirname, '..', 'ui'), {
-          bundling: {
-            image: lambda.Runtime.NODEJS_20_X.bundlingImage,
-            local: {
-              tryBundle(outputDir: string) {
-                const fs = require('fs');
-                const html = fs.readFileSync(
-                  path.join(__dirname, '..', 'ui', 'index.html'), 'utf8'
-                );
-                fs.writeFileSync(
-                  path.join(outputDir, 'index.html'),
-                  html.replace('{{API_URL}}', api.url.replace(/\/$/, ''))
-                );
-                return true;
-              },
-            },
-          },
+        s3deploy.Source.asset(path.join(__dirname, '..', 'ui')),
+        s3deploy.Source.jsonData('config.json', {
+          apiUrl: api.url.replace(/\/$/, ''),
         }),
       ],
       destinationBucket: uiBucket,

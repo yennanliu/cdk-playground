@@ -213,7 +213,7 @@
 </div>
 
 <script>
-const API_URL = '{{API_URL}}';
+let API_URL = ''; // loaded from config.js
 
 let token = sessionStorage.getItem('token');
 let claims = null;
@@ -523,9 +523,12 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // --- Init ---
-if (token) {
-  try { initApp(); } catch(e) { logout(); }
-}
+fetch('config.json').then(r => r.json()).then(cfg => {
+  API_URL = cfg.apiUrl;
+  if (token) {
+    try { initApp(); } catch(e) { logout(); }
+  }
+});
 </script>
 </body>
 </html>
