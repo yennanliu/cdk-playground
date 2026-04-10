@@ -19,12 +19,13 @@ export async function getItem(table: string, key: Record<string, string>) {
   return res.Item;
 }
 
-export async function queryByPk(table: string, pk: string, indexName?: string) {
+export async function queryByPk(table: string, pk: string, indexName?: string, keyName: string = 'PK') {
   const res = await ddb.send(
     new QueryCommand({
       TableName: table,
       IndexName: indexName,
-      KeyConditionExpression: 'PK = :pk',
+      KeyConditionExpression: `#key = :pk`,
+      ExpressionAttributeNames: { '#key': keyName },
       ExpressionAttributeValues: { ':pk': pk },
     })
   );
