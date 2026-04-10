@@ -125,6 +125,14 @@ export class PermissionControlStack extends Stack {
     const assign = roles.addResource('assign');
     assign.addMethod('POST', new apigateway.LambdaIntegration(hierarchyFn));
     assign.addMethod('DELETE', new apigateway.LambdaIntegration(hierarchyFn));
+    const requests = roles.addResource('requests');
+    requests.addMethod('GET', new apigateway.LambdaIntegration(hierarchyFn));
+    requests.addMethod('POST', new apigateway.LambdaIntegration(hierarchyFn));
+    requests.addMethod('PUT', new apigateway.LambdaIntegration(hierarchyFn));
+
+    // /admin
+    const admin = api.root.addResource('admin');
+    admin.addResource('stats').addMethod('GET', new apigateway.LambdaIntegration(hierarchyFn));
 
     // /permissions
     const permissions = api.root.addResource('permissions');

@@ -5,6 +5,7 @@ import {
   PutCommand,
   QueryCommand,
   DeleteCommand,
+  ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 
 const client = new DynamoDBClient({});
@@ -45,4 +46,18 @@ export async function queryByPkSk(table: string, pk: string, skPrefix: string) {
 
 export async function deleteItem(table: string, key: Record<string, string>) {
   await ddb.send(new DeleteCommand({ TableName: table, Key: key }));
+}
+
+export async function scanAll(table: string): Promise<Record<string, unknown>[]> {
+  const items: Record<string, unknown>[] = [];
+  let lastKey: Record<string, unknown> | undefined;
+  do {
+    const res = await ddb.send(new ScanCommand({
+      TableName: table,
+      ExclusiveStartKey: lastKey,
+    }));
+    items.push(...(res.Items ?? []));
+    lastKey = res.LastEvaluatedKey;
+  } while (lastKey);
+  return items;
 }

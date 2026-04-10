@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { verifyToken } from '../shared/auth-util';
-import { putItem, getItem, queryByPk, queryByPkSk, deleteItem } from '../shared/dynamo-util';
+import { putItem, getItem, queryByPk, queryByPkSk, deleteItem, scanAll } from '../shared/dynamo-util';
 
 const HIERARCHY_TABLE = process.env.HIERARCHY_TABLE!;
 const ROLE_ASSIGNMENT_TABLE = process.env.ROLE_ASSIGNMENT_TABLE!;
@@ -187,6 +187,155 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!entityId || !roleName) return json(400, { error: 'entityId and roleName required' });
     await deleteItem(ROLE_ASSIGNMENT_TABLE, { PK: entityId, SK: `ROLE#${roleName}` });
     return json(200, { deleted: true });
+  }
+
+  // --- Role Requests (self-service) ---
+  if (path === '/roles/requests' && method === 'POST') {
+    const claims = verifyToken(event.headers['Authorization'] || event.headers['authorization']);
+    if (!claims) return json(401, { error: 'Unauthorized' });
+    const { roleName, reason } = JSON.parse(event.body || '{}');
+    if (!roleName) return json(400, { error: 'roleName required' });
+    const requestId = `${claims.empId}-${roleName}`;
+    await putItem(ROLE_ASSIGNMENT_TABLE, {
+      PK: `REQUEST#${requestId}`,
+      SK: `REQUEST#${requestId}`,
+      empId: claims.empId,
+      teamId: claims.teamId,
+      deptId: claims.deptId,
+      roleName,
+      reason: reason || '',
+      status: 'pending',
+      requestedAt: new Date().toISOString(),
+    });
+    return json(201, { requestId, roleName, status: 'pending' });
+  }
+
+  if (path === '/roles/requests' && method === 'GET') {
+    const claims = verifyToken(event.headers['Authorization'] || event.headers['authorization']);
+    if (!claims) return json(401, { error: 'Unauthorized' });
+    // Scan all requests (for admin dashboard and user's own view)
+    const all = await scanAll(ROLE_ASSIGNMENT_TABLE);
+    const requests = all.filter(i => (i.PK as string).startsWith('REQUEST#'));
+    return json(200, { requests });
+  }
+
+  if (path === '/roles/requests' && method === 'PUT') {
+    const err = requireAdmin(event);
+    if (err) return err;
+    const { requestId, status } = JSON.parse(event.body || '{}');
+    if (!requestId || !['approved', 'rejected'].includes(status))
+      return json(400, { error: 'requestId and status (approved/rejected) required' });
+    const existing = await getItem(ROLE_ASSIGNMENT_TABLE, { PK: `REQUEST#${requestId}`, SK: `REQUEST#${requestId}` });
+    if (!existing) return json(404, { error: 'Request not found' });
+    // Update request status
+    await putItem(ROLE_ASSIGNMENT_TABLE, {
+      ...existing,
+      status,
+      reviewedAt: new Date().toISOString(),
+    });
+    // If approved, also create the actual role assignment
+    if (status === 'approved') {
+      await putItem(ROLE_ASSIGNMENT_TABLE, {
+        PK: `EMP#${existing.empId}`,
+        SK: `ROLE#${existing.roleName}`,
+        assignedAt: new Date().toISOString(),
+      });
+    }
+    return json(200, { requestId, status });
+  }
+
+  // --- Admin Stats ---
+  if (path === '/admin/stats' && method === 'GET') {
+    const err = requireAdmin(event);
+    if (err) return err;
+
+    const [hierarchyItems, roleItems, assignmentItems] = await Promise.all([
+      scanAll(HIERARCHY_TABLE),
+      scanAll(ROLE_TABLE),
+      scanAll(ROLE_ASSIGNMENT_TABLE),
+    ]);
+
+    const departments = hierarchyItems.filter(i => i.entityType === 'department');
+    const teams = hierarchyItems.filter(i => i.entityType === 'team');
+    const employees = hierarchyItems.filter(i => i.entityType === 'employee');
+    const roles = roleItems.filter(i => (i.PK as string).startsWith('ROLE#'));
+    const assignments = assignmentItems.filter(i => !(i.PK as string).startsWith('REQUEST#'));
+    const requests = assignmentItems.filter(i => (i.PK as string).startsWith('REQUEST#'));
+
+    // Build per-department breakdown
+    const deptBreakdown = departments.map(d => {
+      const deptId = (d.SK as string).replace('DEPT#', '');
+      const deptTeams = teams.filter(t => (t.PK as string) === `DEPT#${deptId}`);
+      const teamIds = deptTeams.map(t => (t.SK as string).replace('TEAM#', ''));
+      const deptEmps = employees.filter(e => teamIds.includes((e.PK as string).replace('TEAM#', '')));
+      const deptAssignments = assignments.filter(a => (a.PK as string) === `DEPT#${deptId}`);
+      const teamAssignments = assignments.filter(a => teamIds.includes((a.PK as string).replace('TEAM#', '')));
+      const empIds = deptEmps.map(e => (e.SK as string).replace('EMP#', ''));
+      const empAssignments = assignments.filter(a => empIds.includes((a.PK as string).replace('EMP#', '')));
+      return {
+        deptId,
+        name: d.name,
+        teamCount: deptTeams.length,
+        employeeCount: deptEmps.length,
+        roleAssignments: {
+          department: deptAssignments.map(a => (a.SK as string).replace('ROLE#', '')),
+          team: teamAssignments.map(a => ({ team: (a.PK as string).replace('TEAM#', ''), role: (a.SK as string).replace('ROLE#', '') })),
+          employee: empAssignments.map(a => ({ emp: (a.PK as string).replace('EMP#', ''), role: (a.SK as string).replace('ROLE#', '') })),
+        },
+      };
+    });
+
+    // Per-employee permission list
+    const employeePermissions = await Promise.all(employees.map(async (emp) => {
+      const empId = (emp.SK as string).replace('EMP#', '');
+      const teamId = (emp.PK as string).replace('TEAM#', '');
+      const deptId = (emp.deptId as string) || 'unknown';
+
+      const empRoles = assignments.filter(a => a.PK === `EMP#${empId}`).map(a => (a.SK as string).replace('ROLE#', ''));
+      const teamRoles = assignments.filter(a => a.PK === `TEAM#${teamId}`).map(a => (a.SK as string).replace('ROLE#', ''));
+      const deptRoles = assignments.filter(a => a.PK === `DEPT#${deptId}`).map(a => (a.SK as string).replace('ROLE#', ''));
+      const allRoleNames = [...new Set([...empRoles, ...teamRoles, ...deptRoles])];
+
+      const perms = new Set<string>();
+      const ds = new Set<string>();
+      for (const rn of allRoleNames) {
+        const rd = roles.find(r => r.PK === `ROLE#${rn}`);
+        if (!rd) continue;
+        for (const p of (rd.permissions as string[])) perms.add(p);
+        for (const d of (rd.datasets as string[])) ds.add(d);
+      }
+
+      return {
+        empId, name: emp.name, phone: emp.phone, teamId, deptId,
+        roles: allRoleNames,
+        roleSources: {
+          department: deptRoles,
+          team: teamRoles,
+          employee: empRoles,
+        },
+        permissions: [...perms],
+        datasets: [...ds],
+      };
+    }));
+
+    return json(200, {
+      counts: {
+        departments: departments.length,
+        teams: teams.length,
+        employees: employees.length,
+        roles: roles.length,
+        assignments: assignments.length,
+        pendingRequests: requests.filter(r => r.status === 'pending').length,
+      },
+      departments: deptBreakdown,
+      employees: employeePermissions,
+      roles: roles.map(r => ({
+        name: (r.PK as string).replace('ROLE#', ''),
+        permissions: r.permissions,
+        datasets: r.datasets,
+      })),
+      requests,
+    });
   }
 
   return json(404, { error: 'Not found' });

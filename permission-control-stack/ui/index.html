@@ -102,6 +102,8 @@
     <!-- Tabs -->
     <div class="tabs">
       <div class="tab active" data-tab="permtest">Permission Test</div>
+      <div class="tab" data-tab="request">Request Role</div>
+      <div class="tab" data-tab="admindash">Admin Dashboard</div>
       <div class="tab" data-tab="hierarchy">Hierarchy</div>
       <div class="tab" data-tab="roles">Roles</div>
       <div class="tab" data-tab="datasets">Datasets</div>
@@ -159,6 +161,68 @@
           </div>
           <div id="pt-action-result"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Request Role Tab -->
+    <div class="tab-content" id="tab-request">
+      <div class="card">
+        <h3>Request a Role</h3>
+        <p style="color:#666;font-size:13px;margin-bottom:12px;">Submit a request to be assigned a role. An admin will review and approve/reject it.</p>
+        <div class="form-row">
+          <input id="req-role" placeholder="Role name (e.g. editor, admin, finance-reader)" />
+          <input id="req-reason" placeholder="Reason (optional)" style="flex:2" />
+          <button class="btn btn-primary" onclick="submitRequest()">Submit Request</button>
+        </div>
+        <div id="req-msg"></div>
+      </div>
+      <div class="card">
+        <h3>My Requests</h3>
+        <button class="btn btn-primary" onclick="loadMyRequests()" style="margin-bottom:12px;background:#34a853">Refresh</button>
+        <table id="req-table">
+          <thead><tr><th>Role</th><th>Reason</th><th>Status</th><th>Requested</th><th>Reviewed</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Admin Dashboard Tab -->
+    <div class="tab-content" id="tab-admindash">
+      <div class="card">
+        <h3>System Overview</h3>
+        <button class="btn btn-primary" onclick="loadAdminStats()" style="margin-bottom:12px;background:#34a853">Refresh</button>
+        <div id="admin-counts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;"></div>
+      </div>
+      <div class="card">
+        <h3>Pending Role Requests</h3>
+        <table id="admin-req-table">
+          <thead><tr><th>Employee</th><th>Department</th><th>Team</th><th>Role</th><th>Reason</th><th>Date</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div id="admin-req-none" style="color:#999;font-size:14px;padding:8px;" class="hidden">No pending requests.</div>
+      </div>
+      <div class="card">
+        <h3>All Employees &amp; Permissions</h3>
+        <div class="form-row" style="margin-bottom:12px;">
+          <input id="admin-filter" placeholder="Filter by name, dept, team, role..." oninput="filterAdminTable()" />
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="admin-emp-table">
+            <thead><tr><th>Employee</th><th>Name</th><th>Dept</th><th>Team</th><th>Roles</th><th>Permissions</th><th>Datasets</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Roles Defined</h3>
+        <table id="admin-roles-table">
+          <thead><tr><th>Role</th><th>Permissions</th><th>Datasets</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Department Breakdown</h3>
+        <div id="admin-dept-breakdown"></div>
       </div>
     </div>
 
@@ -533,6 +597,148 @@ async function lookupRole() {
         Datasets: ${(r.datasets||[]).map(d => `<span class="tag tag-green">${d}</span>`).join(' ')}
       </div>`;
   } catch(e) { document.getElementById('lookup-result').innerHTML = `<div class="msg msg-err">${e.message}</div>`; }
+}
+
+// --- Role Requests ---
+async function submitRequest() {
+  const roleName = document.getElementById('req-role').value.trim();
+  const reason = document.getElementById('req-reason').value.trim();
+  if (!roleName) return showMsg('req-msg', 'Role name required', false);
+  try {
+    await api('POST', '/roles/requests', { roleName, reason });
+    showMsg('req-msg', `Request for "${roleName}" submitted`, true);
+    document.getElementById('req-role').value = '';
+    document.getElementById('req-reason').value = '';
+    loadMyRequests();
+  } catch(e) { showMsg('req-msg', e.message, false); }
+}
+
+async function loadMyRequests() {
+  try {
+    const data = await api('GET', '/roles/requests');
+    const mine = (data.requests || []).filter(r => r.empId === claims.empId);
+    const tbody = document.querySelector('#req-table tbody');
+    const statusStyle = { pending: 'tag-orange', approved: 'tag-green', rejected: 'tag-blue' };
+    tbody.innerHTML = mine.length ? mine.map(r => `
+      <tr>
+        <td><strong>${r.roleName}</strong></td>
+        <td>${r.reason || '-'}</td>
+        <td><span class="tag ${statusStyle[r.status] || 'tag-orange'}">${r.status}</span></td>
+        <td>${new Date(r.requestedAt).toLocaleDateString()}</td>
+        <td>${r.reviewedAt ? new Date(r.reviewedAt).toLocaleDateString() : '-'}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="5" style="color:#999">No requests yet</td></tr>';
+  } catch(e) { showMsg('req-msg', e.message, false); }
+}
+
+// --- Admin Dashboard ---
+let adminData = null;
+
+async function loadAdminStats() {
+  try {
+    const data = await api('GET', '/admin/stats');
+    adminData = data;
+
+    // Counts
+    const c = data.counts;
+    document.getElementById('admin-counts').innerHTML = [
+      { label: 'Departments', val: c.departments, color: '#1a73e8' },
+      { label: 'Teams', val: c.teams, color: '#34a853' },
+      { label: 'Employees', val: c.employees, color: '#ea8600' },
+      { label: 'Roles', val: c.roles, color: '#7b1fa2' },
+      { label: 'Assignments', val: c.assignments, color: '#00897b' },
+      { label: 'Pending Requests', val: c.pendingRequests, color: '#d93025' },
+    ].map(s => `<div style="background:#fff;border-left:4px solid ${s.color};padding:12px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.08);">
+        <div style="font-size:24px;font-weight:700;color:${s.color};">${s.val}</div>
+        <div style="font-size:12px;color:#666;text-transform:uppercase;">${s.label}</div>
+      </div>`).join('');
+
+    // Pending requests
+    const pending = (data.requests || []).filter(r => r.status === 'pending');
+    const reqNone = document.getElementById('admin-req-none');
+    const reqBody = document.querySelector('#admin-req-table tbody');
+    if (pending.length === 0) {
+      reqBody.innerHTML = '';
+      reqNone.classList.remove('hidden');
+    } else {
+      reqNone.classList.add('hidden');
+      reqBody.innerHTML = pending.map(r => `
+        <tr>
+          <td>${r.empId}</td>
+          <td>${r.deptId}</td>
+          <td>${r.teamId}</td>
+          <td><strong>${r.roleName}</strong></td>
+          <td>${r.reason || '-'}</td>
+          <td>${new Date(r.requestedAt).toLocaleDateString()}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="reviewRequest('${r.empId}-${r.roleName}','approved')">Approve</button>
+            <button class="btn btn-danger btn-sm" onclick="reviewRequest('${r.empId}-${r.roleName}','rejected')">Reject</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // All employees
+    renderAdminEmpTable(data.employees);
+
+    // Roles
+    document.querySelector('#admin-roles-table tbody').innerHTML = (data.roles || []).map(r => `
+      <tr>
+        <td><strong>${r.name}</strong></td>
+        <td>${(r.permissions||[]).map(p => `<span class="tag tag-blue">${p}</span>`).join(' ')}</td>
+        <td>${(r.datasets||[]).map(d => `<span class="tag tag-green">${d}</span>`).join(' ')}</td>
+      </tr>
+    `).join('');
+
+    // Department breakdown
+    document.getElementById('admin-dept-breakdown').innerHTML = (data.departments || []).map(d => `
+      <div style="background:#f8f9fa;border-radius:6px;padding:12px;margin-bottom:8px;">
+        <div style="font-weight:600;font-size:15px;margin-bottom:4px;">${d.name} <span style="color:#999;font-weight:400;">(${d.deptId})</span></div>
+        <div style="font-size:13px;color:#666;">
+          ${d.teamCount} teams, ${d.employeeCount} employees
+          ${d.roleAssignments.department.length ? `<br/>Dept roles: ${d.roleAssignments.department.map(r => `<span class="tag tag-orange">${r}</span>`).join(' ')}` : ''}
+          ${d.roleAssignments.team.length ? `<br/>Team roles: ${d.roleAssignments.team.map(r => `<span class="tag tag-blue">${r.team}: ${r.role}</span>`).join(' ')}` : ''}
+          ${d.roleAssignments.employee.length ? `<br/>Employee roles: ${d.roleAssignments.employee.map(r => `<span class="tag tag-green">${r.emp}: ${r.role}</span>`).join(' ')}` : ''}
+        </div>
+      </div>
+    `).join('');
+
+  } catch(e) { console.error(e); }
+}
+
+function renderAdminEmpTable(employees) {
+  document.querySelector('#admin-emp-table tbody').innerHTML = (employees || []).map(e => `
+    <tr data-filter="${[e.empId,e.name,e.deptId,e.teamId,...e.roles,...e.permissions].join(' ').toLowerCase()}">
+      <td>${e.empId}</td>
+      <td><strong>${e.name}</strong></td>
+      <td>${e.deptId}</td>
+      <td>${e.teamId}</td>
+      <td>${e.roles.length ? e.roles.map(r => {
+        const sources = [];
+        if (e.roleSources.department.includes(r)) sources.push('dept');
+        if (e.roleSources.team.includes(r)) sources.push('team');
+        if (e.roleSources.employee.includes(r)) sources.push('emp');
+        const colors = { dept: 'tag-orange', team: 'tag-blue', emp: 'tag-green' };
+        return `<span class="tag ${colors[sources[0]] || 'tag-blue'}" title="from: ${sources.join(', ')}">${r}</span>`;
+      }).join(' ') : '<span style="color:#999">none</span>'}</td>
+      <td>${e.permissions.length ? e.permissions.map(p => `<span class="tag tag-blue">${p}</span>`).join(' ') : '<span style="color:#999">none</span>'}</td>
+      <td>${e.datasets.length ? e.datasets.map(d => `<span class="tag tag-green">${d}</span>`).join(' ') : '<span style="color:#999">none</span>'}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="7" style="color:#999">No employees</td></tr>';
+}
+
+function filterAdminTable() {
+  const q = document.getElementById('admin-filter').value.toLowerCase();
+  document.querySelectorAll('#admin-emp-table tbody tr').forEach(tr => {
+    tr.style.display = (tr.dataset.filter || '').includes(q) ? '' : 'none';
+  });
+}
+
+async function reviewRequest(requestId, status) {
+  try {
+    await api('PUT', '/roles/requests', { requestId, status });
+    loadAdminStats();
+  } catch(e) { alert(e.message); }
 }
 
 // --- Permission Test ---
