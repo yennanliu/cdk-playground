@@ -2,6 +2,27 @@
 
 A role-based access control (RBAC) system for dataset management built with AWS CDK. Implements hierarchical permission inheritance (Department > Team > Employee) combined with role-based permissions, providing fine-grained access control over datasets stored in S3.
 
+## Run
+
+```bash
+
+npm install
+
+cdk bootstrap
+
+cdk deploy
+
+# insert mock data (update API endpoint first)
+bash scripts/seed-data.sh
+
+# login
+# go to UI, and login with random phone number or below user name:
+# - alice
+# - bob
+# - eve
+# - ivy
+```
+
 ## Features
 
 - **Hierarchical Organization**: Model your org structure as Departments → Teams → Employees
