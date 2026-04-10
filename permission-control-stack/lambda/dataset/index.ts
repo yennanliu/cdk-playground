@@ -10,8 +10,14 @@ const DATASET_BUCKET = process.env.DATASET_BUCKET!;
 
 const s3 = new S3Client({});
 
+const CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+};
+
 function json(statusCode: number, body: unknown): APIGatewayProxyResult {
-  return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+  return { statusCode, headers: CORS_HEADERS, body: JSON.stringify(body) };
 }
 
 interface ResolvedPermissions {

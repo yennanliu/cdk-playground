@@ -6,8 +6,14 @@ const HIERARCHY_TABLE = process.env.HIERARCHY_TABLE!;
 const ROLE_ASSIGNMENT_TABLE = process.env.ROLE_ASSIGNMENT_TABLE!;
 const ROLE_TABLE = process.env.ROLE_TABLE!;
 
+const CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+};
+
 function json(statusCode: number, body: unknown): APIGatewayProxyResult {
-  return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+  return { statusCode, headers: CORS_HEADERS, body: JSON.stringify(body) };
 }
 
 function requireAdmin(event: APIGatewayProxyEvent): APIGatewayProxyResult | null {
