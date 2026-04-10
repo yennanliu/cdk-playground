@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { verifyToken } from '../shared/auth-util';
-import { putItem, queryByPk, queryByPkSk, deleteItem } from '../shared/dynamo-util';
+import { putItem, getItem, queryByPk, queryByPkSk, deleteItem } from '../shared/dynamo-util';
 
 const HIERARCHY_TABLE = process.env.HIERARCHY_TABLE!;
 const ROLE_ASSIGNMENT_TABLE = process.env.ROLE_ASSIGNMENT_TABLE!;
@@ -102,6 +102,69 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!roleName) return json(400, { error: 'name required' });
     const items = await queryByPk(ROLE_TABLE, `ROLE#${roleName}`);
     return json(200, { role: items[0] || null });
+  }
+
+  // --- Permissions Lookup ---
+  if (path === '/permissions' && method === 'GET') {
+    const err = requireAdmin(event);
+    if (err) return err;
+
+    const empId = event.queryStringParameters?.empId;
+    const teamId = event.queryStringParameters?.teamId;
+    if (!empId || !teamId) return json(400, { error: 'empId and teamId required' });
+
+    // Look up employee to get deptId
+    const emp = await getItem(HIERARCHY_TABLE, { PK: `TEAM#${teamId}`, SK: `EMP#${empId}` });
+    if (!emp) return json(404, { error: 'Employee not found' });
+    const deptId = (emp.deptId as string) || 'unknown';
+
+    // Query role assignments at all 3 hierarchy levels
+    const [empRoles, teamRoles, deptRoles] = await Promise.all([
+      queryByPk(ROLE_ASSIGNMENT_TABLE, `EMP#${empId}`),
+      queryByPk(ROLE_ASSIGNMENT_TABLE, `TEAM#${teamId}`),
+      queryByPk(ROLE_ASSIGNMENT_TABLE, `DEPT#${deptId}`),
+    ]);
+
+    // Build role assignment details with source level
+    const roleEntries: { roleName: string; source: string; level: string }[] = [];
+    for (const r of deptRoles) roleEntries.push({ roleName: (r.SK as string).replace('ROLE#', ''), source: deptId, level: 'department' });
+    for (const r of teamRoles) roleEntries.push({ roleName: (r.SK as string).replace('ROLE#', ''), source: teamId, level: 'team' });
+    for (const r of empRoles) roleEntries.push({ roleName: (r.SK as string).replace('ROLE#', ''), source: empId, level: 'employee' });
+
+    // Fetch role definitions
+    const uniqueRoles = [...new Set(roleEntries.map(r => r.roleName))];
+    const roleDefs = await Promise.all(
+      uniqueRoles.map(name => getItem(ROLE_TABLE, { PK: `ROLE#${name}`, SK: `ROLE#${name}` }))
+    );
+    const roleMap: Record<string, { permissions: string[]; datasets: string[] }> = {};
+    for (const rd of roleDefs) {
+      if (!rd) continue;
+      const name = (rd.PK as string).replace('ROLE#', '');
+      roleMap[name] = { permissions: rd.permissions as string[], datasets: rd.datasets as string[] };
+    }
+
+    // Merge all permissions and datasets
+    const allPermissions = new Set<string>();
+    const allDatasets = new Set<string>();
+    for (const name of uniqueRoles) {
+      const def = roleMap[name];
+      if (!def) continue;
+      for (const p of def.permissions) allPermissions.add(p);
+      for (const d of def.datasets) allDatasets.add(d);
+    }
+
+    return json(200, {
+      employee: { empId, teamId, deptId, name: emp.name, phone: emp.phone },
+      roleAssignments: roleEntries.map(r => ({
+        ...r,
+        permissions: roleMap[r.roleName]?.permissions || [],
+        datasets: roleMap[r.roleName]?.datasets || [],
+      })),
+      resolved: {
+        permissions: [...allPermissions],
+        datasets: [...allDatasets],
+      },
+    });
   }
 
   // --- Role Assignment ---

@@ -126,6 +126,10 @@ export class PermissionControlStack extends Stack {
     assign.addMethod('POST', new apigateway.LambdaIntegration(hierarchyFn));
     assign.addMethod('DELETE', new apigateway.LambdaIntegration(hierarchyFn));
 
+    // /permissions
+    const permissions = api.root.addResource('permissions');
+    permissions.addMethod('GET', new apigateway.LambdaIntegration(hierarchyFn));
+
     // /datasets
     const datasets = api.root.addResource('datasets');
     datasets.addMethod('GET', new apigateway.LambdaIntegration(datasetFn));

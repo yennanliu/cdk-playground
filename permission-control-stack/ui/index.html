@@ -101,13 +101,69 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <div class="tab active" data-tab="hierarchy">Hierarchy</div>
+      <div class="tab active" data-tab="permtest">Permission Test</div>
+      <div class="tab" data-tab="hierarchy">Hierarchy</div>
       <div class="tab" data-tab="roles">Roles</div>
       <div class="tab" data-tab="datasets">Datasets</div>
     </div>
 
+    <!-- Permission Test Tab -->
+    <div class="tab-content active" id="tab-permtest">
+      <div class="card">
+        <h3>Lookup Employee Permissions</h3>
+        <p style="color:#666;font-size:13px;margin-bottom:12px;">Select an employee to see all resolved permissions (inherited from department, team, and direct assignments).</p>
+        <div class="form-row">
+          <select id="pt-dept" onchange="ptLoadTeams()"><option value="">Select Department...</option></select>
+          <select id="pt-team" onchange="ptLoadEmps()"><option value="">Select Team...</option></select>
+          <select id="pt-emp"><option value="">Select Employee...</option></select>
+          <button class="btn btn-primary" onclick="ptLookup()">Check Permissions</button>
+        </div>
+        <div id="pt-msg"></div>
+      </div>
+
+      <div id="pt-result" class="hidden">
+        <!-- Employee Info -->
+        <div class="card">
+          <h3>Employee Info</h3>
+          <div id="pt-emp-info"></div>
+        </div>
+
+        <!-- Role Assignments Breakdown -->
+        <div class="card">
+          <h3>Role Assignments (by hierarchy level)</h3>
+          <table id="pt-roles-table">
+            <thead><tr><th>Role</th><th>Level</th><th>Source</th><th>Permissions</th><th>Datasets</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div id="pt-no-roles" class="hidden" style="color:#999;font-size:14px;padding:8px;">No roles assigned at any level.</div>
+        </div>
+
+        <!-- Resolved (Merged) Permissions -->
+        <div class="card">
+          <h3>Resolved Permissions (merged from all levels)</h3>
+          <div id="pt-resolved"></div>
+        </div>
+
+        <!-- Action Test -->
+        <div class="card">
+          <h3>Test Action</h3>
+          <p style="color:#666;font-size:13px;margin-bottom:8px;">Check if this employee can perform a specific action on a dataset.</p>
+          <div class="form-row">
+            <select id="pt-action">
+              <option value="dataset:read">dataset:read</option>
+              <option value="dataset:write">dataset:write</option>
+              <option value="dataset:delete">dataset:delete</option>
+            </select>
+            <input id="pt-dataset" placeholder="Dataset ID (e.g. sales-2024)" />
+            <button class="btn btn-primary" onclick="ptTestAction()">Test</button>
+          </div>
+          <div id="pt-action-result"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Hierarchy Tab -->
-    <div class="tab-content active" id="tab-hierarchy">
+    <div class="tab-content" id="tab-hierarchy">
       <!-- Departments -->
       <div class="card">
         <h3>Departments</h3>
@@ -341,7 +397,7 @@ async function loadDepts() {
   ).join('') || '<tr><td colspan="2" style="color:#999">No departments</td></tr>';
 
   // Update selects
-  ['team-dept','emp-dept'].forEach(selId => {
+  ['team-dept','emp-dept','pt-dept'].forEach(selId => {
     const sel = document.getElementById(selId);
     sel.innerHTML = '<option value="">Select Dept...</option>' +
       depts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
@@ -477,6 +533,117 @@ async function lookupRole() {
         Datasets: ${(r.datasets||[]).map(d => `<span class="tag tag-green">${d}</span>`).join(' ')}
       </div>`;
   } catch(e) { document.getElementById('lookup-result').innerHTML = `<div class="msg msg-err">${e.message}</div>`; }
+}
+
+// --- Permission Test ---
+let ptResolvedData = null;
+
+async function ptLoadTeams() {
+  const deptId = document.getElementById('pt-dept').value;
+  const teamSel = document.getElementById('pt-team');
+  const empSel = document.getElementById('pt-emp');
+  teamSel.innerHTML = '<option value="">Select Team...</option>';
+  empSel.innerHTML = '<option value="">Select Employee...</option>';
+  if (!deptId) return;
+  const data = await api('GET', `/hierarchy/teams?deptId=${deptId}`);
+  teamSel.innerHTML = '<option value="">Select Team...</option>' +
+    (data.teams || []).map(t => `<option value="${t.SK.replace('TEAM#','')}">${t.name}</option>`).join('');
+}
+
+async function ptLoadEmps() {
+  const teamId = document.getElementById('pt-team').value;
+  const empSel = document.getElementById('pt-emp');
+  empSel.innerHTML = '<option value="">Select Employee...</option>';
+  if (!teamId) return;
+  const data = await api('GET', `/hierarchy/employees?teamId=${teamId}`);
+  empSel.innerHTML = '<option value="">Select Employee...</option>' +
+    (data.employees || []).map(e => `<option value="${e.SK.replace('EMP#','')}">${e.name} (${e.SK.replace('EMP#','')})</option>`).join('');
+}
+
+async function ptLookup() {
+  const empId = document.getElementById('pt-emp').value;
+  const teamId = document.getElementById('pt-team').value;
+  if (!empId || !teamId) return showMsg('pt-msg', 'Select department, team, and employee', false);
+
+  try {
+    const data = await api('GET', `/permissions?empId=${empId}&teamId=${teamId}`);
+    ptResolvedData = data;
+    document.getElementById('pt-result').classList.remove('hidden');
+
+    // Employee info
+    const emp = data.employee;
+    document.getElementById('pt-emp-info').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">
+        <div class="perm-item"><div class="label">Employee ID</div>${emp.empId}</div>
+        <div class="perm-item"><div class="label">Name</div>${emp.name}</div>
+        <div class="perm-item"><div class="label">Phone</div>${emp.phone}</div>
+        <div class="perm-item"><div class="label">Team</div>${emp.teamId}</div>
+        <div class="perm-item"><div class="label">Department</div>${emp.deptId}</div>
+      </div>`;
+
+    // Role assignments table
+    const assignments = data.roleAssignments || [];
+    const tbody = document.querySelector('#pt-roles-table tbody');
+    const noRoles = document.getElementById('pt-no-roles');
+    if (assignments.length === 0) {
+      tbody.innerHTML = '';
+      noRoles.classList.remove('hidden');
+    } else {
+      noRoles.classList.add('hidden');
+      const levelColors = { department: 'tag-orange', team: 'tag-blue', employee: 'tag-green' };
+      tbody.innerHTML = assignments.map(a => `
+        <tr>
+          <td><strong>${a.roleName}</strong></td>
+          <td><span class="tag ${levelColors[a.level] || 'tag-blue'}">${a.level}</span></td>
+          <td>${a.source}</td>
+          <td>${(a.permissions||[]).map(p => `<span class="tag tag-blue">${p}</span>`).join(' ')}</td>
+          <td>${(a.datasets||[]).map(d => `<span class="tag tag-green">${d}</span>`).join(' ')}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Resolved permissions
+    const resolved = data.resolved;
+    const perms = resolved.permissions || [];
+    const datasets = resolved.datasets || [];
+    document.getElementById('pt-resolved').innerHTML = `
+      <div style="margin-bottom:8px;">
+        <div class="label" style="font-weight:600;color:#555;font-size:11px;text-transform:uppercase;margin-bottom:4px;">Permissions</div>
+        ${perms.length ? perms.map(p => `<span class="tag tag-blue" style="font-size:13px;padding:4px 10px;">${p}</span>`).join(' ') : '<span style="color:#999">None</span>'}
+      </div>
+      <div>
+        <div class="label" style="font-weight:600;color:#555;font-size:11px;text-transform:uppercase;margin-bottom:4px;">Accessible Datasets</div>
+        ${datasets.length ? datasets.map(d => `<span class="tag tag-green" style="font-size:13px;padding:4px 10px;">${d}</span>`).join(' ') : '<span style="color:#999">None</span>'}
+      </div>`;
+
+    // Clear action test
+    document.getElementById('pt-action-result').innerHTML = '';
+
+  } catch(e) { showMsg('pt-msg', e.message, false); }
+}
+
+function ptTestAction() {
+  if (!ptResolvedData) return;
+  const action = document.getElementById('pt-action').value;
+  const datasetId = document.getElementById('pt-dataset').value.trim();
+  if (!datasetId) return showMsg('pt-action-result', 'Enter a dataset ID', false);
+
+  const resolved = ptResolvedData.resolved;
+  const hasPermission = (resolved.permissions || []).includes(action);
+  const hasDataset = (resolved.datasets || []).includes('*') || (resolved.datasets || []).includes(datasetId);
+  const allowed = hasPermission && hasDataset;
+
+  const emp = ptResolvedData.employee;
+  document.getElementById('pt-action-result').innerHTML = `
+    <div class="msg ${allowed ? 'msg-ok' : 'msg-err'}" style="margin-top:8px;">
+      <strong>${allowed ? 'ALLOWED' : 'DENIED'}</strong> &mdash;
+      ${emp.name} (${emp.empId})
+      ${allowed ? 'can' : 'cannot'} perform <strong>${action}</strong> on dataset <strong>${datasetId}</strong>
+      <br/><span style="font-size:12px;opacity:.8;">
+        Permission "${action}": ${hasPermission ? 'YES' : 'NO'} |
+        Dataset access "${datasetId}": ${hasDataset ? 'YES' : 'NO'}
+      </span>
+    </div>`;
 }
 
 // --- Datasets ---

@@ -21,15 +21,22 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     // Look up employee by phone via GSI
     const items = await queryByPk(HIERARCHY_TABLE, phone, 'phone-index', 'phone');
-    if (items.length === 0) return json(401, { error: 'Employee not found' });
 
-    const emp = items[0];
-    const empId = (emp.SK as string).replace('EMP#', '');
-    const teamId = (emp.PK as string).replace('TEAM#', '');
-    const deptId = (emp.deptId as string) || 'unknown';
+    let empId: string, teamId: string, deptId: string;
+    if (items.length > 0) {
+      const emp = items[0];
+      empId = (emp.SK as string).replace('EMP#', '');
+      teamId = (emp.PK as string).replace('TEAM#', '');
+      deptId = (emp.deptId as string) || 'unknown';
+    } else {
+      // Guest login — issue token with guest identity
+      empId = `guest-${Date.now()}`;
+      teamId = 'guest';
+      deptId = 'guest';
+    }
 
     const token = issueToken(empId, teamId, deptId, phone);
-    return json(200, { token, empId, teamId, deptId });
+    return json(200, { token, empId, teamId, deptId, guest: items.length === 0 });
   }
 
   return json(404, { error: 'Not found' });
