@@ -1,6 +1,7 @@
-import { Stack, StackProps, RemovalPolicy } from 'aws-cdk-lib';
+import { Stack, StackProps, RemovalPolicy, CfnOutput } from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as path from 'path';
@@ -95,6 +96,11 @@ export class PermissionControlStack extends Stack {
     const api = new apigateway.RestApi(this, 'PermissionControlApi', {
       restApiName: 'Permission Control API',
       deployOptions: { stageName: 'v1' },
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type', 'Authorization'],
+      },
     });
 
     // /auth/verify
@@ -126,5 +132,49 @@ export class PermissionControlStack extends Stack {
     const dataset = datasets.addResource('{id}');
     dataset.addMethod('GET', new apigateway.LambdaIntegration(datasetFn));
     dataset.addMethod('PUT', new apigateway.LambdaIntegration(datasetFn));
+
+    // ─── UI Static Website ───
+
+    const uiBucket = new s3.Bucket(this, 'UiBucket', {
+      websiteIndexDocument: 'index.html',
+      blockPublicAccess: new s3.BlockPublicAccess({
+        blockPublicAcls: false,
+        ignorePublicAcls: false,
+        blockPublicPolicy: false,
+        restrictPublicBuckets: false,
+      }),
+      publicReadAccess: true,
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+
+    new s3deploy.BucketDeployment(this, 'DeployUi', {
+      sources: [
+        s3deploy.Source.asset(path.join(__dirname, '..', 'ui'), {
+          bundling: {
+            image: lambda.Runtime.NODEJS_20_X.bundlingImage,
+            local: {
+              tryBundle(outputDir: string) {
+                const fs = require('fs');
+                const html = fs.readFileSync(
+                  path.join(__dirname, '..', 'ui', 'index.html'), 'utf8'
+                );
+                fs.writeFileSync(
+                  path.join(outputDir, 'index.html'),
+                  html.replace('{{API_URL}}', api.url.replace(/\/$/, ''))
+                );
+                return true;
+              },
+            },
+          },
+        }),
+      ],
+      destinationBucket: uiBucket,
+    });
+
+    new CfnOutput(this, 'UiUrl', {
+      value: uiBucket.bucketWebsiteUrl,
+      description: 'Permission Control UI',
+    });
   }
 }
