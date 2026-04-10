@@ -122,10 +122,20 @@ The single stack (`PermissionControlStackStack`) defines:
 
 ### Testing
 
-Current test file has outdated assertions (references SQS/SNS which don't exist). Recommended approach:
-- Use snapshot tests to verify CloudFormation template structure
-- Mock DynamoDB and S3 for Lambda unit tests
-- Integration tests against real AWS resources (use sparingly due to cost)
+**Unit Tests**: Located in `lambda/**/__tests__/*.test.ts` and `test/` directory.
+
+**Test Structure:**
+- `lambda/shared/__tests__/auth-util.test.ts` — JWT issuance and verification
+- `lambda/shared/__tests__/dynamo-util.test.ts` — DynamoDB helper functions
+- `lambda/auth/__tests__/index.test.ts` — Auth Lambda handler (phone verification)
+- `lambda/hierarchy/__tests__/index.test.ts` — Hierarchy Lambda handler (CRUD operations)
+- `lambda/dataset/__tests__/index.test.ts` — Dataset Lambda handler (authorization + S3 URLs)
+- `test/permission-control-stack.test.ts` — CDK stack snapshot tests
+
+**Test Types:**
+- Unit tests mock AWS services (DynamoDB, S3) for isolated testing
+- Stack tests verify CloudFormation template structure (resource counts, configurations)
+- No integration tests (avoid cost; use manually in dev account if needed)
 
 ## Important Notes
 

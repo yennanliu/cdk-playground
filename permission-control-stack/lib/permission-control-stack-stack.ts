@@ -6,7 +6,7 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as path from 'path';
 import { Construct } from 'constructs';
 
-export class PermissionControlStackStack extends Stack {
+export class PermissionControlStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
