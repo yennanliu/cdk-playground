@@ -5,14 +5,21 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "clean": "find lib -name '*.js' -delete && find lib -name '*.d.ts' -delete && find lib -name '*.js.map' -delete && find bin -name '*.js' -delete && find bin -name '*.d.ts' -delete && find bin -name '*.js.map' -delete"
   },
   "devDependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1039.0",
+    "@aws-sdk/client-dynamodb": "^3.1039.0",
+    "@aws-sdk/client-sqs": "^3.1039.0",
+    "@aws-sdk/lib-dynamodb": "^3.1039.0",
+    "@types/aws-lambda": "^8.10.149",
     "@types/jest": "^30",
     "@types/node": "^24.10.1",
+    "aws-cdk": "2.1120.0",
+    "esbuild": "^0.25.0",
     "jest": "^30",
     "ts-jest": "^29",
-    "aws-cdk": "2.1120.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.9.3"
   },
