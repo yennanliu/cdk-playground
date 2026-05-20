@@ -11,3 +11,4 @@ redis-cluster-1/app/mysite/mysite/__pycache__
 */cdk.context.json
 ai-music-gen-stack-1/lambda/generate-music/*.d.ts.map
 ai-music-gen-stack-1/lambda/generate-music/*.js.map
+openclaw-stack-1/openclaw-key.pem
