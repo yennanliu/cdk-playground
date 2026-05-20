@@ -55,7 +55,8 @@ export class OpenclawStack1Stack extends Stack {
 
       // Node.js 20 via nodesource
       'curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -',
-      'dnf install -y nodejs git chromium',
+      // chromium is not in AL2023 default repos — install nodejs and git only
+      'dnf install -y nodejs git',
 
       // Clone and install OpenClaw
       'cd /opt && git clone https://github.com/openclaw/openclaw.git',
