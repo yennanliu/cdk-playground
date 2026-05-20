@@ -25,7 +25,7 @@ export class OpenclawStack1Stack extends Stack {
     // All ports open to internet as requested
     const sg = new ec2.SecurityGroup(this, 'OpenClawSg', {
       vpc,
-      description: 'OpenClaw EC2 — all ports open',
+      description: 'OpenClaw EC2 - all ports open',
       allowAllOutbound: true,
     });
     sg.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allTraffic(), 'Allow all inbound IPv4');
