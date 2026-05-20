@@ -81,3 +81,5 @@ Log Group E (batch) ──→ Subscription Filter → Firehose → Batch Lambda 
 - Provide migration path for existing configurations
 
 This approach will eliminate code duplication, make it easier to add new application types, and group related log processing logic together.
+
+
