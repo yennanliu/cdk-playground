@@ -130,7 +130,6 @@ graph TB
     class RoleMapperPy,IndexManager,UnifiedProcessor,SharedUtils lambdaClass
     class CloudWatchLogs,Domain,EKSDeliveryStream,PodDeliveryStream dataClass
 ```
-
 ### Architecture Overview
 
 This CDK application implements a centralized logging solution that ingests CloudWatch logs from EKS clusters and Pod applications into OpenSearch for analysis and visualization.
@@ -287,4 +286,5 @@ This flowchart illustrates the complete data processing pipeline from CDK deploy
 - **Document Structure**: Create OpenSearch-compatible documents with proper field mappings
 - **Batch Processing**: Multiple log events combined into newline-delimited JSON
 - **Fault Tolerance**: Processing failures trigger S3 backup with detailed error logging
+
 
