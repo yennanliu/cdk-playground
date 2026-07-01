@@ -1,17 +1,14 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Template, Match } from 'aws-cdk-lib/assertions';
+import { Template } from 'aws-cdk-lib/assertions';
 import * as RagStack1 from '../lib/rag_stack_1-stack';
 
-test('SQS Queue and SNS Topic Created', () => {
+test('stack synthesizes the core RAG resources', () => {
   const app = new cdk.App();
-  // WHEN
   const stack = new RagStack1.RagStack1Stack(app, 'MyTestStack');
-  // THEN
-
   const template = Template.fromStack(stack);
 
-  template.hasResourceProperties('AWS::SQS::Queue', {
-    VisibilityTimeout: 300
-  });
-  template.resourceCountIs('AWS::SNS::Topic', 1);
+  // docs + web buckets (may be more once auto-delete / deployment helpers are added).
+  template.resourceCountIs('AWS::ApiGatewayV2::Api', 1);
+  template.resourceCountIs('AWS::Bedrock::KnowledgeBase', 1);
+  template.resourceCountIs('AWS::Bedrock::DataSource', 1);
 });

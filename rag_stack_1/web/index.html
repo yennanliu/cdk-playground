@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RAG</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    section { margin: 1.5rem 0; padding: 1rem; border: 1px solid #8883; border-radius: 8px; }
+    input, textarea, button { font: inherit; padding: .5rem; margin: .25rem 0; width: 100%; box-sizing: border-box; }
+    button { width: auto; cursor: pointer; }
+    #answer { white-space: pre-wrap; }
+    .muted { opacity: .7; font-size: .85rem; }
+    .hidden { display: none; }
+    ul { margin: .5rem 0; padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>RAG — document Q&amp;A</h1>
+
+  <section id="login-section">
+    <label>Password <input id="password" type="password" /></label>
+    <button id="login-btn">Log in</button>
+    <div id="login-msg" class="muted"></div>
+  </section>
+
+  <div id="app" class="hidden">
+    <section>
+      <h2>Upload a document</h2>
+      <input id="file" type="file" />
+      <button id="upload-btn">Upload</button>
+      <div id="upload-msg" class="muted"></div>
+    </section>
+
+    <section>
+      <h2>Ask a question</h2>
+      <textarea id="question" rows="3" placeholder="What does the document say about…"></textarea>
+      <button id="ask-btn">Ask</button>
+      <div id="answer"></div>
+      <ul id="citations"></ul>
+    </section>
+  </div>
+
+  <script>
+    let API = '';
+    let token = '';
+
+    const $ = (id) => document.getElementById(id);
+
+    async function boot() {
+      const cfg = await fetch('./config.json').then((r) => r.json());
+      API = cfg.apiUrl;
+    }
+
+    async function api(path, body, auth) {
+      const res = await fetch(API + path, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(auth ? { authorization: 'Bearer ' + token } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+      return res.json();
+    }
+
+    $('login-btn').onclick = async () => {
+      try {
+        const out = await api('/login', { password: $('password').value });
+        token = out.token;
+        $('login-section').classList.add('hidden');
+        $('app').classList.remove('hidden');
+      } catch (e) {
+        $('login-msg').textContent = e.message;
+      }
+    };
+
+    $('upload-btn').onclick = async () => {
+      const file = $('file').files[0];
+      if (!file) return;
+      $('upload-msg').textContent = 'Requesting URL…';
+      try {
+        const { url } = await api('/upload-url', { filename: file.name, contentType: file.type }, true);
+        await fetch(url, { method: 'PUT', headers: { 'content-type': file.type }, body: file });
+        $('upload-msg').textContent = 'Uploaded. It will be searchable after the next sync (a few minutes).';
+      } catch (e) {
+        $('upload-msg').textContent = 'Error: ' + e.message;
+      }
+    };
+
+    $('ask-btn').onclick = async () => {
+      $('answer').textContent = 'Thinking…';
+      $('citations').innerHTML = '';
+      try {
+        const out = await api('/query', { question: $('question').value }, true);
+        $('answer').textContent = out.answer;
+        for (const c of out.citations || []) {
+          const li = document.createElement('li');
+          li.textContent = c;
+          $('citations').appendChild(li);
+        }
+      } catch (e) {
+        $('answer').textContent = 'Error: ' + e.message;
+      }
+    };
+
+    boot();
+  </script>
+</body>
+</html>

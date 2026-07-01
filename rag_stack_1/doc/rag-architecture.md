@@ -175,6 +175,55 @@ Deployment order matters: vector store → Knowledge Base → data source → La
 
 ---
 
+## 11. Implementation status & deploy
+
+**Status: implemented and synthesizing.** The stack builds (`tsc`), synthesizes (`cdk synth`), and passes its test.
+
+### Code layout (as built)
+
+```
+bin/rag_stack_1.ts              # entry point
+lib/
+  rag_stack_1-stack.ts          # wires constructs + UI deploy + config (context)
+  constructs/
+    fn.ts                       # shared NodejsFunction factory (esbuild-bundled)
+    storage.ts                  # docs bucket (private) + web bucket (website hosting)
+    knowledge-base.ts           # Bedrock KB + OpenSearch Serverless + S3 source + cron sync
+    api.ts                      # HTTP API + shared-password auth + /login /upload-url /query
+lambda/                         # handlers (bundled by esbuild, excluded from tsc)
+  login.ts  authorizer.ts  upload-url.ts  query.ts  sync.ts
+web/index.html                  # minimal SPA (login -> upload -> ask)
+```
+
+### Notable choices
+
+- **`@cdklabs/generative-ai-cdk-constructs`** provides the L2 `bedrock.VectorKnowledgeBase` + `S3DataSource` — it creates the OpenSearch Serverless collection, the vector index (custom resource), and the KB role for us. This is what keeps the KB wiring elegant instead of ~200 lines of hand-rolled policies.
+- **`NodejsFunction`** bundles the TypeScript Lambda handlers with esbuild — no separate `tsconfig.lambda.json` compile step. `tsc` is scoped to `bin`/`lib`/`test`; `lambda/` is excluded.
+- **Auth:** `/login` mints a 12h HMAC token (signing key auto-generated into the app secret); the Lambda authorizer validates it. Stateless, no session store.
+
+### Deploy
+
+```bash
+cdk bootstrap                          # once per account/region
+cdk deploy -c appPassword=your-secret  # defaults to "change-me-dev" if omitted
+```
+
+Optional context overrides: `-c modelId=...` or `-c modelArn=...`.
+
+### Pre-flight (required for it to work end-to-end)
+
+1. **Enable Bedrock model access** in the target region — both Titan Text Embeddings v2 and the chosen Claude generation model, or ingestion/query fail at runtime.
+2. **Generation model ARN** — default is `anthropic.claude-opus-4-8` as a *foundation-model* ARN. Newer Claude models often require an **inference-profile** ARN for on-demand invoke; if so, pass `-c modelArn=arn:aws:bedrock:REGION:ACCT:inference-profile/...`.
+3. **Docker must be running** at deploy — the KB construct bundles a Python custom-resource Lambda in Docker.
+
+### Still prototype-grade (by design)
+
+- Web bucket is **public-read** (assets only — never put docs/secrets there).
+- Auth is a **single shared password**, not per-user identity.
+- New uploads are searchable only after the next **cron sync** (default 15 min).
+
+---
+
 ### TL;DR
 
 Upload → S3 → (cron `sync` Lambda) → Bedrock Knowledge Base (chunk/embed into a vector store) → ask via API → `RetrieveAndGenerate` with Claude → grounded, cited answer. Data-flow Lambdas: `upload-url` + `query` + a cron `sync` (plus `login`/authorizer for the shared-password gate). One Knowledge Base, one UI, no CloudFront, no per-upload trigger. Managed services do the heavy lifting; we just wire them together.
