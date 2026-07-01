@@ -25,7 +25,7 @@
 | Chunking + embedding | Bedrock Knowledge Base | Managed; uses Titan/Cohere embeddings |
 | **RAG DB (vector store)** | OpenSearch Serverless *(default)* or Aurora PostgreSQL + pgvector | Stores embeddings + metadata |
 | Retrieval + generation | Bedrock `RetrieveAndGenerate` | One call: search + LLM answer + citations |
-| Generation model | Claude on Bedrock (`anthropic.claude-opus-4-8`) | Highest quality; Sonnet for cost |
+| Generation model | Claude on Bedrock via **inference profile** (default `global.anthropic.claude-sonnet-4-6`) | Newer models require an inference-profile ARN, not a foundation-model ARN |
 | API | API Gateway (HTTP) → Lambda | Thin backend for upload URLs + queries |
 | Observability | CloudWatch + X-Ray | Logs, metrics, tracing |
 
@@ -93,7 +93,7 @@
 2. API Gateway's Lambda authorizer checks the token, then invokes the **`query` Lambda**.
 3. Lambda calls Bedrock **`RetrieveAndGenerate`** against the Knowledge Base:
    - retrieves top-K relevant chunks from the vector store,
-   - passes them + the question to **Claude** (`anthropic.claude-opus-4-8`),
+   - passes them + the question to **Claude** (the configured inference-profile model),
    - returns a synthesized answer **plus citations** (source S3 URIs / chunk spans).
 4. UI renders the answer and clickable source citations.
 
@@ -115,12 +115,13 @@ Both store the same thing: an embedding vector per chunk + metadata (source URI,
 ## 6. Model choices (on Bedrock)
 
 - **Embeddings:** Amazon Titan Text Embeddings v2 (managed by the Knowledge Base).
-- **Generation:** Claude on Bedrock. IDs carry the `anthropic.` prefix on Bedrock:
-  - `anthropic.claude-opus-4-8` — highest quality (default recommendation).
-  - `anthropic.claude-sonnet-5` — strong quality at lower cost; good for high volume.
-  - `anthropic.claude-haiku-4-5` — cheapest/fastest for simple Q&A.
+- **Generation:** Claude on Bedrock, invoked by `RetrieveAndGenerate` via an **inference-profile ARN** (default `global.anthropic.claude-sonnet-4-6`). Override the id with `-c modelId=...` (e.g. `jp.anthropic.claude-sonnet-4-6` for region-pinned inference) or the whole ARN with `-c modelArn=...`.
 
-> Note: Bedrock uses the `AnthropicBedrockMantle` client shape and `anthropic.`-prefixed model IDs. If we later call Claude directly (outside the KB `RetrieveAndGenerate` convenience) we'd use that client. For citation-grade grounding, prefer `RetrieveAndGenerate`, which wires retrieval + generation together for us.
+> **Two Bedrock gotchas we hit (validated the hard way):**
+> 1. **Use an inference-profile ARN, not a foundation-model ARN.** Newer Claude models reject on-demand foundation-model invocation (`"on-demand throughput isn't supported"`); they must be called through an inference profile (`global.` / `apac.` / `jp.` prefix).
+> 2. **Not every model has default KB prompt templates.** `anthropic.claude-opus-4-8`, for example, returns `"Custom prompt templates must be provided…"`. `sonnet-4-6` / `sonnet-4-5` / `haiku-4-5` work with the KB's default templates.
+>
+> Also ensure **model access is enabled** for the chosen model in the Bedrock console for the target region.
 
 ---
 
@@ -177,7 +178,7 @@ Deployment order matters: vector store → Knowledge Base → data source → La
 
 ## 11. Implementation status & deploy
 
-**Status: implemented and synthesizing.** The stack builds (`tsc`), synthesizes (`cdk synth`), and passes its test.
+**Status: implemented, deployed, and validated end-to-end.** The stack builds (`tsc`), synthesizes (`cdk synth`), passes its test, and was validated on a live deploy (ap-northeast-1): login/auth gate, presigned upload, cron ingestion, and a grounded `/query` answer with an S3 citation.
 
 ### Code layout (as built)
 
@@ -213,7 +214,7 @@ Optional context overrides: `-c modelId=...` or `-c modelArn=...`.
 ### Pre-flight (required for it to work end-to-end)
 
 1. **Enable Bedrock model access** in the target region — both Titan Text Embeddings v2 and the chosen Claude generation model, or ingestion/query fail at runtime.
-2. **Generation model ARN** — default is `anthropic.claude-opus-4-8` as a *foundation-model* ARN. Newer Claude models often require an **inference-profile** ARN for on-demand invoke; if so, pass `-c modelArn=arn:aws:bedrock:REGION:ACCT:inference-profile/...`.
+2. **Generation model** — default is the `global.anthropic.claude-sonnet-4-6` **inference profile** (built as `arn:aws:bedrock:REGION:ACCT:inference-profile/global.anthropic.claude-sonnet-4-6`). The chosen model must (a) have model access enabled and (b) support the KB's default prompt templates. Override with `-c modelId=...` / `-c modelArn=...`. The query Lambda's IAM already permits `bedrock:InvokeModel` on `foundation-model/*` + `inference-profile/*` and `bedrock:GetInferenceProfile`.
 3. **Docker must be running** at deploy — the KB construct bundles a Python custom-resource Lambda in Docker.
 
 ### Still prototype-grade (by design)
