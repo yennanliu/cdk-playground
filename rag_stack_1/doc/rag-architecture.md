@@ -18,10 +18,10 @@
 
 | Concern | AWS service | Why |
 |---|---|---|
-| Upload / Chat UI | S3 static site + CloudFront | Cheap, no servers, global CDN |
+| Upload / Chat UI | S3 website bucket (static hosting) | Cheapest possible — no CDN/CloudFront to configure (dev/internal) |
 | User auth *(prototype)* | Simple shared-password login in the UI | No managed identity service to set up; swap in Cognito later |
 | Raw document storage | Amazon S3 (`docs` bucket) | Durable source of truth; KB data source |
-| Ingestion trigger | S3 Event → Lambda | Kicks off KB sync on upload |
+| Ingestion trigger | EventBridge schedule → KB sync | No per-upload wiring; batches new docs on a timer |
 | Chunking + embedding | Bedrock Knowledge Base | Managed; uses Titan/Cohere embeddings |
 | **RAG DB (vector store)** | OpenSearch Serverless *(default)* or Aurora PostgreSQL + pgvector | Stores embeddings + metadata |
 | Retrieval + generation | Bedrock `RetrieveAndGenerate` | One call: search + LLM answer + citations |
@@ -41,9 +41,9 @@
                                   │ (static assets)            │ (HTTPS + shared token)
                                   ▼                            ▼
                         ┌──────────────────┐        ┌────────────────────────┐
-                        │   CloudFront      │        │   API Gateway (HTTP)   │
-                        │   + S3 web bucket │        │   Lambda authorizer     │
-                        │                   │        │   (shared-secret check) │
+                        │  S3 website       │        │   API Gateway (HTTP)   │
+                        │  bucket           │        │   Lambda authorizer     │
+                        │  (static hosting) │        │   (shared-secret check) │
                         └──────────────────┘        └───────────┬────────────┘
                                                                  │
                                         ┌────────────────────────┼───────────────────────┐
@@ -57,13 +57,11 @@
         INGESTION    │   S3 docs bucket        │                   │  QUERY
         FLOW  ──────▶│   (raw uploads)         │                   │  FLOW
                      └───────────┬─────────────┘                   │
-                                 │ S3:ObjectCreated               │
-                                 ▼                                 │
-                       ┌───────────────────┐                       │
-                       │ Lambda: ingest     │                       │
-                       │ (StartIngestionJob)│                       │
-                       └─────────┬─────────┘                        │
-                                 ▼                                  ▼
+                                 │                                 │
+             ┌───────────────────┐│                               │
+             │ EventBridge        ││ (KB reads bucket on sync)     │
+             │ schedule (every N) │┼──────► StartIngestionJob      │
+             └───────────────────┘▼                               ▼
                        ┌───────────────────────────────────────────────────┐
                        │        Amazon Bedrock Knowledge Base               │
                        │  chunk → embed (Titan) → store & retrieve          │
@@ -84,10 +82,10 @@
 1. User signs in with the shared password (UI stores the returned token) and picks a file.
 2. UI calls `POST /upload-url`; the `upload-url` Lambda returns a **presigned S3 PUT URL** (browser uploads directly to S3 — bytes never pass through Lambda).
 3. Upload lands in the **`docs` S3 bucket**, which is the Knowledge Base **data source**.
-4. `S3:ObjectCreated` triggers the **`ingest` Lambda**, which calls `StartIngestionJob` on the Knowledge Base.
+4. An **EventBridge schedule** (e.g. every N minutes) calls `StartIngestionJob` on the Knowledge Base — batching up whatever new files have arrived since the last sync. (Target the Bedrock API directly, or a tiny scheduled Lambda if the account/region needs it.)
 5. Bedrock **chunks**, **embeds** (Amazon Titan Text Embeddings), and writes vectors + metadata to the **vector store**.
 
-> Simpler alternative: skip the `ingest` Lambda and run KB sync on a schedule (EventBridge every N minutes). Fewer moving parts, at the cost of ingestion latency.
+> Trade-off: newly uploaded docs become searchable only after the next scheduled sync (minutes, not seconds). If you later need near-instant availability, add back an `S3:ObjectCreated → Lambda` trigger that calls `StartIngestionJob` per upload.
 
 ### 4.2 Query flow (question → grounded answer)
 
@@ -129,7 +127,7 @@ Both store the same thing: an embedding vector per chunk + metadata (source URI,
 ## 7. Security
 
 - **UI auth (prototype):** a single shared password. The UI posts it to `POST /login`; the Lambda compares against a secret in Secrets Manager and returns a signed token the UI sends on later calls. API Gateway gates `/upload-url` and `/query` with a **Lambda authorizer** that validates that token. Enough to keep the endpoint from being wide open — **not** multi-user identity. When real users/roles are needed, replace the `/login` Lambda + authorizer with a Cognito user pool + JWT authorizer; the data flows don't change.
-- **Buckets:** both S3 buckets are private; web assets served only via CloudFront (OAC); uploads only via presigned URLs.
+- **Buckets:** the `docs` bucket is fully private (uploads only via presigned URLs). The web bucket uses S3 static website hosting — its objects are public-read, so keep **only** built SPA assets there, never documents or secrets. (No CloudFront/HTTPS-on-custom-domain in this setup; acceptable for dev/internal. Re-add CloudFront + OAC when you need HTTPS, a custom domain, or a private origin.)
 - **IAM:** least privilege — `upload-url` Lambda can only presign PUTs to the `docs` bucket; `query` Lambda can only call `bedrock:RetrieveAndGenerate` on the one Knowledge Base.
 - **Encryption:** SSE-S3/KMS on buckets; TLS everywhere.
 - **Secrets:** any DB credentials (Aurora option) in AWS Secrets Manager, injected as needed.
@@ -145,10 +143,10 @@ Keep it in the single `RagStack1Stack` (or split into constructs) with these log
 lib/
   rag_stack_1-stack.ts        # wires the constructs below
   constructs/
-    storage.ts                # docs bucket + web bucket + CloudFront
-    knowledge-base.ts         # Bedrock KB + data source + vector store
+    storage.ts                # docs bucket (private) + web bucket (website hosting)
+    knowledge-base.ts         # Bedrock KB + data source + vector store + EventBridge sync schedule
     api.ts                    # HTTP API + Lambda (shared-secret) authorizer
-    functions/                # login, authorizer, upload-url, ingest, query Lambdas
+    functions/                # login, authorizer, upload-url, query Lambdas
 ```
 
 Deployment order matters: vector store → Knowledge Base → data source → Lambdas → API → UI.
@@ -162,15 +160,15 @@ Deployment order matters: vector store → Knowledge Base → data source → La
 - **Cheapest at rest:** Aurora Serverless v2 pgvector (scales down) + Lambda + S3.
 - **Least ops:** OpenSearch Serverless (has a minimum capacity floor — budget for it).
 - Generation cost scales with query volume and model tier — start on Sonnet if volume is high, Opus if quality matters most.
-- Everything else (S3, Lambda, API Gateway, Cognito) is effectively pay-per-use.
+- Everything else (S3, Lambda, API Gateway, EventBridge) is effectively pay-per-use.
 
 ---
 
 ## 10. Build order (milestones)
 
-1. **Storage** — buckets, CloudFront.
-2. **Knowledge Base** — vector store + Bedrock KB + S3 data source.
-3. **Ingestion** — `upload-url` + `ingest` Lambdas + S3 event.
+1. **Storage** — `docs` bucket (private) + web bucket (website hosting).
+2. **Knowledge Base** — vector store + Bedrock KB + S3 data source + EventBridge sync schedule.
+3. **Ingestion** — `upload-url` Lambda (presigned PUT); docs picked up by the scheduled sync.
 4. **Query + simple auth** — `query` Lambda + HTTP API + `/login` + Lambda authorizer (shared password in Secrets Manager).
 5. **UI** — minimal SPA (upload form + chat), deploy to web bucket.
 6. **Polish** — citations rendering, CloudWatch dashboards, cost alarms.
@@ -179,5 +177,5 @@ Deployment order matters: vector store → Knowledge Base → data source → La
 
 ### TL;DR
 
-Upload → S3 → Bedrock Knowledge Base (chunk/embed into a vector store) → ask via API → `RetrieveAndGenerate` with Claude → grounded, cited answer. Two Lambdas, one Knowledge Base, one UI. Managed services do the heavy lifting; we just wire them together.
+Upload → S3 → (scheduled sync) → Bedrock Knowledge Base (chunk/embed into a vector store) → ask via API → `RetrieveAndGenerate` with Claude → grounded, cited answer. Core data-flow Lambdas: `upload-url` + `query` (plus `login`/authorizer for the shared-password gate). One Knowledge Base, one UI, no CloudFront, no per-upload trigger. Managed services do the heavy lifting; we just wire them together.
 ```
