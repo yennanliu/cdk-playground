@@ -12,11 +12,13 @@ export class RagStack1Stack extends Stack {
 
     // --- Config (override with `cdk deploy -c key=value`) ---
     const appPassword = this.node.tryGetContext('appPassword') ?? 'change-me-dev';
-    const modelId = this.node.tryGetContext('modelId') ?? 'anthropic.claude-opus-4-8';
-    // Some newer models require an inference-profile ARN instead of a foundation-model
-    // ARN — pass `-c modelArn=...` to override the default below.
+    // Newer Claude models on Bedrock must be invoked via an INFERENCE PROFILE, not a
+    // bare foundation-model ARN (foundation-model ARNs fail with "on-demand throughput
+    // isn't supported"). Default to a cross-region ("global") Sonnet profile; override
+    // the id with `-c modelId=...` or the whole ARN with `-c modelArn=...`.
+    const modelId = this.node.tryGetContext('modelId') ?? 'global.anthropic.claude-sonnet-4-6';
     const modelArn = this.node.tryGetContext('modelArn')
-      ?? `arn:aws:bedrock:${this.region}::foundation-model/${modelId}`;
+      ?? `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/${modelId}`;
 
     // --- Constructs ---
     const storage = new Storage(this, 'Storage');

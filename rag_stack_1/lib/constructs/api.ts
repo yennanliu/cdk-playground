@@ -1,4 +1,4 @@
-import { RemovalPolicy, Duration, CfnOutput } from 'aws-cdk-lib';
+import { RemovalPolicy, Duration, CfnOutput, Stack } from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -51,13 +51,23 @@ export class Api extends Construct {
 
     // RetrieveAndGenerate retrieves from the KB and invokes the generation model
     // under the caller's identity.
+    const account = Stack.of(this).account;
     query.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:Retrieve', 'bedrock:RetrieveAndGenerate'],
       resources: [props.knowledgeBaseArn],
     }));
+    // Allow invoking both bare foundation models and inference profiles (which fan
+    // out to foundation models across regions, hence the '*' region on both ARNs).
     query.addToRolePolicy(new iam.PolicyStatement({
-      actions: ['bedrock:InvokeModel'],
-      resources: [props.modelArn],
+      actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+      resources: [
+        'arn:aws:bedrock:*::foundation-model/*',
+        `arn:aws:bedrock:*:${account}:inference-profile/*`,
+      ],
+    }));
+    query.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:GetInferenceProfile'],
+      resources: [`arn:aws:bedrock:*:${account}:inference-profile/*`],
     }));
 
     const authorizer = new HttpLambdaAuthorizer('Authorizer', authorizerFn, {
