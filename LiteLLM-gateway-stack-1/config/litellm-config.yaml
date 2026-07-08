@@ -1,0 +1,27 @@
+# LiteLLM proxy config — OPTIONAL reference.
+#
+# The deployed stack runs LiteLLM config-less: models and provider API keys are
+# added in the Admin UI (STORE_MODEL_IN_DB=True) and master_key / database_url
+# come from environment variables. You do NOT need this file to run the gateway.
+#
+# Use it only if you prefer to bake models into a custom image. To do so, build
+# an image that COPYs this file to /app/config.yaml and add `--config
+# /app/config.yaml` to the container command in the stack.
+
+model_list:
+  # In-account inference via Bedrock — no API key; uses the task IAM role.
+  - model_name: claude-sonnet
+    litellm_params:
+      model: bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
+      aws_region_name: us-east-1
+
+litellm_settings:
+  drop_params: true
+  num_retries: 2
+  request_timeout: 600
+  # fallbacks: [{ "gpt-4o": ["claude-sonnet"] }]
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  store_model_in_db: true
