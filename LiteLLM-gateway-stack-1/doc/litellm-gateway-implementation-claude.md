@@ -4,6 +4,8 @@ Companion to [litellm-gateway-aws-design-claude.md](./litellm-gateway-aws-design
 
 **Guiding principle:** simple & elegant. One stack, managed serverless services, no Redis, provider keys added in the UI post‑deploy. Prefer high‑level CDK L2/L3 constructs (e.g. `ApplicationLoadBalancedFargateService`) over hand‑wiring.
 
+> **Status (implemented):** Phases **1–5 are built** in `lib/lite_llm-gateway-stack-1-stack.ts` with 12 passing unit tests and CI. See [Implementation Notes](#implementation-notes--deviations) for where the built stack refined this plan.
+
 ## Table of Contents
 
 1. [Target Architecture Recap](#target-architecture-recap)
@@ -11,8 +13,9 @@ Companion to [litellm-gateway-aws-design-claude.md](./litellm-gateway-aws-design
 3. [Implementation Phases](#implementation-phases)
 4. [Testing Strategy](#testing-strategy)
 5. [CI (GitHub Actions)](#ci-github-actions)
-6. [Other Considerations](#other-considerations)
-7. [Definition of Done](#definition-of-done)
+6. [Implementation Notes / Deviations](#implementation-notes--deviations)
+7. [Other Considerations](#other-considerations)
+8. [Definition of Done](#definition-of-done)
 
 ---
 
@@ -55,24 +58,26 @@ Keep it a **single stack**. If it grows, extract L3 constructs (`NetworkConstruc
 
 ## Implementation Phases
 
-### Phase 0 — Scaffolding & hygiene (½ day)
+> **Legend:** ✅ implemented · each phase below marks what landed.
+
+### Phase 0 — Scaffolding & hygiene (½ day) ✅
 - Confirm `npm install` builds; replace the SQS/SNS placeholder in `lib/`.
 - Add `clean` script (per repo CLAUDE.md) to strip compiled `*.js`/`*.d.ts` from `lib/` & `bin/`.
 - Add `cdk-nag` (optional) for security best‑practice linting during synth.
 - **Deliverable:** empty stack synths clean; `npm run build` + `npm test` green.
 
-### Phase 1 — Network (½ day)
+### Phase 1 — Network (½ day) ✅
 - `ec2.Vpc`: `maxAzs: 2`, `natGateways: 1`, public + `PRIVATE_WITH_EGRESS` subnets.
 - Security groups: ALB SG (443 in), service SG (4000 from ALB SG), DB SG (5432 from service SG).
 - **Deliverable:** VPC + SGs; unit test asserts subnet/NAT counts.
 
-### Phase 2 — Data & secrets (1 day)
+### Phase 2 — Data & secrets (1 day) ✅
 - `rds.DatabaseCluster` — Aurora PostgreSQL **Serverless v2** (`serverlessV2MinCapacity: 0.5`, `max: 4`), writer in private subnets, `storageEncrypted: true`.
 - DB credentials → auto‑generated **Secrets Manager** secret.
 - Two more secrets: `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY` (generate once; salt key **must not** change later).
 - **Deliverable:** cluster + secrets; test asserts engine, encryption, Serverless v2 scaling config.
 
-### Phase 3 — Gateway service (1–2 days)
+### Phase 3 — Gateway service (1–2 days) ✅
 - `config/litellm-config.yaml` — minimal: `store_model_in_db: true`, `master_key`/`database_url` from env, optional Bedrock model + fallbacks.
 - `ecs_patterns.ApplicationLoadBalancedFargateService`:
   - Image `ghcr.io/berriai/litellm:main-stable` (or mirror to ECR in‑stack).
@@ -85,20 +90,35 @@ Keep it a **single stack**. If it grows, extract L3 constructs (`NetworkConstruc
 - Grant DB connect + secret read to the task role.
 - **Deliverable:** service reachable via ALB DNS; `/ui` login works.
 
-### Phase 4 — Scaling & observability (½ day)
-- `service.autoScaleTaskCount({ min: 2, max: N })` + `scaleOnCpuUtilization(60%)`.
-- Log group with retention (e.g. 1 month).
-- CloudWatch alarms: ALB 5xx, unhealthy hosts, task CPU/mem, Aurora ACU/connections.
-- `CfnOutput`: ALB URL, UI URL, secret ARNs.
-- **Deliverable:** autoscaling policy + alarms present in synth; tests assert they exist.
+### Phase 4 — Scaling & observability (½ day) ✅
+- `service.autoScaleTaskCount({ minCapacity: 2, maxCapacity: 6 })` + `scaleOnCpuUtilization(60%)`.
+- Log group with 1‑month retention.
+- CloudWatch alarms → **SNS topic**: unhealthy hosts, target 5xx, service CPU, service memory, Aurora connections. Subscribe an endpoint to `AlarmTopicArn` after deploy.
+- `CfnOutput`: gateway URL, UI URL, master‑key secret ARN, alarm topic ARN.
+- **Deliverable:** autoscaling policy + 5 alarms present in synth; tests assert them.
 
-### Phase 5 — Harden & document (½ day)
-- TLS: ACM cert + HTTPS listener + Route 53 record (if a domain is available); otherwise HTTP for POC with a TODO.
-- `RemovalPolicy`: `DESTROY` for dev; note `SNAPSHOT`/`RETAIN` for the DB in prod.
-- Update README with deploy steps and the post‑deploy UI walkthrough.
+### Phase 5 — Harden & document (½ day) ✅
+- TLS is **opt‑in via CDK context**: pass `-c domainName=... -c hostedZoneId=... -c zoneName=...` and the ALB serves **HTTPS** with an auto‑provisioned **ACM cert + Route 53 A‑record + HTTP→HTTPS redirect**. Without them it serves plain HTTP on :80 (POC).
+- `RemovalPolicy`: `DESTROY` for dev (salt‑key secret is `RETAIN`); note `SNAPSHOT`/`RETAIN` for the DB in prod.
+- README updated with deploy steps and the post‑deploy UI walkthrough.
 - **Deliverable:** `cdk deploy` end‑to‑end; a virtual key created in UI serves a real request.
 
 > Sequencing: 1 → 2 → 3 are strictly ordered (service needs DB + secrets). 4 and 5 can overlap.
+
+---
+
+## Implementation Notes / Deviations
+
+Where the built stack refined this plan (all toward "simpler & elegant"):
+
+| Plan said | Built as | Why |
+| --- | --- | --- |
+| Image `ghcr.io/berriai/litellm:main-stable` | **`litellm-database:main-stable`** | The `-database` variant bundles Prisma and runs DB migrations at startup. |
+| Mount/ship `config.yaml` | **Config‑less** run (`STORE_MODEL_IN_DB=True`) | Models + provider keys are added in the UI; avoids a Docker image build in CI. `config/litellm-config.yaml` kept as an optional reference. |
+| Inject `DATABASE_URL` as one secret | Assembled at startup from injected secret **parts** in a shell wrapper | RDS generates the password; a URL‑safe `excludeCharacters` set lets the container build the URL without a custom resource. |
+| Master/salt keys as ready‑to‑use secrets | Raw random secrets; `sk-` prefix added at runtime | LiteLLM requires the `sk-` prefix; concatenation happens in the same startup wrapper. Actual master key = `sk-` + secret value. |
+| TLS "if a domain is available" | **Opt‑in via context** (`domainName`/`hostedZoneId`/`zoneName`) | Deployable now over HTTP; production‑ready HTTPS with one flag set, no code change. |
+| Alarms present | Alarms **wired to an SNS topic** | An alarm with a notification target is actually actionable. |
 
 ---
 
@@ -249,11 +269,11 @@ jobs:
 
 ## Definition of Done
 
-- [ ] `lib/` stack replaces the SQS/SNS template with VPC + Aurora + Secrets + Fargate/ALB.
-- [ ] `config/litellm-config.yaml` present, minimal, `store_model_in_db: true`.
-- [ ] `npm run build` and `npx tsc --noEmit` pass clean.
-- [ ] Unit tests (fine‑grained + snapshot) pass; assert Bedrock IAM, port 4000, health check, secrets‑as‑secrets, no ElastiCache.
-- [ ] `npx cdk synth` succeeds with dummy creds.
-- [ ] GitHub Actions CI workflow committed and green on PR.
-- [ ] `cdk deploy` brings up a reachable `/ui`; a UI‑created virtual key serves a live request.
-- [ ] README updated with deploy + post‑deploy UI steps.
+- [x] `lib/` stack replaces the SQS/SNS template with VPC + Aurora + Secrets + Fargate/ALB.
+- [x] `config/litellm-config.yaml` present, minimal, `store_model_in_db: true` (optional reference).
+- [x] `npm run build` and `npx tsc --noEmit` pass clean.
+- [x] Unit tests (fine‑grained + snapshot) pass — 12 tests; assert Bedrock IAM, port 4000, health check, secrets‑as‑secrets, autoscaling, alarms, no ElastiCache.
+- [x] `npx cdk synth` succeeds with dummy creds (both HTTP and TLS context paths).
+- [x] GitHub Actions CI workflow committed (lint/build/test/synth).
+- [ ] `cdk deploy` brings up a reachable `/ui`; a UI‑created virtual key serves a live request. *(requires an AWS account — not run here)*
+- [x] README updated with deploy + post‑deploy UI steps.

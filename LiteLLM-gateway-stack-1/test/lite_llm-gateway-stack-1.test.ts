@@ -92,6 +92,29 @@ describe('LiteLLM gateway stack', () => {
     }));
   });
 
+  // --- Phase 4: scaling & observability ---
+  test('service autoscales on CPU (target tracking)', () => {
+    template.hasResourceProperties('AWS::ApplicationAutoScaling::ScalableTarget', Match.objectLike({
+      MinCapacity: 2,
+      MaxCapacity: 6,
+    }));
+    template.hasResourceProperties('AWS::ApplicationAutoScaling::ScalingPolicy', Match.objectLike({
+      PolicyType: 'TargetTrackingScaling',
+      TargetTrackingScalingPolicyConfiguration: Match.objectLike({
+        TargetValue: 60,
+      }),
+    }));
+  });
+
+  test('CloudWatch alarms publish to an SNS topic', () => {
+    template.resourceCountIs('AWS::SNS::Topic', 1);
+    // unhealthy hosts, 5xx, cpu, memory, db connections
+    template.resourceCountIs('AWS::CloudWatch::Alarm', 5);
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
+      AlarmActions: Match.anyValue(),
+    }));
+  });
+
   // --- Guards the "keep it simple" decision ---
   test('no Redis / ElastiCache is provisioned', () => {
     template.resourceCountIs('AWS::ElastiCache::CacheCluster', 0);

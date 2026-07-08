@@ -1,11 +1,16 @@
 import { CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib/core';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cw_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecs_patterns from 'aws-cdk-lib/aws-ecs-patterns';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
+import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 
 /**
@@ -16,7 +21,12 @@ import { Construct } from 'constructs';
  *
  * No Redis (see doc/litellm-gateway-design). Provider API keys are added in the
  * LiteLLM Admin UI after deploy; only the master key, salt key and DB creds are
- * provisioned here. Implements phases 1-3 of the implementation plan.
+ * provisioned here. Implements phases 1-5 of the implementation plan.
+ *
+ * TLS is opt-in: pass `-c domainName=... -c hostedZoneId=... -c zoneName=...`
+ * (a Route 53 hosted zone you control) and the ALB serves HTTPS with an
+ * auto-provisioned ACM cert + DNS record and an HTTP->HTTPS redirect. Without
+ * those context values it serves plain HTTP on :80 (fine for a POC).
  */
 export class LiteLlmGatewayStack1Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -95,6 +105,18 @@ export class LiteLlmGatewayStack1Stack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    // Phase 5 — optional TLS via a Route 53 hosted zone (see class doc).
+    const domainName = this.node.tryGetContext('domainName') as string | undefined;
+    const hostedZoneId = this.node.tryGetContext('hostedZoneId') as string | undefined;
+    const zoneName = this.node.tryGetContext('zoneName') as string | undefined;
+    const useTls = Boolean(domainName && hostedZoneId && zoneName);
+    const domainZone = useTls
+      ? route53.HostedZone.fromHostedZoneAttributes(this, 'Zone', {
+          hostedZoneId: hostedZoneId!,
+          zoneName: zoneName!,
+        })
+      : undefined;
+
     // The -database image bundles Prisma and runs migrations at startup.
     const image = ecs.ContainerImage.fromRegistry('ghcr.io/berriai/litellm-database:main-stable');
 
@@ -116,7 +138,16 @@ export class LiteLlmGatewayStack1Stack extends Stack {
       memoryLimitMiB: 2048,
       desiredCount: 2,
       publicLoadBalancer: true, // set false for a VPC-only gateway
-      listenerPort: 80, // TLS/ACM added in phase 5
+      // HTTPS with an auto-provisioned ACM cert + DNS record + HTTP->HTTPS
+      // redirect when a hosted zone is supplied; plain HTTP otherwise.
+      ...(useTls
+        ? {
+            protocol: elbv2.ApplicationProtocol.HTTPS,
+            domainName,
+            domainZone,
+            redirectHTTP: true,
+          }
+        : { listenerPort: 80 }),
       // Give tasks time to run DB migrations before health checks can fail them.
       healthCheckGracePeriod: Duration.seconds(180),
       taskImageOptions: {
@@ -164,19 +195,65 @@ export class LiteLlmGatewayStack1Stack extends Stack {
     );
 
     // ---------------------------------------------------------------------
+    // Phase 4 — Scaling & observability
+    // ---------------------------------------------------------------------
+    // Horizontal autoscaling on CPU; stateless tasks make this safe.
+    const scaling = gateway.service.autoScaleTaskCount({ minCapacity: 2, maxCapacity: 6 });
+    scaling.scaleOnCpuUtilization('CpuScaling', {
+      targetUtilizationPercent: 60,
+      scaleInCooldown: Duration.seconds(120),
+      scaleOutCooldown: Duration.seconds(60),
+    });
+
+    // Alarms notify this topic — subscribe an email/Slack endpoint post-deploy.
+    const alarmTopic = new sns.Topic(this, 'AlarmTopic', {
+      displayName: 'LiteLLM gateway alarms',
+    });
+    const alarmAction = new cw_actions.SnsAction(alarmTopic);
+    const addAlarm = (id: string, metric: cloudwatch.Metric, threshold: number): void => {
+      const alarm = metric.createAlarm(this, id, {
+        threshold,
+        evaluationPeriods: 3,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      });
+      alarm.addAlarmAction(alarmAction);
+    };
+
+    addAlarm('UnhealthyHostsAlarm', gateway.targetGroup.metrics.unhealthyHostCount(), 0);
+    addAlarm(
+      'Alb5xxAlarm',
+      gateway.targetGroup.metrics.httpCodeTarget(
+        elbv2.HttpCodeTarget.TARGET_5XX_COUNT,
+        { period: Duration.minutes(1), statistic: 'Sum' },
+      ),
+      10,
+    );
+    addAlarm('ServiceCpuAlarm', gateway.service.metricCpuUtilization(), 85);
+    addAlarm('ServiceMemoryAlarm', gateway.service.metricMemoryUtilization(), 85);
+    addAlarm('DbConnectionsAlarm', cluster.metricDatabaseConnections(), 200);
+
+    // ---------------------------------------------------------------------
     // Outputs
     // ---------------------------------------------------------------------
+    const baseUrl = useTls
+      ? `https://${domainName}`
+      : `http://${gateway.loadBalancer.loadBalancerDnsName}`;
     new CfnOutput(this, 'GatewayUrl', {
-      value: `http://${gateway.loadBalancer.loadBalancerDnsName}`,
+      value: baseUrl,
       description: 'LiteLLM gateway base URL (OpenAI-compatible endpoint)',
     });
     new CfnOutput(this, 'AdminUiUrl', {
-      value: `http://${gateway.loadBalancer.loadBalancerDnsName}/ui`,
+      value: `${baseUrl}/ui`,
       description: 'LiteLLM Admin UI — log in with the master key',
     });
     new CfnOutput(this, 'MasterKeySecretArn', {
       value: masterKeySecret.secretArn,
       description: 'Secret holding the raw master key value (actual key = "sk-" + value)',
+    });
+    new CfnOutput(this, 'AlarmTopicArn', {
+      value: alarmTopic.topicArn,
+      description: 'SNS topic for gateway alarms — subscribe an endpoint to receive them',
     });
   }
 }
