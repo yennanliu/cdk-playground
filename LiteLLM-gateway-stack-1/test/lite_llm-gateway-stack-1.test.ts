@@ -46,6 +46,15 @@ describe('LiteLLM gateway stack', () => {
     }));
   });
 
+  test('deploys with circuit-breaker rollback and full-capacity rolling updates', () => {
+    template.hasResourceProperties('AWS::ECS::Service', Match.objectLike({
+      DeploymentConfiguration: Match.objectLike({
+        DeploymentCircuitBreaker: { Enable: true, Rollback: true },
+        MinimumHealthyPercent: 100,
+      }),
+    }));
+  });
+
   test('target group uses the LiteLLM liveness health check', () => {
     template.hasResourceProperties('AWS::ElasticLoadBalancingV2::TargetGroup', Match.objectLike({
       HealthCheckPath: '/health/liveliness',

@@ -160,6 +160,14 @@ export class LiteLlmGatewayStack1Stack extends Stack {
       // health checks. 4 GB gives comfortable headroom (valid with 1 vCPU).
       memoryLimitMiB: 4096,
       desiredCount: 2,
+      // Roll a failed deploy back automatically instead of leaving unhealthy
+      // tasks churning (without this, ECS can take up to ~3h to give up).
+      circuitBreaker: { rollback: true },
+      // Keep at least one task serving during a rolling deploy. The default
+      // (50%) would drop us to a single replica; 100% holds full capacity while
+      // new tasks come up (needs headroom, which desiredCount=2 + maxCapacity=6
+      // provides).
+      minHealthyPercent: 100,
       publicLoadBalancer: true, // set false for a VPC-only gateway
       // HTTPS with an auto-provisioned ACM cert + DNS record + HTTP->HTTPS
       // redirect when a hosted zone is supplied; plain HTTP otherwise.

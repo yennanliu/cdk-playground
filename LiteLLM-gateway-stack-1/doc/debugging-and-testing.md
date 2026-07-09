@@ -41,9 +41,15 @@ curl -s -o /dev/null -w "liveliness=%{http_code}\n" "$BASE/health/liveliness"
 # Deeper: DB connectivity, config load, etc.
 curl -s "$BASE/health/readiness" | jq .
 
-# Per-model health (calls each configured model; needs auth). Slow — it round-trips providers.
-curl -s "$BASE/health" -H "Authorization: Bearer $MASTER_KEY" | jq .
+# Per-model health — prefer scoping to ONE model (see warning below).
+curl -s "$BASE/health?model=claude-haiku-45" -H "Authorization: Bearer $MASTER_KEY" | jq .
 ```
+
+> ⚠️ **Don't call bare `/health` blind.** It round-trips *every* configured
+> model, and if one model group is failing (e.g. a retired Bedrock model), the
+> per-model retries make the whole request hang — we've seen it block for 2+
+> minutes and tie up workers. Always scope with `?model=<name>` when triaging,
+> and only run the full `/health` when you know all models are healthy.
 
 If liveliness fails, it's infra (task not running / ALB / SG) — go to logs
 (§4) and ECS (§5). If liveliness passes but readiness fails, it's usually the
@@ -106,9 +112,14 @@ curl -s -o /dev/null -w "%{http_code}\n" "$BASE/v1/models" -H "Authorization: Be
 ### Spend / usage
 
 ```bash
+# Per-key spend — works on the OSS build.
 curl -s "$BASE/key/info?key=$VKEY" -H "Authorization: Bearer $MASTER_KEY" | jq '.info.spend'
-curl -s "$BASE/global/spend/report" -H "Authorization: Bearer $MASTER_KEY" | jq .
 ```
+
+> ⚠️ **`/global/spend/report` is Enterprise-only.** On this OSS deployment it
+> returns `You must be a LiteLLM Enterprise user to use this feature` (needs
+> `LITELLM_LICENSE`). Use `/key/info` per key, or read spend from the Admin UI,
+> which is backed by the same Postgres tables and works without a license.
 
 The Admin UI (`$BASE/ui`) has the same data plus the Playground
 (`$BASE/ui/playground/`) — log in with the master key, then paste a virtual key

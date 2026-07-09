@@ -173,6 +173,7 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
       "DeletionPolicy": "Delete",
       "Properties": {
         "CopyTagsToSnapshot": true,
+        "DBClusterIdentifier": "teststack-db",
         "DBClusterParameterGroupName": "default.aurora-postgresql16",
         "DBSubnetGroupName": {
           "Ref": "DatabaseSubnets56F17B9A",
@@ -186,7 +187,7 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
             [
               "{{resolve:secretsmanager:",
               {
-                "Ref": "TestStackDatabaseSecret4D295638886bce5d92c4678bb2904dfaf6fb890c",
+                "Ref": "TestStackDatabaseSecret4D29563881393b1af1ad9f15943eb2d308d1fba5",
               },
               ":SecretString:password::}}",
             ],
@@ -214,7 +215,7 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
     "DatabaseSecretAttachmentE5D1B020": {
       "Properties": {
         "SecretId": {
-          "Ref": "TestStackDatabaseSecret4D295638886bce5d92c4678bb2904dfaf6fb890c",
+          "Ref": "TestStackDatabaseSecret4D29563881393b1af1ad9f15943eb2d308d1fba5",
         },
         "TargetId": {
           "Ref": "DatabaseB269D8BB",
@@ -285,7 +286,7 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
     },
     "DbSecurityGroupE9D701AD": {
       "Properties": {
-        "GroupDescription": "LiteLLM Aurora — ingress from the Fargate service only",
+        "GroupDescription": "LiteLLM Aurora - ingress from the Fargate service only",
         "SecurityGroupEgress": [
           {
             "CidrIp": "255.255.255.255/32",
@@ -334,6 +335,7 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
     },
     "EcsCluster97242B84": {
       "Properties": {
+        "ClusterName": "TestStack-cluster",
         "ClusterSettings": [
           {
             "Name": "containerInsights",
@@ -357,6 +359,7 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
             "Value": "false",
           },
         ],
+        "Name": "TestStack-alb",
         "Scheme": "internet-facing",
         "SecurityGroups": [
           {
@@ -461,6 +464,7 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
     "GatewayLogs64F6314F": {
       "DeletionPolicy": "Delete",
       "Properties": {
+        "LogGroupName": "/ecs/TestStack",
         "RetentionInDays": 30,
       },
       "Type": "AWS::Logs::LogGroup",
@@ -483,8 +487,15 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
             "Enable": false,
             "Rollback": false,
           },
+          "DeploymentCircuitBreaker": {
+            "Enable": true,
+            "Rollback": true,
+          },
           "MaximumPercent": 200,
-          "MinimumHealthyPercent": 50,
+          "MinimumHealthyPercent": 100,
+        },
+        "DeploymentController": {
+          "Type": "ECS",
         },
         "DesiredCount": 2,
         "EnableECSManagedTags": false,
@@ -520,6 +531,7 @@ exports[`LiteLLM gateway stack template snapshot 1`] = `
             ],
           },
         },
+        "ServiceName": "TestStack-svc",
         "TaskDefinition": {
           "Ref": "GatewayTaskDef6C231C1D",
         },
@@ -749,7 +761,7 @@ exec litellm --port 4000 --num_workers 2",
           ],
         },
         "Family": "TestStackGatewayTaskDef82EEB779",
-        "Memory": "2048",
+        "Memory": "4096",
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": [
           "FARGATE",
@@ -974,7 +986,7 @@ exec litellm --port 4000 --num_workers 2",
       },
       "Type": "AWS::CloudWatch::Alarm",
     },
-    "TestStackDatabaseSecret4D295638886bce5d92c4678bb2904dfaf6fb890c": {
+    "TestStackDatabaseSecret4D29563881393b1af1ad9f15943eb2d308d1fba5": {
       "DeletionPolicy": "Delete",
       "Properties": {
         "Description": {
@@ -989,7 +1001,7 @@ exec litellm --port 4000 --num_workers 2",
           ],
         },
         "GenerateSecretString": {
-          "ExcludeCharacters": "/@" \\'",
+          "ExcludeCharacters": "!"#$%&'()*+,/:;<=>?@[\\]^\`{|}~ ",
           "GenerateStringKey": "password",
           "PasswordLength": 30,
           "SecretStringTemplate": "{"username":"litellm"}",
