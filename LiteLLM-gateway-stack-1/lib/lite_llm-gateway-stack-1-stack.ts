@@ -28,10 +28,20 @@ import { Construct } from 'constructs';
  * auto-provisioned ACM cert + DNS record and an HTTP->HTTPS redirect. Without
  * those context values it serves plain HTTP on :80 (fine for a POC).
  */
+export interface LiteLlmGatewayStack1StackProps extends StackProps {
+  /**
+   * Base name applied to the trackable resources (DB cluster, ECS cluster,
+   * ECS service, ALB, log group). Use a version suffix — e.g. `litellm-gateway-v1`
+   * — so bumping the version yields a cleanly-named, conflict-free re-deploy.
+   */
+  readonly resourceName?: string;
+}
+
 export class LiteLlmGatewayStack1Stack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: Construct, id: string, props?: LiteLlmGatewayStack1StackProps) {
     super(scope, id, props);
 
+    const resourceName = props?.resourceName ?? id;
     const dbName = 'litellm';
     const containerPort = 4000;
 
@@ -67,15 +77,21 @@ export class LiteLlmGatewayStack1Stack extends Stack {
     // Aurora PostgreSQL Serverless v2. Credentials are auto-generated into their
     // own Secrets Manager secret; excludeCharacters keeps the password URL-safe
     // so the container can assemble a DATABASE_URL from the parts.
+    // DATABASE_URL is assembled by string interpolation (no URL-encoding), and
+    // the value is expanded inside a double-quoted shell string. Restrict the
+    // generated password to characters safe in both contexts — alphanumerics
+    // plus - _ . — so no char can break URL parsing (e.g. a '[' triggering
+    // Python's "Invalid IPv6 URL") or the shell.
     const dbCredentials = rds.Credentials.fromGeneratedSecret('litellm', {
-      excludeCharacters: '/@" \\\'',
+      excludeCharacters: "!\"#$%&'()*+,/:;<=>?@[\\]^`{|}~ ",
     });
     const dbSecurityGroup = new ec2.SecurityGroup(this, 'DbSecurityGroup', {
       vpc,
-      description: 'LiteLLM Aurora — ingress from the Fargate service only',
+      description: 'LiteLLM Aurora - ingress from the Fargate service only',
       allowAllOutbound: false,
     });
     const cluster = new rds.DatabaseCluster(this, 'Database', {
+      clusterIdentifier: `${resourceName}-db`,
       engine: rds.DatabaseClusterEngine.auroraPostgres({
         version: rds.AuroraPostgresEngineVersion.VER_16_9,
       }),
@@ -96,11 +112,13 @@ export class LiteLlmGatewayStack1Stack extends Stack {
     // Phase 3 — Gateway service (ECS Fargate + ALB)
     // ---------------------------------------------------------------------
     const ecsCluster = new ecs.Cluster(this, 'EcsCluster', {
+      clusterName: `${resourceName}-cluster`,
       vpc,
       containerInsightsV2: ecs.ContainerInsights.ENABLED,
     });
 
     const logGroup = new logs.LogGroup(this, 'GatewayLogs', {
+      logGroupName: `/ecs/${resourceName}`,
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: RemovalPolicy.DESTROY,
     });
@@ -134,8 +152,13 @@ export class LiteLlmGatewayStack1Stack extends Stack {
 
     const gateway = new ecs_patterns.ApplicationLoadBalancedFargateService(this, 'Gateway', {
       cluster: ecsCluster,
+      serviceName: `${resourceName}-svc`,
+      loadBalancerName: `${resourceName}-alb`,
       cpu: 1024,
-      memoryLimitMiB: 2048,
+      // LiteLLM runs 2 uvicorn workers + a bundled Prisma engine; 2 GB is too
+      // tight and the container gets OOM-killed (exit 137) before it can pass
+      // health checks. 4 GB gives comfortable headroom (valid with 1 vCPU).
+      memoryLimitMiB: 4096,
       desiredCount: 2,
       publicLoadBalancer: true, // set false for a VPC-only gateway
       // HTTPS with an auto-provisioned ACM cert + DNS record + HTTP->HTTPS
