@@ -52,9 +52,10 @@ whether it matters for **POC** or only **prod**.
 - **[high / low — prod] Single NAT Gateway.** `natGateways: 1` means all
   outbound traffic (external providers, image pulls if not cached) dies if that
   one AZ has trouble. Use one NAT per AZ for prod.
-- **[med / low — both] No deployment circuit breaker.** A bad task revision can
-  roll forward and sit unhealthy. Enable
-  `circuitBreaker: { rollback: true }` on the service so failed deploys auto-roll-back.
+- **[med / low — both] ✅ DONE — deployment circuit breaker + min-healthy.**
+  The service now sets `circuitBreaker: { rollback: true }` (failed deploys
+  auto-roll-back instead of churning up to ~3h) and `minHealthyPercent: 100`
+  (full capacity held during rolling deploys, vs the CDK-default 50%).
 - **[med / med — prod] Rate limiting is per-replica (no Redis).** Effective global
   limit ≈ per-key limit × replica count, and it drifts as autoscaling changes
   the count. Add ElastiCache Redis for exact cluster-wide limits + response
@@ -115,6 +116,6 @@ whether it matters for **POC** or only **prod**.
 | Pin image digest | ElastiCache Redis for exact rate limits |
 | Scope Bedrock IAM to model ARNs | WAF + internal ALB posture |
 | Subscribe an endpoint to the alarm topic | ADOT/Prometheus metrics pipeline |
-| `circuitBreaker: { rollback: true }` | Secret rotation for master + DB creds |
+| ~~`circuitBreaker: { rollback: true }`~~ ✅ done | Secret rotation for master + DB creds |
 | Enforce Aurora SSL | Post-deploy integration test in CI |
 | One NAT per AZ (prod) | Callback-based tracing (Langfuse/Datadog) |
