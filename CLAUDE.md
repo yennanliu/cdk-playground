@@ -158,6 +158,16 @@ When deploying a new stack while another is being destroyed:
 cdk deploy --output cdk.out2.deploy
 ```
 
+**Never delete the `--output` directory while a deploy/destroy is in flight.**
+The `--output cdk.out.<name>` flag is the workaround for the "Other CLIs are
+currently reading from cdk.out" lock when a second CDK command runs
+concurrently. But that directory holds the synthesized template and asset
+manifest the CLI keeps reading *after* CloudFormation finishes — removing it
+mid-run leaves the `cdk` process hung (CloudFormation may already show
+`UPDATE_COMPLETE` while the CLI never exits). Let the command finish, then clean
+up the output dir. If a `cdk` process does hang this way, verify the real
+outcome directly (`aws cloudformation describe-stacks`) before killing it.
+
 ## AWS Configuration
 
 Ensure AWS CLI is configured:
