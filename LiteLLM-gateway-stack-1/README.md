@@ -10,6 +10,9 @@ No Redis. Provider API keys and models are added in the LiteLLM Admin UI after d
 
 - **Design:** [`doc/litellm-gateway-aws-design-claude.md`](doc/litellm-gateway-aws-design-claude.md)
 - **Implementation plan:** [`doc/litellm-gateway-implementation-claude.md`](doc/litellm-gateway-implementation-claude.md)
+- **Debugging & testing:** [`doc/debugging-and-testing.md`](doc/debugging-and-testing.md)
+- **Improvement backlog:** [`doc/improvements.md`](doc/improvements.md)
+- **繁體中文:** [`README.zh-TW.md`](README.zh-TW.md)
 
 ## Commands
 
