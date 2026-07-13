@@ -57,18 +57,19 @@ export class GitlabDeploymentV2Stack extends Stack {
       }
     });
 
-    // Create an access point for GitLab data
+    // Create an access point for GitLab data with root access
+    // We'll create directory structure and set permissions in the container
     const accessPoint = new efs.AccessPoint(this, 'GitLabEfsAccessPoint', {
       fileSystem: fileSystem,
       path: '/',
       createAcl: {
-        ownerGid: '998',  // gitlab user gid
-        ownerUid: '998',  // gitlab user uid
+        ownerGid: '0',  // root group
+        ownerUid: '0',  // root user
         permissions: '755'
       },
       posixUser: {
-        gid: '998',
-        uid: '998'
+        gid: '0',
+        uid: '0'
       }
     });
 
@@ -141,6 +142,33 @@ export class GitlabDeploymentV2Stack extends Stack {
       }
     });
 
+    // Add initialization container to set up permissions
+    const initContainer = taskDefinition.addContainer('InitContainer', {
+      image: ecs.ContainerImage.fromRegistry('amazonlinux:2'),
+      essential: false,
+      command: [
+        'sh', '-c',
+        'mkdir -p /var/opt/gitlab/git-data && ' +
+        'mkdir -p /var/opt/gitlab/.ssh && ' +
+        'mkdir -p /var/opt/gitlab/gitlab-rails && ' +
+        'mkdir -p /var/opt/gitlab/gitlab-ci && ' +
+        'mkdir -p /var/opt/gitlab/postgresql && ' +
+        'mkdir -p /var/opt/gitlab/redis && ' +
+        'mkdir -p /var/opt/gitlab/nginx && ' +
+        'mkdir -p /var/opt/gitlab/prometheus && ' +
+        'chown -R 998:998 /var/opt/gitlab && ' +
+        'chmod -R 775 /var/opt/gitlab'
+      ],
+      logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'gitlab-init' })
+    });
+
+    // Mount the EFS volume to the init container
+    initContainer.addMountPoints({
+      sourceVolume: 'gitlab-data',
+      containerPath: '/var/opt/gitlab',
+      readOnly: false
+    });
+
     // Add GitLab container
     const gitlabContainer = taskDefinition.addContainer('GitLabContainer', {
       image: ecs.ContainerImage.fromRegistry('gitlab/gitlab-ce:latest'),
@@ -152,9 +180,26 @@ export class GitlabDeploymentV2Stack extends Stack {
       ],
       environment: {
         'GITLAB_OMNIBUS_CONFIG': 'external_url "http://' + alb.loadBalancerDnsName + '";' +
-                                'gitlab_rails[\'gitlab_shell_ssh_port\'] = 22;'
+                              'gitlab_rails[\'gitlab_shell_ssh_port\'] = 22;' +
+                              'git_data_dirs({"default" => { "path" => "/var/opt/gitlab/git-data"} });' +
+                              'unicorn[\'worker_processes\'] = 2;' +
+                              'postgresql[\'shared_buffers\'] = "256MB";' + 
+                              'prometheus_monitoring[\'enable\'] = false;'
       },
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'gitlab' })
+    });
+
+    // Set container dependencies - ensure init container runs first
+    gitlabContainer.addContainerDependencies({
+      container: initContainer,
+      condition: ecs.ContainerDependencyCondition.COMPLETE
+    });
+
+    // Grant full permission to the container to modify EFS data
+    gitlabContainer.addUlimits({
+      name: ecs.UlimitName.NOFILE,
+      softLimit: 65535,
+      hardLimit: 65535
     });
 
     // Mount EFS volume to container
@@ -174,7 +219,13 @@ export class GitlabDeploymentV2Stack extends Stack {
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
       },
-      platformVersion: ecs.FargatePlatformVersion.VERSION1_4  // Latest platform version for better EFS support
+      platformVersion: ecs.FargatePlatformVersion.VERSION1_4,  // Latest platform version for better EFS support
+      capacityProviderStrategies: [
+        {
+          capacityProvider: 'FARGATE',
+          weight: 1
+        }
+      ]
     });
 
     // Create target group for the service
