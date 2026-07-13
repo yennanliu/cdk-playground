@@ -5,6 +5,8 @@ import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as path from 'path';
 import { Construct } from 'constructs';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
 
 export interface Route53S3SiteStackProps extends StackProps {
   domainName?: string;
@@ -45,11 +47,27 @@ export class Route53S3SiteStack extends Stack {
       zoneName: domainName
     });
 
+    // Create a certificate for the domain
+    const certificate = new cloudfront.Certificate(this, 'Certificate', {
+      domainName: domainName,
+      hostedZone: hostedZone,
+      region: 'us-east-1', // CloudFront requires the certificate to be in us-east-1
+    });
+
+    // Create a CloudFront distribution to serve the S3 website
+    const cloudfrontTarget = new cloudfront.Distribution(this, 'CloudFrontDistribution', {
+      defaultBehavior: {
+        origin: new cloudfrontOrigins.S3Origin(websiteBucket),
+      },
+      domainNames: [domainName]
+    }, certificate);
+
     // Create an A record to point the domain to the S3 website
     new route53.ARecord(this, 'SiteAliasRecord', {
       zone: hostedZone,
       recordName: domainName,
-      target: route53.RecordTarget.fromAlias(new targets.BucketWebsiteTarget(websiteBucket))
+      //target: route53.RecordTarget.fromAlias(new targets.BucketWebsiteTarget(websiteBucket))
+      target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(cloudfrontTarget)),
     });
 
     // Output values
