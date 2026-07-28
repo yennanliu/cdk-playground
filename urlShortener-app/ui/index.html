@@ -66,6 +66,19 @@
         .copy-btn {
             margin-top: 0.5rem;
         }
+        .recent-urls-table {
+            margin-top: 1rem;
+        }
+        .recent-urls-table td {
+            word-break: break-all;
+            vertical-align: middle;
+        }
+        .url-truncate {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -79,6 +92,9 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="expand-tab" data-bs-toggle="tab" data-bs-target="#expand" type="button" role="tab" aria-controls="expand" aria-selected="false">Expand URL</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="recent-tab" data-bs-toggle="tab" data-bs-target="#recent" type="button" role="tab" aria-controls="recent" aria-selected="false">Recent URLs</button>
                 </li>
             </ul>
             
@@ -159,6 +175,38 @@
                             <a href="#" class="btn btn-outline-primary" id="visit-original" target="_blank">Visit URL</a>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Recent URLs Tab -->
+                <div class="tab-pane fade" id="recent" role="tabpanel" aria-labelledby="recent-tab">
+                    <h4>Recent Shortened URLs:</h4>
+                    <div id="recent-loader" class="text-center my-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <div id="recent-error" class="alert alert-danger mt-3" style="display: none;"></div>
+                    <div id="recent-container">
+                        <table class="table table-hover recent-urls-table">
+                            <thead>
+                                <tr>
+                                    <th>Short URL</th>
+                                    <th>Original URL</th>
+                                    <th>Created</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-urls-table-body">
+                                <!-- Recent URLs will be inserted here -->
+                            </tbody>
+                        </table>
+                        <div id="no-recent-urls" class="alert alert-info" style="display: none;">
+                            No URLs have been shortened yet. Try shortening a URL first!
+                        </div>
+                    </div>
+                    <button id="refresh-recent" class="btn btn-outline-primary mt-3">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
                 </div>
             </div>
         </div>
