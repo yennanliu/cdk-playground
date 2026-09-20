@@ -1,17 +1,90 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import * as SlackAgent1 from '../lib/slack-agent-1-stack';
+import { SlackAgent1Stack } from '../lib/slack-agent-1-stack';
 
-test('SQS Queue and SNS Topic Created', () => {
+function synthesize(props = {}): Template {
   const app = new cdk.App();
-  // WHEN
-  const stack = new SlackAgent1.SlackAgent1Stack(app, 'MyTestStack');
-  // THEN
-
-  const template = Template.fromStack(stack);
-
-  template.hasResourceProperties('AWS::SQS::Queue', {
-    VisibilityTimeout: 300
+  const stack = new SlackAgent1Stack(app, 'TestStack', {
+    env: { account: '123456789012', region: 'us-east-1' },
+    ...props,
   });
-  template.resourceCountIs('AWS::SNS::Topic', 1);
+  return Template.fromStack(stack);
+}
+
+describe('Phase 0 agent host', () => {
+  const template = synthesize();
+
+  test('exposes no inbound port at all -- Socket Mode dials out', () => {
+    template.hasResourceProperties('AWS::EC2::SecurityGroup', {
+      GroupDescription: 'Slack agent host -- egress only, no inbound',
+      SecurityGroupIngress: Match.absent(),
+    });
+  });
+
+  test('runs a single instance with an encrypted root volume', () => {
+    template.resourceCountIs('AWS::EC2::Instance', 1);
+    template.hasResourceProperties('AWS::EC2::Instance', {
+      BlockDeviceMappings: Match.arrayWith([
+        Match.objectLike({ Ebs: Match.objectLike({ Encrypted: true, VolumeType: 'gp3' }) }),
+      ]),
+    });
+  });
+
+  test('provisions no NAT gateway by default', () => {
+    template.resourceCountIs('AWS::EC2::NatGateway', 0);
+  });
+});
+
+describe('job isolation', () => {
+  const template = synthesize();
+
+  test('a role exists that can invoke Bedrock', () => {
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+          }),
+        ]),
+      }),
+    });
+  });
+
+  // The invariant the whole design rests on: a prompt-injected job that gets
+  // hold of its own credentials still cannot read the Slack or GitHub secrets.
+  test('no single policy grants both Bedrock and the credentials secret', () => {
+    const policies = Object.values(template.findResources('AWS::IAM::Policy'));
+    expect(policies.length).toBeGreaterThan(0);
+
+    for (const policy of policies) {
+      const statements = JSON.stringify(policy.Properties.PolicyDocument.Statement);
+      const grantsBedrock = statements.includes('bedrock:InvokeModel');
+      const grantsSecret = statements.includes('secretsmanager:GetSecretValue');
+      expect(grantsBedrock && grantsSecret).toBe(false);
+    }
+  });
+});
+
+describe('dispatch and state', () => {
+  const template = synthesize();
+
+  test('alerts land on the same queue the host already polls', () => {
+    template.resourceCountIs('AWS::SNS::Topic', 1);
+    template.hasResourceProperties('AWS::SNS::Subscription', {
+      Protocol: 'sqs',
+      RawMessageDelivery: true,
+    });
+  });
+
+  test('failed jobs fall through to a dead-letter queue', () => {
+    template.hasResourceProperties('AWS::SQS::Queue', {
+      RedrivePolicy: Match.objectLike({ maxReceiveCount: 3 }),
+    });
+  });
+
+  test('session rows expire so conversation memory stays bounded', () => {
+    template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
+      TimeToLiveSpecification: { AttributeName: 'ttl', Enabled: true },
+    });
+  });
 });

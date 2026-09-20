@@ -5,7 +5,9 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "clean": "find lib bin test -name '*.js' -not -name 'jest.config.js' -delete; find lib bin test -name '*.d.ts' -delete; find lib bin test -name '*.js.map' -delete; rm -rf cdk.out",
+    "clean:all": "npm run clean && rm -rf node_modules"
   },
   "devDependencies": {
     "@swc/core": "^1.15.0",
