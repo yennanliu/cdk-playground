@@ -20,8 +20,11 @@ RUN apt-get update \
        ripgrep \
   && rm -rf /var/lib/apt/lists/*
 
-# The runner bind-mounts a fresh scratch directory here and runs as uid 1000
-# (the `node` user), which the image already provides.
+# The runner mounts a fresh named volume here and runs as uid 1000 (the `node`
+# user the image already provides). Creating the directory with that ownership
+# matters: Docker seeds a new named volume from the image path, so the volume
+# inherits this mode and the job can write to its own workspace.
+RUN install -d -o node -g node /workspace
 WORKDIR /workspace
 USER node
 

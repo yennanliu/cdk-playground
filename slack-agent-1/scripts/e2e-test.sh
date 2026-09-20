@@ -191,7 +191,7 @@ slack-agent-run-job $RUN_ID bash -c '
   [ -n "\$AWS_SESSION_TOKEN" ] && echo "creds=scoped" || echo "creds=missing"
 '
 echo "exit=\$?"
-echo "leftover=\$(ls -A /var/lib/slack-agent/jobs/ 2>/dev/null | wc -l)"
+echo "leftover=\$(docker volume ls -q --filter name=slack-agent-ws- | wc -l)"
 EOS
 )
 jval() { echo "$job" | tr -d '\r' | grep "^$1=" | cut -d= -f2-; }
@@ -204,7 +204,7 @@ assert "$([ "$(jval rootfs)" = readonly ] && echo true || echo false)" "job root
 assert "$([ "$(jval workspace)" = writable ] && echo true || echo false)" "job workspace is writable"
 assert "$([ "$(jval creds)" = scoped ] && echo true || echo false)" "job received scoped credentials"
 assert "$([ "$(jval leftover)" = 0 ] && echo true || echo false)" \
-  "workspace removed after the job" "leftover dirs=$(jval leftover)"
+  "job workspace volume removed afterwards" "leftover volumes=$(jval leftover)"
 
 # ---------------------------------------------------------------------------
 section "Least privilege — what the job role must NOT be able to do"

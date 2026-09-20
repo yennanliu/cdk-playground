@@ -148,7 +148,13 @@ lib/constructs/
 assets/bootstrap.sh             installs Docker, builds the job image,
                                 writes slack-agent-run-job, CloudWatch agent
 docker/worker/Dockerfile        the throwaway job container
+agent/                          the Slack gateway application
+scripts/deploy-app.sh           build and install the app on the host
+scripts/send-request.sh         send one request; no Slack required
+scripts/qa-suite.sh             behavioural QA against the deployed agent
 scripts/e2e-test.sh             end-to-end test against a deployed stack
+scripts/logs.sh                 tail the gateway service logs
+slack/manifest.json             Slack app definition (Socket Mode + scopes)
 test/slack-agent-1.test.ts      assertions against the synthesized template
 doc/slack-agent-aws-options.md  the architecture survey this implements
 ```
@@ -170,8 +176,10 @@ npm run build           # type-check only — tsconfig sets noEmit
 npm test                # unit tests against the synthesized template
 npx cdk synth           # render CloudFormation to cdk.out/
 npx cdk diff            # what a deploy would change
-npx cdk deploy
+npx cdk deploy          # infrastructure
+./scripts/deploy-app.sh # the gateway application
 ./scripts/e2e-test.sh   # end-to-end test against the deployed stack
+./scripts/qa-suite.sh   # behavioural QA against the deployed agent
 npx cdk destroy
 ```
 
@@ -375,6 +383,26 @@ object. Expect two to three minutes, mostly SSM round trips and the
 If the Bedrock check is the only failure, that is almost always account-level
 model access rather than this stack — see **Bedrock model access** above.
 
+### Behavioural QA
+
+`e2e-test.sh` proves the plumbing. `qa-suite.sh` asks whether the agent actually
+behaves:
+
+```bash
+./scripts/qa-suite.sh
+```
+
+Eight checks in three groups — can it answer, does it really use its sandbox,
+does it carry a multi-step task through — plus **Boundaries**, which must never
+fail: it cannot read the host's `agent.env` through the sandbox, cannot reach
+instance metadata, and does not obey an instruction planted in a file it was
+asked to read.
+
+The first two groups run against a language model and are therefore
+probabilistic; re-run a single failure before calling it a regression. The
+Boundaries group is not probabilistic — it is enforced by the kernel and IAM,
+not by the model's cooperation — so a failure there should block a release.
+
 ## 9. Operations
 
 ```bash
@@ -416,22 +444,102 @@ Everything is `RemovalPolicy.DESTROY` and the artifacts bucket auto-deletes its
 objects — appropriate for Phase 0, wrong for anything holding data you want to
 keep. Revisit before this carries production state.
 
-## 12. What is not built yet
+## 12. The gateway application
 
-The gateway application. `slack-agent-gateway.service` is installed but not
-enabled; deploy the app to `/opt/slack-agent/app`, then:
+`agent/` is the Slack gateway: a Bolt app in Socket Mode that answers questions,
+runs commands in the sandbox, and triages whatever lands on the jobs queue.
 
-```bash
-sudo systemctl enable --now slack-agent-gateway
+```
+agent/src/
+  gateway.ts   entry point — starts Bolt and the queue poller
+  slack.ts     app_mention and DM handlers, placeholder + chat.update
+  bedrock.ts   the model and its tool loop
+  jobs.ts      shells out to slack-agent-run-job, never to docker directly
+  sessions.ts  DynamoDB session store
+  alerts.ts    SQS long-poll, triage, post to Slack
+  ask.ts       the same agent on the command line, without Slack
 ```
 
-It needs to hold the Socket Mode connection, ack Slack within 3 seconds and
-continue asynchronously, dedupe on `X-Slack-Retry-Num`, read and write sessions
-in DynamoDB, poll the jobs queue, mint a GitHub App installation token per job,
-and shell out to `slack-agent-run-job`. Everything it needs is in
-`/etc/slack-agent/agent.env`.
+It ships through the artifacts bucket rather than as a CDK asset, so releasing a
+new version does not replace the instance:
 
-## 13. Guardrails
+```bash
+./scripts/deploy-app.sh              # build, upload, install, start
+./scripts/deploy-app.sh --no-start   # install only
+```
+
+One deliberate detail: **the gateway assumes the job role to call Bedrock.** The
+instance role cannot invoke models, and widening it would collapse the
+separation the whole design rests on, so the gateway takes the same scoped
+credentials a job does.
+
+### Sending a request without Slack
+
+This works as soon as the app is installed — no Slack app, no tokens:
+
+```bash
+./scripts/send-request.sh "what architecture is the sandbox?"
+./scripts/send-request.sh -v "clone octocat/Hello-World and list the root files"
+```
+
+Same model, same system prompt, same sandbox tool a Slack message would take —
+only the transport differs. Progress goes to stderr and the answer to stdout, so
+`2>/dev/null` gives you just the reply.
+
+## 13. Connecting Slack
+
+1. **Create the app** at <https://api.slack.com/apps> → *From an app manifest*,
+   and paste [`slack/manifest.json`](slack/manifest.json). It already enables
+   Socket Mode and requests the scopes the gateway uses.
+2. **App-level token**: *Basic Information → App-Level Tokens → Generate*, scope
+   `connections:write`. This is the `xapp-` token.
+3. **Install to workspace**: *OAuth & Permissions → Install*. This is the
+   `xoxb-` bot token.
+4. **Store both** in the secret, along with the channel the agent should post
+   alerts to (right-click a channel → *View channel details* for its ID):
+
+   ```bash
+   cat > config.json <<'JSON'
+   {
+     "slackBotToken": "xoxb-...",
+     "slackAppToken": "xapp-...",
+     "slackAlertChannel": "C0123456789",
+     "githubAppId": "",
+     "githubInstallationId": "",
+     "githubPrivateKey": ""
+   }
+   JSON
+   aws secretsmanager put-secret-value \
+     --secret-id SlackAgent1Stack/config --secret-string file://config.json
+   rm config.json
+   ```
+
+5. **Start the gateway** and watch it connect:
+
+   ```bash
+   ./scripts/deploy-app.sh
+   ./scripts/logs.sh
+   ```
+
+6. **Invite the bot** to a channel (`/invite @agent`) and mention it, or DM it.
+
+`slackAlertChannel` is optional — leave it empty and the queue is still drained,
+just not announced. It is read from the secret rather than the CDK template on
+purpose: CloudFormation rewrites the secret whenever the template's rendered
+value changes, which would overwrite tokens you had put in by hand.
+
+### Testing the alert path
+
+```bash
+./scripts/send-request.sh --alert '{"AlarmName":"HighCPU","NewStateValue":"ALARM"}'
+```
+
+Publishes to the SNS topic. The gateway picks it up off the queue, asks the
+model to triage it, and posts the result to `slackAlertChannel`. This is the
+same route a real CloudWatch alarm or EventBridge schedule takes — point an
+alarm action at `AlertTopicArn` and nothing else changes.
+
+## 14. Guardrails
 
 From `doc/slack-agent-aws-options.md` §6.2. The stack enforces the credential
 separation; these are on you:
@@ -447,7 +555,7 @@ is root-equivalent. It is the price of launching containers from an
 unprivileged process, and the main thing Phase 1 buys back — on Fargate the
 gateway only needs `ecs:RunTask`.
 
-## 14. Path to Phase 1
+## 15. Path to Phase 1
 
 The two things built deliberately in Phase 0 are what make the move cheap:
 

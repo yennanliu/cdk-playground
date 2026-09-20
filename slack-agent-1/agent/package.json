@@ -1,0 +1,24 @@
+{
+  "name": "slack-agent-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase 0 Slack gateway: Socket Mode, Bedrock, containerized jobs",
+  "main": "dist/gateway.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/gateway.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.716.0",
+    "@aws-sdk/client-dynamodb": "^3.716.0",
+    "@aws-sdk/client-secrets-manager": "^3.716.0",
+    "@aws-sdk/client-sqs": "^3.716.0",
+    "@aws-sdk/credential-providers": "^3.716.0",
+    "@aws-sdk/lib-dynamodb": "^3.716.0",
+    "@slack/bolt": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}

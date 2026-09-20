@@ -51,13 +51,17 @@ shift
 # shellcheck source=/dev/null
 source /etc/slack-agent/agent.env
 
-workspace="$(mktemp -d "/var/lib/slack-agent/jobs/${job_id}.XXXXXXXX")"
-chown 1000:1000 "$workspace"
-
+# A named volume, not a host directory. The job writes as uid 1000, and an
+# unprivileged runner cannot rm -rf a tree of directories owned by another uid
+# -- it would leak a workspace on every job that creates one. The Docker daemon
+# runs as root and removes the volume cleanly.
 container="slack-agent-job-${job_id}"
+volume="slack-agent-ws-${job_id}"
+docker volume create "$volume" >/dev/null
+
 cleanup() {
   docker rm -f "$container" >/dev/null 2>&1 || true
-  rm -rf "$workspace"
+  docker volume rm -f "$volume" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -83,7 +87,7 @@ timeout --signal=TERM --kill-after=30s "${AGENT_JOB_TIMEOUT_SECONDS}s" \
     --cpus 2 \
     --read-only \
     --tmpfs /tmp:rw,nosuid,nodev,size=1g \
-    --mount "type=bind,src=${workspace},dst=/workspace" \
+    --mount "type=volume,src=${volume},dst=/workspace" \
     -e HOME=/tmp \
     -e AWS_REGION="$AWS_REGION" \
     -e AWS_ACCESS_KEY_ID="$(jq -r .AccessKeyId <<<"$creds")" \
@@ -98,13 +102,16 @@ chmod 0755 /usr/local/bin/slack-agent-run-job
 # --- service account ---------------------------------------------------------
 id -u slackagent >/dev/null 2>&1 \
   || useradd --system --create-home --home-dir /var/lib/slack-agent slackagent
-install -d -o slackagent -g slackagent /var/lib/slack-agent/jobs /opt/slack-agent/app /var/log/slack-agent
+install -d -o slackagent -g slackagent /opt/slack-agent/app /var/log/slack-agent
 
 # The gateway launches containers, so it needs the Docker socket -- which on
 # this host is root-equivalent. It is the sharpest edge in Phase 0 and the main
 # thing Phase 1 buys back: on Fargate the gateway only needs ecs:RunTask.
 usermod -aG docker slackagent
-chgrp slackagent /etc/slack-agent/agent.env
+# The directory as well as the file: user data creates /etc/slack-agent as
+# 0750 root:root, and without group ownership on the directory the agent cannot
+# traverse into it, so the env file is unreadable no matter what mode it has.
+chgrp slackagent /etc/slack-agent /etc/slack-agent/agent.env
 
 # --- observability -----------------------------------------------------------
 cat > /opt/aws/amazon-cloudwatch-agent/etc/slack-agent.json <<CWAGENT

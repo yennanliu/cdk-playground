@@ -45,6 +45,11 @@ export class SlackAgent1Stack extends Stack {
     const secret = new secretsmanager.Secret(this, 'Config', {
       secretName: `${this.stackName}/config`,
       description: 'Slack bot/app tokens and GitHub App credentials',
+      // Do not add or change keys here once the secret holds real values.
+      // CloudFormation updates the secret whenever this rendered string
+      // changes, which would overwrite whatever you put in out of band. The
+      // gateway tolerates keys that are absent (`slackAlertChannel` is
+      // optional), so add new ones to your config.json instead.
       secretObjectValue: {
         slackBotToken: SecretValue.unsafePlainText(''),
         slackAppToken: SecretValue.unsafePlainText(''),
