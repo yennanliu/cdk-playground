@@ -50,6 +50,38 @@ describe('job isolation', () => {
     });
   });
 
+  // Invoking through an inference profile needs permission on the profile AND
+  // on the foundation model behind it -- and the foundation-model ARN carries
+  // no geography prefix. Granting only one of the two fails at invoke time with
+  // AccessDenied, which no template assertion would otherwise catch.
+  test('an inference profile grants both the profile and its foundation model', () => {
+    const statements = JSON.stringify(
+      Object.values(template.findResources('AWS::IAM::Policy')).map(
+        (p) => p.Properties.PolicyDocument.Statement,
+      ),
+    );
+    expect(statements).toContain('foundation-model/anthropic.claude-opus-5');
+    expect(statements).toContain('inference-profile/global.anthropic.claude-opus-5');
+  });
+
+  // Regression: the job role trusts the instance role by literal ARN to avoid a
+  // CloudFormation cycle, which also drops the ordering that reference implied.
+  // Without an explicit dependency IAM rejects the trust policy at create time
+  // with "Invalid principal in policy".
+  test('job role is created after the instance role it trusts', () => {
+    const roles = template.findResources('AWS::IAM::Role');
+    const [jobRoleId] = Object.entries(roles)
+      .filter(([, r]) => r.Properties?.Description?.includes('job container'))
+      .map(([id]) => id);
+    const [instanceRoleId] = Object.entries(roles)
+      .filter(([, r]) => r.Properties?.Description === 'Slack agent gateway host')
+      .map(([id]) => id);
+
+    expect(jobRoleId).toBeDefined();
+    expect(instanceRoleId).toBeDefined();
+    expect(roles[jobRoleId].DependsOn).toContain(instanceRoleId);
+  });
+
   // The invariant the whole design rests on: a prompt-injected job that gets
   // hold of its own credentials still cannot read the Slack or GitHub secrets.
   test('no single policy grants both Bedrock and the credentials secret', () => {

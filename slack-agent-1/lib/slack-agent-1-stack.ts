@@ -8,7 +8,7 @@ import { AgentNetwork } from './constructs/network';
 import { AgentState } from './constructs/state';
 
 export interface SlackAgent1StackProps extends StackProps {
-  /** Bedrock model ID. Bedrock IDs carry an `anthropic.` prefix. */
+  /** Bedrock inference profile ID, e.g. `global.anthropic.claude-opus-5`. */
   readonly bedrockModelId?: string;
   readonly instanceType?: ec2.InstanceType;
   readonly rootVolumeGiB?: number;
@@ -65,7 +65,9 @@ export class SlackAgent1Stack extends Stack {
       dispatch,
       secret,
       jobTimeout,
-      bedrockModelId: props.bedrockModelId ?? 'anthropic.claude-opus-5',
+      // An inference profile, not a bare foundation-model ID: current Claude
+      // models reject on-demand invocation by bare ID. See `bedrockInvoke`.
+      bedrockModelId: props.bedrockModelId ?? 'global.anthropic.claude-opus-5',
       instanceType:
         props.instanceType ?? ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.LARGE),
       rootVolumeGiB: props.rootVolumeGiB ?? 100,

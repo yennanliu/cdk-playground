@@ -74,6 +74,11 @@ export class AgentHost extends Construct {
     // Named up front so the job role can trust it by literal ARN. Referencing
     // the role object in both directions would make the two resources depend on
     // each other, which CloudFormation rejects as a cycle.
+    //
+    // The literal ARN removes the dependency, which also removes the ordering
+    // it implied -- and IAM rejects a trust policy naming a principal that does
+    // not exist yet. `addDependency` below restores the ordering without
+    // restoring the cycle.
     const instanceRoleName = `${stack.stackName}-agent-host`;
 
     const instanceRole = new iam.Role(this, 'InstanceRole', {
@@ -92,6 +97,10 @@ export class AgentHost extends Construct {
       description: 'Slack agent job container -- Bedrock only',
       maxSessionDuration: Duration.hours(1),
     });
+    // The CfnRole specifically, not the Role construct: the construct's subtree
+    // includes its default policy, which references the job role, and depending
+    // on the whole subtree would reintroduce the cycle from the other side.
+    this.jobRole.node.addDependency(instanceRole.node.defaultChild!);
     this.jobRole.addToPolicy(bedrockInvoke(stack, props.bedrockModelId));
 
     instanceRole.addToPolicy(
@@ -183,17 +192,30 @@ export class AgentHost extends Construct {
 /**
  * Permission to call one Claude model on Bedrock.
  *
- * Cross-region inference profiles dispatch to the foundation model in sibling
- * regions, so the foundation-model ARN is wildcarded across regions while the
- * model ID itself stays pinned. Confirm the ID your region serves with
- * `aws bedrock list-inference-profiles`.
+ * Current Claude models are not available for on-demand invocation by their
+ * bare foundation-model ID -- Bedrock rejects that with "Invocation of model ID
+ * ... with on-demand throughput isn't supported" and demands an inference
+ * profile. A profile ID is the foundation model prefixed with a geography
+ * (`global.`, `us.`, `apac.`, `jp.`, ...), and invoking through one needs
+ * permission on *both* the profile and the underlying foundation model, which
+ * the profile may reach in a sibling region -- hence the wildcard region on the
+ * foundation-model ARN and the pinned model ID.
+ *
+ * List what your region serves with `aws bedrock list-inference-profiles`.
  */
 function bedrockInvoke(stack: Stack, modelId: string): iam.PolicyStatement {
+  const foundationModelId = modelId.replace(/^(global|us|eu|apac|jp)\./, '');
+  const isInferenceProfile = foundationModelId !== modelId;
+
   return new iam.PolicyStatement({
     actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
     resources: [
-      `arn:${stack.partition}:bedrock:*::foundation-model/${modelId}`,
-      `arn:${stack.partition}:bedrock:${stack.region}:${stack.account}:inference-profile/*`,
+      `arn:${stack.partition}:bedrock:*::foundation-model/${foundationModelId}`,
+      ...(isInferenceProfile
+        ? [
+            `arn:${stack.partition}:bedrock:${stack.region}:${stack.account}:inference-profile/${modelId}`,
+          ]
+        : []),
     ],
   });
 }
