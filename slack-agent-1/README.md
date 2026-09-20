@@ -148,6 +148,7 @@ lib/constructs/
 assets/bootstrap.sh             installs Docker, builds the job image,
                                 writes slack-agent-run-job, CloudWatch agent
 docker/worker/Dockerfile        the throwaway job container
+scripts/e2e-test.sh             end-to-end test against a deployed stack
 test/slack-agent-1.test.ts      assertions against the synthesized template
 doc/slack-agent-aws-options.md  the architecture survey this implements
 ```
@@ -165,15 +166,24 @@ doc/slack-agent-aws-options.md  the architecture survey this implements
 
 ```bash
 npm install
-npm run build          # type-check only — tsconfig sets noEmit
-npm test               # unit tests against the synthesized template
-npx cdk synth          # render CloudFormation to cdk.out/
-npx cdk diff           # what a deploy would change
+npm run build           # type-check only — tsconfig sets noEmit
+npm test                # unit tests against the synthesized template
+npx cdk synth           # render CloudFormation to cdk.out/
+npx cdk diff            # what a deploy would change
+npx cdk deploy
+./scripts/e2e-test.sh   # end-to-end test against the deployed stack
+npx cdk destroy
 ```
 
 `npm run build` does not emit JavaScript, so `lib/` and `bin/` stay clean.
 `npm run clean` removes `cdk.out` and any stray build output; `npm run
 clean:all` also drops `node_modules`.
+
+If a second CDK command starts while one is in flight you will see *"Other CLIs
+are currently reading from cdk.out"*. Pass `--output cdk.out.<name>` to the
+second command, and do not delete that directory until the command finishes —
+the CLI keeps reading it after CloudFormation is done, and removing it mid-run
+leaves the process hung.
 
 ### Changing infrastructure
 
@@ -340,6 +350,30 @@ sudo slack-agent-run-job chain1 bash -c '
 You can confirm the credential separation from the host by assuming the job
 role and checking that it is denied on the secret and the sessions table while
 Bedrock still works.
+
+### End-to-end test
+
+One command checks everything that exists today:
+
+```bash
+./scripts/e2e-test.sh
+STACK=SlackAgent1Stack REGION=ap-northeast-1 ./scripts/e2e-test.sh   # explicit
+```
+
+29 assertions across six groups: the host bootstrapped, alarms reach the jobs
+queue, the session store and artifact bucket accept writes, a real job is
+isolated (no IMDS, uid 1000, read-only root, workspace cleaned up), the job
+role is **denied** on the secret, table, and bucket, and a job container can
+invoke the configured model. It exits non-zero on any failure, so it works as a
+post-deploy gate.
+
+Host checks run through SSM, so it needs no SSH and no inbound port. It creates
+and deletes exactly three things: one SNS message, one DynamoDB row, one S3
+object. Expect two to three minutes, mostly SSM round trips and the
+`npm install` inside the Bedrock job.
+
+If the Bedrock check is the only failure, that is almost always account-level
+model access rather than this stack — see **Bedrock model access** above.
 
 ## 9. Operations
 
