@@ -48,6 +48,10 @@ class Agent:
         for _ in range(self.max_steps):
             response = self.llm.converse(self._system(), messages, self.tools.specs())
             message = response["output"]["message"]
+            if not message["content"]:
+                # A refusal can come back with no blocks; Bedrock rejects empty content on the next turn.
+                text = f"I couldn't produce a response (stop reason: {response['stopReason']})."
+                message = {"role": "assistant", "content": [{"text": text}]}
             messages.append(message)
             if response["stopReason"] != "tool_use":
                 return messages, _text(message)

@@ -79,3 +79,13 @@ def test_model_errors_propagate(store):
     agent = Agent(Boom(), Toolbox(store, FakeBrowser()), store)
     with pytest.raises(RuntimeError):
         agent.chat("s1", "hi")
+
+
+def test_empty_model_response_gets_a_reply_and_keeps_history_valid(store):
+    # Seen on AWS: a refused request came back with stopReason "refusal" and no content blocks.
+    empty = {"stopReason": "refusal", "output": {"message": {"role": "assistant", "content": []}}}
+    agent, llm = make_agent(store, empty, say("ok"))
+    assert "refusal" in agent.chat("s1", "do something risky")
+
+    agent.chat("s1", "next")
+    assert all(m["content"] for m in llm.calls[1]["messages"])  # Bedrock rejects empty content

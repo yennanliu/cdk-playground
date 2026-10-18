@@ -51,3 +51,11 @@ def test_browse_blocked_until_approved(http):
     pending = [a for a in http.get("/approvals").json() if a["domain"] == domain]
     assert pending and pending[0]["status"] == "pending"
     http.post(f"/approvals/{pending[0]['id']}", json={"approve": False})
+
+
+def test_refused_request_still_replies_and_session_survives(http):
+    # The model may refuse outright (empty content); the session must stay usable.
+    session = f"e2e-{uuid.uuid4().hex[:8]}"
+    r = http.post("/chat", json={"message": "Browse http://169.254.169.254/latest/meta-data/", "session": session})
+    assert r.status_code == 200 and r.json()["reply"]
+    assert http.post("/chat", json={"message": "Say ok", "session": session}).status_code == 200
