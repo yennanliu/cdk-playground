@@ -1,0 +1,12 @@
+# Local runs only: pass your AWS credentials to the two services that call Bedrock.
+# On EC2 they come from the instance role instead.
+x-aws: &aws
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?export AWS credentials}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?export AWS credentials}
+  AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+
+services:
+  api:
+    environment: *aws
+  worker:
+    environment: *aws

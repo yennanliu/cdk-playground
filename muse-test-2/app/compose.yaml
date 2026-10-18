@@ -1,0 +1,92 @@
+# Muse v2: one image, six services, four networks.
+#
+#   backend  (internal)  postgres  api  worker  scheduler  sentinel
+#   browse   (internal)  worker  browser
+#   sandbox  (internal)  browser  sentinel
+#   egress               api  worker  sentinel        <- the only networks with a route out
+#
+# The browser sits only on internal networks: its one way out is the sentinel
+# proxy, and it cannot see Postgres, IMDS or credentials.
+name: muse
+
+x-app: &app
+  image: muse:local
+  build: .
+  restart: unless-stopped
+  environment: &env
+    DATABASE_URL: postgresql://muse:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/muse
+    AWS_REGION: ${AWS_REGION:?set AWS_REGION}
+    MUSE_MODEL_ID: ${MUSE_MODEL_ID:-global.anthropic.claude-sonnet-5-5}
+    MUSE_EMBED_MODEL_ID: ${MUSE_EMBED_MODEL_ID:-amazon.titan-embed-text-v2:0}
+    MUSE_ALLOWED_DOMAINS: ${MUSE_ALLOWED_DOMAINS:-}
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: muse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: muse
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U muse"]
+      interval: 2s
+      retries: 30
+
+  api:
+    <<: *app
+    command: ["python", "-m", "muse.api"]
+    ports: ["127.0.0.1:${MUSE_PORT:-8080}:8080"]
+    networks: [backend, egress]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8080/health')"]
+      interval: 3s
+      retries: 40
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "muse.worker"]
+    deploy:
+      replicas: 2
+    networks: [backend, browse, egress]
+
+  scheduler:
+    <<: *app
+    command: ["python", "-m", "muse.scheduler"]
+    networks: [backend]
+
+  sentinel:
+    <<: *app
+    command: ["python", "-m", "muse.sentinel"]
+    networks: [backend, sandbox, egress]
+
+  browser:
+    <<: *app
+    command: ["python", "-m", "muse.browser"]
+    # Deliberately no DATABASE_URL and no AWS settings.
+    environment:
+      MUSE_PROXY_URL: http://sentinel:3128
+    depends_on: [sentinel]
+    shm_size: 1gb
+    networks: [browse, sandbox]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health')"]
+      interval: 3s
+      retries: 40
+
+networks:
+  backend:
+    internal: true
+  browse:
+    internal: true
+  sandbox:
+    internal: true
+  egress: {}
+
+volumes:
+  pgdata:
