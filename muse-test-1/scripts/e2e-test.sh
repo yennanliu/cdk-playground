@@ -15,9 +15,11 @@ instance="$(aws cloudformation describe-stacks --stack-name "$stack" \
   --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)"
 
 aws ssm start-session --target "$instance" --document-name AWS-StartPortForwardingSession \
-  --parameters "portNumber=8080,localPortNumber=$port" >/dev/null &
+  --parameters "portNumber=8080,localPortNumber=$port" >/dev/null 2>&1 &
 tunnel=$!
-trap 'kill "$tunnel" 2>/dev/null || true' EXIT
+# The CLI forks session-manager-plugin, which holds the port; kill it too or the
+# tunnel outlives this script.
+trap 'pkill -P "$tunnel" 2>/dev/null; kill "$tunnel" 2>/dev/null || true' EXIT
 
 for _ in $(seq 1 30); do
   curl -fs "http://localhost:$port/health" >/dev/null && break
