@@ -28,6 +28,8 @@ cat > /usr/local/bin/muse-release <<'RELEASE'
 # Deploy the app release named in SSM. Idempotent; keeps the Postgres volume.
 #
 set -euo pipefail
+exec 9>/var/lock/muse-release
+flock 9  # one release at a time
 set -a; source /etc/muse/muse.env; set +a
 
 url="$(aws ssm get-parameter --region "$AWS_REGION" --name "$MUSE_APP_PARAM" --query Parameter.Value --output text)"
@@ -39,11 +41,12 @@ if [ ! -d "$release" ]; then
   unzip -q -o "$tmp" -d "$release"
   rm -f "$tmp"
 fi
+ln -sfn /etc/muse/muse.env "$release/.env"  # compose reads it, so plain `docker compose logs` works
 ln -sfn "$release" /opt/muse/current
 
 cd /opt/muse/current
 docker build -q -t muse:local .
-docker compose --env-file /etc/muse/muse.env up -d --no-build --remove-orphans --wait --wait-timeout 600
+docker compose up -d --no-build --remove-orphans --wait --wait-timeout 600
 echo "released $(basename "$release")"
 RELEASE
 chmod 0755 /usr/local/bin/muse-release

@@ -167,3 +167,19 @@ test('synthesizes without errors or warnings', () => {
   expect(annotations.findError('*', Match.anyValue())).toEqual([]);
   expect(annotations.findWarning('*', Match.anyValue())).toEqual([]);
 });
+
+describe('bootstrap', () => {
+  const script = require('fs').readFileSync(require('path').join(__dirname, '..', 'assets', 'bootstrap.sh'), 'utf8');
+
+  test('releases are serialized, so a release fired at a booting box cannot race its first one', () => {
+    expect(script).toMatch(/flock 9/);
+  });
+
+  test('each release links the env file as .env, so plain `docker compose` works on the box', () => {
+    expect(script).toContain('ln -sfn /etc/muse/muse.env "$release/.env"');
+  });
+
+  test('the Postgres password is generated once and kept', () => {
+    expect(script).toMatch(/grep -q '\^POSTGRES_PASSWORD=' \/etc\/muse\/muse.env \|\|/);
+  });
+});
