@@ -1,0 +1,28 @@
+[project]
+name = "muse"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.43.114",
+    "fastapi>=0.143.3",
+    "playwright>=1.64.0",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "browser: needs a local Chromium (uv run playwright install chromium)",
+    "live: calls real Amazon Bedrock (set MUSE_LIVE=1)",
+    "deployed: hits the deployed stack (set MUSE_URL)",
+]
+
+[tool.ruff]
+line-length = 120
