@@ -1,0 +1,32 @@
+[project]
+name = "muse"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.43.114",
+    "fastapi>=0.143.3",
+    "httpx>=0.28.1",
+    "pgvector>=0.5.1",
+    "playwright>=1.64.0",
+    "psycopg[binary]>=3.3.6",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "postgres: needs Docker (starts pgvector) or MUSE_TEST_DATABASE_URL",
+    "browser: needs a local Chromium (uv run playwright install chromium)",
+    "live: calls real Amazon Bedrock (set MUSE_LIVE=1)",
+    "compose: runs the whole docker compose stack locally (set MUSE_COMPOSE=1)",
+    "deployed: hits the deployed stack (set MUSE_URL)",
+]
+
+[tool.ruff]
+line-length = 120
