@@ -5,7 +5,13 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "test:app": "cd app && uv run pytest",
+    "test:live": "cd app && MUSE_LIVE=1 uv run pytest -m live",
+    "test:e2e": "scripts/e2e-test.sh",
+    "test:all": "npm test && npm run test:app",
+    "clean": "find lib -name '*.js' -delete && find lib -name '*.d.ts' -delete && find lib -name '*.js.map' -delete && find bin -name '*.js' -delete && find bin -name '*.d.ts' -delete && find bin -name '*.js.map' -delete",
+    "clean:all": "npm run clean && rm -rf node_modules cdk.out"
   },
   "devDependencies": {
     "@swc/core": "^1.15.0",
