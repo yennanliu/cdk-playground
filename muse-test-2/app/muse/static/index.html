@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muse</title>
+<style>
+  :root { --bg:#fafaf9; --panel:#fff; --ink:#1c1917; --muted:#78716c; --line:#e7e5e4; --accent:#4f46e5; --warn:#b45309; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0c0a09; --panel:#1c1917; --ink:#f5f5f4; --muted:#a8a29e; --line:#292524; --accent:#818cf8; --warn:#f59e0b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  main { display:grid; grid-template-columns: 1fr 340px; gap:16px; max-width:1200px; margin:0 auto; padding:16px; height:100vh; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; height:auto; } }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .chat { display:flex; flex-direction:column; min-height:70vh; }
+  #log { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+  .msg { padding:8px 12px; border-radius:10px; max-width:85%; white-space:pre-wrap; }
+  .me { align-self:flex-end; background:var(--accent); color:#fff; }
+  .muse { align-self:flex-start; border:1px solid var(--line); }
+  form { display:flex; gap:8px; margin-top:10px; }
+  input { flex:1; padding:10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; }
+  button { padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer; font:inherit; }
+  button.primary { background:var(--accent); color:#fff; border:none; }
+  aside { display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+  h1 { font-size:18px; margin:0 0 8px; } h2 { font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 8px; }
+  ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  li { display:flex; gap:8px; align-items:baseline; justify-content:space-between; font-size:14px; }
+  li span { overflow-wrap:anywhere; } .pending { color:var(--warn); } .muted { color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <section class="chat">
+    <h1>Muse</h1>
+    <div id="log"></div>
+    <form id="form"><input id="input" placeholder="Ask Muse to do something…" autocomplete="off"><button class="primary">Send</button></form>
+  </section>
+  <aside>
+    <section><h2>Approvals</h2><ul id="approvals"></ul></section>
+    <section><h2>Memories</h2><ul id="memories"></ul></section>
+    <section><h2>Background tasks</h2><ul id="tasks"></ul></section>
+    <section><h2>Audit trail</h2><ul id="audit"></ul></section>
+  </aside>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const api = async (path, opts = {}) => {
+  const r = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.status === 204 ? null : r.json();
+};
+const say = (who, text) => { const d = document.createElement("div"); d.className = `msg ${who}`; d.textContent = text; $("log").append(d); d.scrollIntoView(); return d; };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Chat is a queued job: poll until a worker finishes it.
+async function awaitJob(id, bubble) {
+  for (let i = 0; ; i++) {
+    const job = await api(`/jobs/${id}`);
+    if (job.status === "done" || job.status === "failed") return job;
+    bubble.textContent = job.status === "queued" ? "Queued…" : "Working" + ".".repeat(1 + (i % 3));
+    await sleep(1000);
+  }
+}
+const list = (id, items, row) => { $(id).innerHTML = items.length ? items.map(row).join("") : '<li class="muted">Nothing yet</li>'; };
+
+async function refresh() {
+  const [memories, tasks, approvals, audit] = await Promise.all(["/memories", "/tasks", "/approvals", "/audit"].map((p) => api(p)));
+  list("memories", memories, (m) => `<li><span>${esc(m.text)}</span><button onclick="del('/memories/${m.id}')">Forget</button></li>`);
+  list("tasks", tasks, (t) => `<li><span>${esc(t.prompt)} <span class="muted">every ${t.every_minutes}m${t.last_result ? " · " + esc(t.last_result.slice(0, 120)) : ""}</span></span><button onclick="del('/tasks/${t.id}')">Delete</button></li>`);
+  list("approvals", approvals.slice(0, 10), (a) => a.status === "pending"
+    ? `<li><span class="pending">${esc(a.domain)}</span><span><button onclick="decide(${a.id}, true)">Allow</button> <button onclick="decide(${a.id}, false)">Deny</button></span></li>`
+    : `<li><span>${esc(a.domain)}</span><span class="muted">${a.status}</span></li>`);
+  list("audit", audit.slice(0, 15), (e) => `<li><span class="muted">${new Date(e.at * 1000).toLocaleTimeString()}</span><span>${esc(e.event)} ${esc(e.detail.name || e.detail.domain || "")}</span></li>`);
+}
+async function del(path) { await api(path, { method: "DELETE" }); refresh(); }
+async function decide(id, approve) { await api(`/approvals/${id}`, { method: "POST", body: JSON.stringify({ approve }) }); refresh(); }
+
+$("form").onsubmit = async (e) => {
+  e.preventDefault();
+  const message = $("input").value.trim(); if (!message) return;
+  $("input").value = ""; say("me", message);
+  const bubble = say("muse", "Queued…");
+  try {
+    const { job_id } = await api("/chat", { method: "POST", body: JSON.stringify({ message }) });
+    const job = await awaitJob(job_id, bubble);
+    bubble.textContent = job.status === "done" ? job.result : `⚠️ ${job.result}`;
+  } catch (err) { bubble.textContent = `⚠️ ${err.message}`; }
+  refresh();
+};
+refresh(); setInterval(refresh, 15000);
+</script>
+</body>
+</html>
