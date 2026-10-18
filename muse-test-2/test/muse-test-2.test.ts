@@ -70,8 +70,8 @@ describe('instance', () => {
   });
 
   test('IMDSv2 only, with a hop limit containers can use', () => {
-    synth().template.hasResourceProperties('AWS::EC2::LaunchTemplate', {
-      LaunchTemplateData: { MetadataOptions: { HttpTokens: 'required', HttpPutResponseHopLimit: 2 } },
+    synth().template.hasResourceProperties('AWS::EC2::Instance', {
+      MetadataOptions: Match.objectLike({ HttpTokens: 'required', HttpPutResponseHopLimit: 2 }),
     });
   });
 
@@ -119,7 +119,7 @@ describe('release', () => {
 describe('permissions', () => {
   test('instance can invoke exactly the chat model and the embedding model', () => {
     const bedrock = statements(synth().template).filter((s) => [s.Action].flat().includes('bedrock:InvokeModel'));
-    expect(bedrock.flatMap((s) => s.Resource.map(render)).sort()).toEqual([
+    expect(bedrock.flatMap((s) => [s.Resource].flat().map(render)).sort()).toEqual([
       'arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-5-5',
       'arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0',
       'arn:aws:bedrock:ap-northeast-1:123456789012:inference-profile/global.anthropic.claude-sonnet-5-5',

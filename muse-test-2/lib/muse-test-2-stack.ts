@@ -64,8 +64,10 @@ export class MuseTest2Stack extends Stack {
     app.grantRead(role);
     bootstrap.grantRead(role);
 
+    // A literal name (not a token) so user data stays fixed as releases come and go.
+    const appParam = `/${this.stackName}/app-zip`;
     const appZip = new ssm.StringParameter(this, 'AppZip', {
-      parameterName: `/${this.stackName}/app-zip`,
+      parameterName: appParam,
       description: 'S3 URL of the app release muse-release deploys',
       stringValue: app.s3ObjectUrl,
     });
@@ -81,7 +83,7 @@ export class MuseTest2Stack extends Stack {
       `MUSE_MODEL_ID=${modelId}`,
       `MUSE_EMBED_MODEL_ID=${embedModelId}`,
       `MUSE_ALLOWED_DOMAINS=${(props.allowedDomains ?? []).join(',')}`,
-      `MUSE_APP_PARAM=${appZip.parameterName}`,
+      `MUSE_APP_PARAM=${appParam}`,
       'ENVEOF',
     );
     userData.addExecuteFileCommand({
@@ -102,8 +104,9 @@ export class MuseTest2Stack extends Stack {
       userData,
       userDataCausesReplacement: true,
       ssmSessionPermissions: true,
-      requireImdsv2: true,
-      // Containers sit one network hop behind the host; the worker and API need the role's credentials.
+      // IMDSv2 only. Containers sit one network hop behind the host, and the worker and API need the
+      // role's credentials; the browser cannot reach IMDS at all (internal networks + sentinel).
+      httpTokens: ec2.HttpTokens.REQUIRED,
       httpPutResponseHopLimit: 2,
       blockDevices: [
         {
@@ -123,7 +126,7 @@ export class MuseTest2Stack extends Stack {
         // The first boot releases by itself; creation only needs a harmless call.
         service: 'SSM',
         action: 'getParameter',
-        parameters: { Name: appZip.parameterName },
+        parameters: { Name: appParam },
         physicalResourceId: cr.PhysicalResourceId.of('release'),
       },
       onUpdate: {
