@@ -1,0 +1,30 @@
+[project]
+name = "muse"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "bedrock-agentcore>=1.24.1",
+    "boto3>=1.43.114",
+    "strands-agents>=1.61.1",
+    "websockets>=17.2",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "moto[dynamodb]>=5.2.4",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-m 'not browser and not live and not deployed'"
+markers = [
+    "browser: drives a real headless Chrome in Docker over CDP",
+    "live: calls real AWS (AgentCore Browser); set MUSE_LIVE=1",
+    "deployed: hits the deployed stack (see ../scripts/e2e-test.sh)",
+]
+
+[tool.ruff]
+line-length = 120
