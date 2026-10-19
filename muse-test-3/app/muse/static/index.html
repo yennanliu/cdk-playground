@@ -5,67 +5,209 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Muse</title>
 <style>
-  :root { --bg:#fafaf9; --panel:#fff; --ink:#1c1917; --muted:#78716c; --line:#e7e5e4; --accent:#4f46e5; --warn:#b45309; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#0c0a09; --panel:#1c1917; --ink:#f5f5f4; --muted:#a8a29e; --line:#292524; --accent:#818cf8; --warn:#f59e0b; }
+  :root {
+    --bg:#f6f5f3; --panel:#ffffff; --sunken:#f1efec; --ink:#1c1917; --muted:#78716c; --line:#e7e5e4;
+    --accent:#4f46e5; --accent-ink:#ffffff; --accent-soft:#eef2ff; --warn:#b45309; --warn-soft:#fef3c7;
+    --ok:#15803d; --ok-soft:#dcfce7; --bad:#b91c1c; --bad-soft:#fee2e2; --shadow:0 1px 2px rgb(0 0 0 / .05), 0 4px 16px rgb(0 0 0 / .04);
   }
-  * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
-  main { display:grid; grid-template-columns: 1fr 340px; gap:16px; max-width:1200px; margin:0 auto; padding:16px; height:100vh; }
-  @media (max-width: 800px) { main { grid-template-columns: 1fr; height:auto; } }
-  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
-  .chat { display:flex; flex-direction:column; min-height:70vh; }
-  #log { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
-  .msg { padding:8px 12px; border-radius:10px; max-width:85%; white-space:pre-wrap; }
-  .me { align-self:flex-end; background:var(--accent); color:#fff; }
-  .muse { align-self:flex-start; border:1px solid var(--line); }
-  form { display:flex; gap:8px; margin-top:10px; }
-  input { flex:1; padding:10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; min-width:0; }
-  button { padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer; font:inherit; }
-  button.primary { background:var(--accent); color:#fff; border:none; }
-  aside { display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
-  h1 { font-size:18px; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center; }
-  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 8px; }
-  ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
-  li { display:flex; gap:8px; align-items:baseline; justify-content:space-between; font-size:14px; }
-  li span { overflow-wrap:anywhere; } .pending { color:var(--warn); } .muted { color:var(--muted); font-size:13px; }
-  #login { max-width:360px; margin:15vh auto; flex-direction:column; }
-  #login p { margin:4px 0 0; min-height:1.5em; color:var(--warn); }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0c0a09; --panel:#171412; --sunken:#1f1b18; --ink:#f5f5f4; --muted:#a8a29e; --line:#2a2522;
+      --accent:#818cf8; --accent-ink:#0c0a09; --accent-soft:#1e1b4b; --warn:#fbbf24; --warn-soft:#3a2a08;
+      --ok:#4ade80; --ok-soft:#052e16; --bad:#f87171; --bad-soft:#3b0a0a; --shadow:none;
+    }
+  }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; font:15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+  button, input, textarea, select { font:inherit; color:inherit; }
+  button { cursor:pointer; border:1px solid var(--line); background:var(--panel); border-radius:8px; padding:5px 11px; }
+  button:hover { background:var(--sunken); }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  button.primary { background:var(--accent); color:var(--accent-ink); border-color:transparent; }
+  button.primary:hover { filter:brightness(1.08); }
+  button.primary:disabled { opacity:.5; cursor:default; }
+  button.ghost { border-color:transparent; background:transparent; color:var(--muted); }
+  button.small { padding:2px 8px; font-size:13px; }
+  input, textarea, select { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; min-width:0; }
+  .muted { color:var(--muted); } .small-text { font-size:13px; }
+  [hidden] { display:none !important; }
+
+  /* sign-in */
+  #login { min-height:100%; display:grid; place-items:center; padding:16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); }
+  #login .card { width:100%; max-width:380px; padding:28px; display:flex; flex-direction:column; gap:12px; }
+  #login h1 { margin:0; font-size:22px; } #login p { margin:0; }
+  #loginError { color:var(--bad); min-height:1.4em; font-size:14px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:650; letter-spacing:-.01em; }
+  .logo { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg, var(--accent), #a855f7); display:grid; place-items:center; color:#fff; font-size:15px; }
+
+  /* app shell */
+  #app { height:100%; display:grid; grid-template-rows:auto auto 1fr; }
+  header { display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap; }
+  header .spacer { flex:1; }
+  #sessionSelect { padding:5px 8px; }
+  .switch { display:inline-flex; align-items:center; gap:8px; user-select:none; cursor:pointer; padding:4px 10px; border-radius:999px; border:1px solid var(--line); }
+  .switch input { appearance:none; width:32px; height:18px; border-radius:999px; background:var(--line); position:relative; margin:0; padding:0; border:none; cursor:pointer; transition:background .15s; }
+  .switch input::after { content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition:transform .15s; box-shadow:0 1px 2px rgb(0 0 0 / .3); }
+  .switch input:checked { background:var(--warn); } .switch input:checked::after { transform:translateX(14px); }
+  .switch.on { border-color:var(--warn); background:var(--warn-soft); }
+  #banner { background:var(--warn-soft); color:var(--warn); padding:8px 16px; font-size:14px; border-bottom:1px solid var(--line); }
+  main { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:16px; padding:16px; min-height:0; max-width:1320px; width:100%; margin:0 auto; }
+  @media (max-width: 900px) { #app { height:auto; } main { grid-template-columns:minmax(0,1fr); } .chat { height:75vh; } }
+  @media (max-width: 560px) { #who { display:none; } header { gap:8px; padding:8px 12px; } main { padding:12px; } }
+
+  /* chat */
+  .chat { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+  #log { flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:14px; }
+  .row { display:flex; gap:10px; align-items:flex-start; max-width:92%; }
+  .row.me { align-self:flex-end; flex-direction:row-reverse; }
+  .avatar { flex:none; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:13px; font-weight:600; background:var(--sunken); color:var(--muted); }
+  .row.muse .avatar { background:linear-gradient(135deg, var(--accent), #a855f7); color:#fff; }
+  .bubble { padding:9px 13px; border-radius:14px; overflow-wrap:anywhere; min-width:0; }
+  .me .bubble { background:var(--accent); color:var(--accent-ink); border-top-right-radius:4px; white-space:pre-wrap; }
+  .muse .bubble { background:var(--sunken); border-top-left-radius:4px; }
+  .muse .bubble.error { background:var(--bad-soft); color:var(--bad); }
+  .bubble p { margin:0 0 .6em; } .bubble p:last-child, .bubble ul:last-child, .bubble ol:last-child, .bubble pre:last-child { margin-bottom:0; }
+  .bubble ul, .bubble ol { margin:0 0 .6em; padding-left:1.3em; }
+  .bubble h3, .bubble h4 { margin:.2em 0 .4em; font-size:1em; }
+  .bubble code { font:13px ui-monospace, SFMono-Regular, Menlo, monospace; background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:0 4px; }
+  .bubble pre { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px; overflow-x:auto; margin:0 0 .6em; }
+  .bubble pre code { border:none; padding:0; background:none; }
+  .bubble a { color:var(--accent); }
+  .typing span { display:inline-block; width:6px; height:6px; margin:0 2px; border-radius:50%; background:var(--muted); animation:blink 1.2s infinite both; }
+  .typing span:nth-child(2) { animation-delay:.2s; } .typing span:nth-child(3) { animation-delay:.4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity:.25; } 40% { opacity:1; } }
+  .empty { margin:auto; text-align:center; max-width:460px; display:flex; flex-direction:column; gap:12px; align-items:center; }
+  .empty h2 { margin:0; font-size:20px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .chips button { border-radius:999px; font-size:14px; }
+  .composer { display:flex; gap:8px; padding:12px; border-top:1px solid var(--line); align-items:flex-end; }
+  .composer textarea { flex:1; resize:none; max-height:160px; line-height:1.45; }
+
+  /* side panels */
+  aside { display:flex; flex-direction:column; gap:12px; overflow-y:auto; min-height:0; }
+  aside .card { padding:12px 14px; }
+  aside h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px; display:flex; align-items:center; gap:6px; }
+  .badge { background:var(--warn); color:#fff; border-radius:999px; font-size:11px; padding:0 7px; letter-spacing:0; }
+  ul.list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  ul.list li { display:flex; gap:8px; align-items:flex-start; justify-content:space-between; font-size:14px; }
+  ul.list li > span:first-child { overflow-wrap:anywhere; min-width:0; }
+  .actions { display:flex; gap:4px; flex:none; }
+  .chip { display:inline-block; font-size:11px; border-radius:999px; padding:0 7px; background:var(--sunken); color:var(--muted); vertical-align:1px; }
+  .chip.pending { background:var(--warn-soft); color:var(--warn); } .chip.approved { background:var(--ok-soft); color:var(--ok); } .chip.denied { background:var(--bad-soft); color:var(--bad); }
+  .taskform { display:flex; gap:6px; margin-top:10px; }
+  .taskform input { flex:1; padding:5px 8px; font-size:14px; } .taskform select { padding:5px; font-size:14px; }
+  .result { display:block; font-size:12px; color:var(--muted); margin-top:2px; }
+  #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:8px 14px; border-radius:8px; font-size:14px; box-shadow:var(--shadow); }
 </style>
 </head>
 <body>
-<section id="login" style="display:none">
-  <h1>Muse</h1>
-  <form id="signin" style="flex-direction:column">
+<section id="login" hidden>
+  <form id="signin" class="card">
+    <div class="brand"><span class="logo">✦</span><h1>Muse</h1></div>
+    <p class="muted">Your personal agent. Sign in to continue.</p>
     <input id="email" type="email" placeholder="Email" autocomplete="username" required>
     <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
     <button class="primary">Sign in</button>
+    <div id="loginError" role="alert"></div>
   </form>
-  <p id="loginError"></p>
 </section>
-<main id="app" style="display:none">
-  <section class="chat">
-    <h1>Muse <button id="signout">Sign out</button></h1>
-    <div id="log"></div>
-    <form id="form"><input id="input" placeholder="Ask Muse to do something…" autocomplete="off"><button class="primary">Send</button></form>
-  </section>
-  <aside>
-    <section><h2>Approvals</h2><ul id="approvals"></ul></section>
-    <section><h2>Memories</h2><ul id="memories"></ul></section>
-    <section><h2>Background tasks</h2><ul id="tasks"></ul></section>
-    <section><h2>Audit trail</h2><ul id="audit"></ul></section>
-  </aside>
-</main>
+
+<div id="app" hidden>
+  <header>
+    <div class="brand"><span class="logo">✦</span>Muse</div>
+    <select id="sessionSelect" aria-label="Chat"></select>
+    <button id="newChat" class="small" title="Start a new conversation">+ New chat</button>
+    <span class="spacer"></span>
+    <label class="switch" id="autoSwitch" title="When on, Muse opens any website without asking you first">
+      <input type="checkbox" id="autoAllow"> Auto-allow
+    </label>
+    <span id="who" class="muted small-text"></span>
+    <button id="signout" class="ghost small">Sign out</button>
+  </header>
+  <div id="banner" hidden>
+    <strong>Auto-allow is on.</strong> Muse opens any website without asking first. Every visit is still in Activity;
+    domains you denied stay blocked, and private or cloud-metadata addresses are never opened.
+  </div>
+  <main>
+    <section class="chat card">
+      <div id="log" aria-live="polite"></div>
+      <form id="composer" class="composer">
+        <textarea id="input" rows="1" placeholder="Ask Muse to do something…" title="Enter to send, Shift+Enter for a new line"></textarea>
+        <button id="send" class="primary">Send</button>
+      </form>
+    </section>
+    <aside>
+      <section class="card"><h2>Approvals <span id="pendingCount" class="badge" hidden></span></h2><ul class="list" id="approvals"></ul></section>
+      <section class="card">
+        <h2>Background tasks</h2><ul class="list" id="tasks"></ul>
+        <form id="taskform" class="taskform">
+          <input id="taskPrompt" placeholder="e.g. Summarise the news" aria-label="Task">
+          <select id="taskEvery" aria-label="How often">
+            <option value="60">hourly</option><option value="1440" selected>daily</option><option value="10080">weekly</option><option value="15">every 15 min</option>
+          </select>
+          <button class="small">Add</button>
+        </form>
+      </section>
+      <section class="card"><h2>Memories</h2><ul class="list" id="memories"></ul></section>
+      <section class="card"><h2>Activity</h2><ul class="list" id="audit"></ul></section>
+    </aside>
+  </main>
+</div>
+<div id="toast" hidden></div>
+
 <script>
 const CONFIG = /*CONFIG*/{};
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const store = { get: (k) => { try { return sessionStorage.getItem(k); } catch { return null; } },
-                set: (k, v) => { try { v ? sessionStorage.setItem(k, v) : sessionStorage.removeItem(k); } catch {} } };
-let token = store.get("muse.token");
+const store = (kind) => ({
+  get: (k) => { try { return kind.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { v == null ? kind.removeItem(k) : kind.setItem(k, v); } catch {} },
+});
+const tab = store(sessionStorage), local = store(localStorage);
+let token = tab.get("muse.token");
+let session = local.get("muse.session") || "default";
+let busy = false;
 
-// Cognito's InitiateAuth, called directly: no SDK, no hosted UI.
+function toast(text) {
+  $("toast").textContent = text; $("toast").hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => ($("toast").hidden = true), 3500);
+}
+
+// --- Markdown, safely: escape everything first, then add a small set of tags. ---
+function inline(s) {
+  return s
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+}
+function markdown(text) {
+  const out = []; let list = null;
+  const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  const parts = esc(text).split(/```[a-z]*\n?/);
+  parts.forEach((part, i) => {
+    if (i % 2) { close(); out.push(`<pre><code>${part.replace(/\n$/, "")}</code></pre>`); return; }
+    for (const line of part.split("\n")) {
+      let m;
+      if ((m = line.match(/^\s*[-*•]\s+(.*)/))) { if (list !== "ul") { close(); out.push("<ul>"); list = "ul"; } out.push(`<li>${inline(m[1])}</li>`); }
+      else if ((m = line.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== "ol") { close(); out.push("<ol>"); list = "ol"; } out.push(`<li>${inline(m[1])}</li>`); }
+      else if ((m = line.match(/^#{1,6}\s+(.*)/))) { close(); out.push(`<h4>${inline(m[1])}</h4>`); }
+      else if (line.trim()) { close(); out.push(`<p>${inline(line)}</p>`); }
+      else close();
+    }
+  });
+  close();
+  return out.join("");
+}
+
+// --- Auth: Cognito InitiateAuth, called directly (no SDK, no hosted UI). ---
+function claims(t) { try { return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); } catch { return {}; } }
+const expired = (t) => !t || (claims(t).exp || 0) * 1000 < Date.now() + 30000;
+
 async function signIn(email, password) {
   const r = await fetch(`https://cognito-idp.${CONFIG.region}.amazonaws.com/`, {
     method: "POST",
@@ -73,64 +215,201 @@ async function signIn(email, password) {
     body: JSON.stringify({ AuthFlow: "USER_PASSWORD_AUTH", ClientId: CONFIG.clientId, AuthParameters: { USERNAME: email, PASSWORD: password } }),
   });
   const body = await r.json();
-  if (!r.ok) throw new Error(body.message || "sign-in failed");
+  if (!r.ok) throw new Error(body.message || "Sign-in failed");
   if (!body.AuthenticationResult) throw new Error(`Cognito wants ${body.ChallengeName}; set a permanent password first (see README)`);
   return body.AuthenticationResult.AccessToken;
 }
-function show(signedIn) { $("login").style.display = signedIn ? "none" : "flex"; $("app").style.display = signedIn ? "grid" : "none"; }
-function signOut() { token = null; store.set("muse.token", null); show(false); }
+function show(signedIn) {
+  $("login").hidden = signedIn; $("app").hidden = !signedIn;
+  $("who").textContent = signedIn ? (local.get("muse.email") || "") : "";
+}
+function signOut(message) {
+  token = null; tab.set("muse.token", null); show(false);
+  if (message) $("loginError").textContent = message;
+}
 
-const api = async (path, opts = {}) => {
+async function api(path, opts = {}) {
+  if (expired(token)) { signOut("Your session expired. Please sign in again."); throw new Error("signed out"); }
   const r = await fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } });
-  if (r.status === 401) { signOut(); throw new Error("signed out"); }
+  if (r.status === 401) { signOut("Your session expired. Please sign in again."); throw new Error("signed out"); }
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
   return r.status === 204 ? null : r.json();
-};
-const say = (who, text) => { const d = document.createElement("div"); d.className = `msg ${who}`; d.textContent = text; $("log").append(d); d.scrollIntoView(); return d; };
-const list = (id, items, row) => { $(id).innerHTML = items.length ? items.map(row).join("") : '<li class="muted">Nothing yet</li>'; };
+}
 
-// A chat turn runs on the worker; poll it until it finishes.
-async function awaitTurn(id, bubble) {
-  for (let i = 0; ; i++) {
+// --- Chat ---
+const SUGGESTIONS = [
+  "What's the main heading on https://example.com/?",
+  "Remember that I prefer short answers.",
+  "Every morning, summarise the top story on https://news.ycombinator.com/",
+  "What do you know about me?",
+];
+function emptyState() {
+  $("log").innerHTML = `<div class="empty"><span class="logo" style="width:44px;height:44px;font-size:22px">✦</span>
+    <h2>What can I do for you?</h2>
+    <p class="muted">I can read websites (with your approval), remember what matters to you, and run tasks in the background.</p>
+    <div class="chips">${SUGGESTIONS.map((s) => `<button type="button">${esc(s)}</button>`).join("")}</div></div>`;
+  $("log").querySelectorAll(".chips button").forEach((b) => (b.onclick = () => { $("input").value = b.textContent; send(); }));
+}
+function bubble(who, html, cls = "") {
+  $("log").querySelector(".empty")?.remove();
+  const row = document.createElement("div");
+  row.className = `row ${who}`;
+  row.innerHTML = `<div class="avatar">${who === "me" ? esc((local.get("muse.email") || "Y")[0].toUpperCase()) : "✦"}</div><div class="bubble ${cls}"></div>`;
+  row.lastChild.innerHTML = html;
+  $("log").append(row); row.scrollIntoView({ block: "end" });
+  return row.lastChild;
+}
+const say = (who, text) => bubble(who, who === "me" ? esc(text) : markdown(text));
+const typing = () => bubble("muse", '<span class="typing"><span></span><span></span><span></span></span>');
+function settle(el, turn) {
+  el.classList.toggle("error", turn.status !== "done");
+  el.innerHTML = markdown(turn.reply || "(no reply)");
+}
+
+async function loadHistory() {
+  $("log").innerHTML = "";
+  const turns = await api(`/chat?session=${encodeURIComponent(session)}`);
+  if (!turns.length) return emptyState();
+  for (const t of turns) {
+    say("me", t.message);
+    const el = typing();
+    if (t.status === "running") awaitTurn(t.id, el); else settle(el, t);
+  }
+}
+async function awaitTurn(id, el) {
+  for (;;) {
     const turn = await api(`/chat/${id}`);
-    if (turn.status !== "running") return turn;
-    bubble.textContent = "Working" + ".".repeat(1 + (i % 3));
+    if (turn.status !== "running") { settle(el, turn); el.parentElement.scrollIntoView({ block: "end" }); return turn; }
     await sleep(1500);
   }
 }
+async function send() {
+  const message = $("input").value.trim();
+  if (!message || busy) return;
+  busy = true; $("send").disabled = true;
+  $("input").value = ""; grow();
+  say("me", message);
+  const el = typing();
+  try {
+    const { id } = await api("/chat", { method: "POST", body: JSON.stringify({ message, session }) });
+    await awaitTurn(id, el);
+  } catch (err) { el.classList.add("error"); el.textContent = err.message; }
+  busy = false; $("send").disabled = false; $("input").focus();
+  refresh();
+}
+function grow() { const t = $("input"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 160) + "px"; }
 
+// --- Chats (sessions): remembered per browser, history comes from the API. ---
+function sessions() { try { return JSON.parse(local.get("muse.sessions")) || ["default"]; } catch { return ["default"]; } }
+function renderSessions() {
+  const all = sessions();
+  $("sessionSelect").innerHTML = all.map((s) => `<option value="${esc(s)}" ${s === session ? "selected" : ""}>${s === "default" ? "Main chat" : esc(s.replace(/^chat-/, "Chat "))}</option>`).join("");
+}
+function switchTo(s) { session = s; local.set("muse.session", s); renderSessions(); loadHistory().catch((e) => toast(e.message)); }
+
+// --- Side panels ---
+const ago = (secs) => {
+  const d = Math.max(0, Date.now() / 1000 - secs);
+  return d < 60 ? "just now" : d < 3600 ? `${Math.floor(d / 60)}m ago` : d < 86400 ? `${Math.floor(d / 3600)}h ago` : `${Math.floor(d / 86400)}d ago`;
+};
+const EVERY = (m) => (m % 10080 === 0 ? `every ${m / 10080 > 1 ? m / 10080 + " weeks" : "week"}` : m % 1440 === 0 ? `every ${m / 1440 > 1 ? m / 1440 + " days" : "day"}` : m % 60 === 0 ? `every ${m / 60 > 1 ? m / 60 + " hours" : "hour"}` : `every ${m} min`);
+function describe(e) {
+  const d = e.detail || {};
+  switch (e.event) {
+    case "tool": return d.name === "browse" ? `Opened ${esc(d.input?.url || "")}` : d.name === "schedule_task" ? "Scheduled a task" : `Used ${esc(d.name)}`;
+    case "auto_allowed": return `Auto-allowed <strong>${esc(d.domain)}</strong>`;
+    case "refused": return `Refused ${esc(d.url)}`;
+    case "approval": return `${esc(d.domain)} <span class="chip ${esc(d.status)}">${esc(d.status)}</span>`;
+    case "settings": return `Auto-allow turned ${d.auto_allow ? "on" : "off"}`;
+    case "turn": return d.ok ? "Answered a message" : "A message failed";
+    case "task_added": return "Task added"; case "task_deleted": return "Task deleted";
+    case "task_failed": return "A task failed"; case "memory_forgotten": return "Forgot a memory";
+    default: return esc(e.event);
+  }
+}
+const list = (id, items, row, empty = "Nothing yet") => { $(id).innerHTML = items.length ? items.map(row).join("") : `<li class="muted small-text">${empty}</li>`; };
+const plain = (s) => String(s ?? "").replace(/[*_`#>]+/g, "").replace(/\s+/g, " ").trim();
+const memoryText = (m) => { try { const j = JSON.parse(m.text); return j.preference || m.text; } catch { return m.text; } };
+
+let refreshes = 0;
 async function refresh() {
   if (!token) return;
-  const [memories, tasks, approvals, audit] = await Promise.all(["/memories", "/tasks", "/approvals", "/audit"].map((p) => api(p)));
-  list("memories", memories, (m) => `<li><span>${esc(m.text)} <span class="muted">${m.kind}</span></span><button onclick="del('/memories/${m.id}')">Forget</button></li>`);
-  list("tasks", tasks, (t) => `<li><span>${esc(t.prompt)} <span class="muted">every ${t.every_minutes}m${t.last_result ? " · " + esc(t.last_result.slice(0, 120)) : ""}</span></span><button onclick="del('/tasks/${t.id}')">Delete</button></li>`);
-  list("approvals", approvals.slice(0, 10), (a) => a.status === "pending"
-    ? `<li><span class="pending">${esc(a.domain)}</span><span><button onclick="decide('${a.domain}', true)">Allow</button> <button onclick="decide('${a.domain}', false)">Deny</button></span></li>`
-    : `<li><span>${esc(a.domain)}</span><span class="muted">${a.status}</span></li>`);
-  list("audit", audit.slice(0, 15), (e) => `<li><span class="muted">${new Date(e.at * 1000).toLocaleTimeString()}</span><span>${esc(e.event)} ${esc(e.detail.name || e.detail.domain || "")}</span></li>`);
+  const mine = ++refreshes;
+  const [memories, tasks, approvals, audit, settings] = await Promise.all(["/memories", "/tasks", "/approvals", "/audit", "/settings"].map((p) => api(p)));
+  if (mine !== refreshes) return; // a newer refresh started meanwhile; never paint older data over it
+  setAuto(settings.auto_allow);
+  const pending = approvals.filter((a) => a.status === "pending");
+  $("pendingCount").hidden = !pending.length; $("pendingCount").textContent = pending.length;
+  list("approvals", approvals.slice(0, 12), (a) => `<li><span>${esc(a.domain)} <span class="chip ${esc(a.status)}">${esc(a.status)}</span></span><span class="actions">${
+    a.status === "pending" ? `<button class="small" data-domain="${esc(a.domain)}" data-approve="1">Allow</button><button class="small" data-domain="${esc(a.domain)}" data-approve="0">Deny</button>`
+    : a.status === "denied" ? `<button class="small" data-domain="${esc(a.domain)}" data-approve="1">Allow</button>`
+    : `<button class="small ghost" data-domain="${esc(a.domain)}" data-approve="0">Revoke</button>`}</span></li>`, "No websites requested yet");
+  list("tasks", tasks, (t) => `<li><span>${esc(t.prompt)} <span class="chip">${EVERY(t.every_minutes)}</span>${
+    t.last_result ? `<span class="result">Last: ${esc(plain(t.last_result).slice(0, 140))}${plain(t.last_result).length > 140 ? "…" : ""}</span>` : '<span class="result">Not run yet</span>'}</span><span class="actions"><button class="small ghost" data-del="/tasks/${esc(t.id)}">Delete</button></span></li>`, "No background tasks");
+  list("memories", memories, (m) => `<li><span>${esc(memoryText(m))} <span class="chip">${esc(m.kind)}</span></span><span class="actions"><button class="small ghost" data-del="/memories/${esc(m.id)}">Forget</button></span></li>`,
+    "Nothing yet. Memories appear a minute or two after you share something.");
+  list("audit", audit.slice(0, 20), (e) => `<li><span>${describe(e)}</span><span class="muted small-text" style="flex:none">${ago(e.at)}</span></li>`);
 }
-async function del(path) { await api(path, { method: "DELETE" }); refresh(); }
-async function decide(domain, approve) { await api(`/approvals/${domain}`, { method: "POST", body: JSON.stringify({ approve }) }); refresh(); }
 
+function setAuto(on) { $("autoAllow").checked = on; $("autoSwitch").classList.toggle("on", on); $("banner").hidden = !on; }
+
+// --- Wiring ---
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-domain], button[data-del]");
+  if (!b) return;
+  b.disabled = true;
+  try {
+    if (b.dataset.del) await api(b.dataset.del, { method: "DELETE" });
+    else await api(`/approvals/${b.dataset.domain}`, { method: "POST", body: JSON.stringify({ approve: b.dataset.approve === "1" }) });
+  } catch (err) { toast(err.message); b.disabled = false; }
+  refresh().catch((err) => toast(err.message));
+});
+$("autoAllow").onchange = async (e) => {
+  const on = e.target.checked;
+  if (on && !confirm("Turn on auto-allow?\n\nMuse will open any website without asking you first. Every visit is still recorded in Activity, domains you denied stay blocked, and private addresses are never opened.")) {
+    e.target.checked = false; return;
+  }
+  try { setAuto((await api("/settings", { method: "PUT", body: JSON.stringify({ auto_allow: on }) })).auto_allow); toast(on ? "Auto-allow is on" : "Auto-allow is off"); }
+  catch (err) { setAuto(!on); toast(err.message); }
+  refresh().catch(() => {});
+};
+$("taskform").onsubmit = async (e) => {
+  e.preventDefault();
+  const prompt = $("taskPrompt").value.trim(); if (!prompt) return;
+  try { await api("/tasks", { method: "POST", body: JSON.stringify({ prompt, every_minutes: Number($("taskEvery").value) }) }); $("taskPrompt").value = ""; toast("Task scheduled"); }
+  catch (err) { toast(err.message); }
+  refresh().catch(() => {});
+};
 $("signin").onsubmit = async (e) => {
   e.preventDefault(); $("loginError").textContent = "";
-  try { token = await signIn($("email").value, $("password").value); store.set("muse.token", token); show(true); refresh(); }
-  catch (err) { $("loginError").textContent = err.message; }
-};
-$("signout").onclick = signOut;
-$("form").onsubmit = async (e) => {
-  e.preventDefault();
-  const message = $("input").value.trim(); if (!message) return;
-  $("input").value = ""; say("me", message);
-  const bubble = say("muse", "Working…");
+  const button = e.target.querySelector("button"); button.disabled = true;
   try {
-    const { id } = await api("/chat", { method: "POST", body: JSON.stringify({ message }) });
-    const turn = await awaitTurn(id, bubble);
-    bubble.textContent = turn.status === "done" ? turn.reply : `⚠️ ${turn.reply}`;
-  } catch (err) { bubble.textContent = `⚠️ ${err.message}`; }
-  refresh();
+    token = await signIn($("email").value.trim(), $("password").value);
+    tab.set("muse.token", token); local.set("muse.email", $("email").value.trim());
+    show(true); start();
+  } catch (err) { $("loginError").textContent = err.message; }
+  button.disabled = false;
 };
-show(!!token); refresh().catch(() => {}); setInterval(() => refresh().catch(() => {}), 15000);
+$("signout").onclick = () => signOut();
+$("composer").onsubmit = (e) => { e.preventDefault(); send(); };
+$("input").addEventListener("input", grow);
+$("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+$("sessionSelect").onchange = (e) => switchTo(e.target.value);
+$("newChat").onclick = () => {
+  const s = "chat-" + Date.now().toString(36);
+  local.set("muse.sessions", JSON.stringify([...sessions(), s]));
+  switchTo(s);
+};
+
+function start() {
+  renderSessions();
+  loadHistory().catch((e) => toast(e.message));
+  refresh().catch(() => {});
+}
+if (expired(token)) { token = null; tab.set("muse.token", null); }
+show(!!token);
+if (token) start();
+setInterval(() => !busy && refresh().catch(() => {}), 15000);
 </script>
 </body>
 </html>

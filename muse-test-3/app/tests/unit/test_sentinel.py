@@ -88,3 +88,21 @@ def test_unknown_action_and_errors_become_text(sentinel):
     assert sentinel.run(ALICE, "rm_rf", {}) == "Unknown action: rm_rf"
     assert sentinel.run(ALICE, "schedule_task", {"prompt": "x", "every_minutes": 0}).startswith("Error:")
     assert sentinel.run(ALICE, "browse", {"nope": 1}).startswith("Error:")
+
+
+def test_auto_allow_browses_without_asking_and_audits_it(sentinel, store, browser):
+    store.update_settings(ALICE, True)
+    assert sentinel.run(ALICE, "browse", {"url": "https://example.com/"}) == "Example Domain"
+    assert store.approvals(ALICE) == []
+    assert any(e["event"] == "auto_allowed" and e["detail"]["domain"] == "example.com" for e in store.audit_log(ALICE))
+    # Only for the user who turned it on.
+    assert sentinel.run(BOB, "browse", {"url": "https://example.com/"}).startswith("Blocked")
+
+
+def test_auto_allow_still_respects_an_explicit_denial_and_hard_refusals(sentinel, store, browser):
+    store.request_domain(ALICE, "example.com")
+    store.decide(ALICE, "example.com", False)
+    store.update_settings(ALICE, True)
+    assert "denied" in sentinel.run(ALICE, "browse", {"url": "https://example.com/"})
+    assert sentinel.run(ALICE, "browse", {"url": "http://169.254.169.254/"}).startswith("Refused")
+    assert browser.visited == []

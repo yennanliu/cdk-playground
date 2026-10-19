@@ -1,6 +1,6 @@
 """Muse's own state in one DynamoDB table, partitioned by user (the Cognito `sub`).
 
-Sort keys: `approval#<domain>`, `turn#<id>`, `task#<id>`, `audit#<time>`.
+Sort keys: `settings`, `approval#<domain>`, `turn#<id>`, `task#<id>`, `audit#<time>`.
 Conversation history and long-term memory are not here: AgentCore Memory keeps those.
 """
 
@@ -32,11 +32,15 @@ class Store:
         self.clock = clock
 
     def _get(self, user, sk):
-        item = self.table.get_item(Key={"user": user, "sk": sk}).get("Item")
+        item = self.table.get_item(Key={"user": user, "sk": sk}, ConsistentRead=True).get("Item")
         return _plain(item) if item else None
 
     def _query(self, user, prefix, newest_first=False, limit=None):
-        kwargs = {"KeyConditionExpression": Key("user").eq(user) & Key("sk").begins_with(prefix)}
+        # Consistent: the UI reads right after its own writes (approve, then refresh the list).
+        kwargs = {
+            "KeyConditionExpression": Key("user").eq(user) & Key("sk").begins_with(prefix),
+            "ConsistentRead": True,
+        }
         if newest_first:
             kwargs["ScanIndexForward"] = False
         if limit:
@@ -63,6 +67,15 @@ class Store:
 
     def _delete(self, user, sk):
         return "Attributes" in self.table.delete_item(Key={"user": user, "sk": sk}, ReturnValues="ALL_OLD")
+
+    # --- settings ---------------------------------------------------------------
+    def settings(self, user):
+        item = self._get(user, "settings") or {}
+        return {"auto_allow": bool(item.get("auto_allow", False))}
+
+    def update_settings(self, user, auto_allow):
+        self.table.put_item(Item={"user": user, "sk": "settings", "auto_allow": auto_allow})
+        return self.settings(user)
 
     # --- sentinel: domain approvals -----------------------------------------
     def approved_domains(self, user):
@@ -109,6 +122,11 @@ class Store:
             }
         )
         return turn_id
+
+    def turns(self, user, session, limit=50):
+        """The newest turns of one session, oldest first."""
+        turns = [t for t in self._query(user, "turn#") if t["session"] == session]
+        return sorted(turns, key=lambda t: t["created"])[-limit:]
 
     def turn(self, user, turn_id):
         return self._get(user, f"turn#{turn_id}")

@@ -17,7 +17,7 @@ aws cognito-idp admin-create-user --user-pool-id <UserPoolId> --username you@exa
 aws cognito-idp admin-set-user-password --user-pool-id <UserPoolId> --username you@example.com \
   --password '<a strong password>' --permanent
 
-npm run test:e2e                          # deployed-stack tests as a throwaway user (~4 min)
+npm run test:e2e                          # API + browser UI tests as a throwaway user (~10 min)
 npx cdk destroy MuseTest3Stack
 ```
 
@@ -138,6 +138,18 @@ session gets refused too. `recover_from_refusal` gives the reply text instead, a
 loaded. The stored events are never rewritten: deleting an event from a session stops
 AgentCore Memory from extracting any more long-term records from it.
 
+### Auto-allow
+
+The **Auto-allow** switch in the header is a per-user setting (`settings` row, `PUT /settings`).
+The sentinel reads it, not the agent, so the model can't turn it on. While it's on:
+
+- any domain that is neither approved nor denied is browsed without asking, and recorded as
+  `auto_allowed` in Activity;
+- a domain you **denied** stays blocked: Auto-allow skips the question, it doesn't override a "no"
+  (denied domains have an **Allow** button to change your mind);
+- the hard refusals still apply: non-http(s) URLs and private, loopback, link-local and
+  cloud-metadata addresses are never opened.
+
 ### Memory
 
 One AgentCore Memory with two built-in strategies, `facts` (semantic) and
@@ -169,7 +181,7 @@ checks that the record is in the caller's namespace first.
 | `sentinel.py` | sentinel λ | URL refusals, domain allow-list and per-user approvals, audit; runs `browse` and `schedule_task` |
 | `browser.py` | sentinel λ | Starts an AgentCore Browser session, then `Target.createTarget` → `Page.navigate` → `Runtime.evaluate(innerText)` over CDP |
 | `worker.py` | worker λ | Turn or task → `InvokeAgentRuntime` → result in DynamoDB |
-| `api.py` + `static/index.html` | api λ | Routes, JWT `sub` as the user, UI with a Cognito sign-in |
+| `api.py` + `static/index.html` | api λ | Routes, JWT `sub` as the user. The UI: Cognito sign-in, chat with Markdown replies and history per chat, approvals, tasks, memories, activity, and the Auto-allow switch; one dependency-free file |
 | `store.py`, `tasks.py`, `config.py` | all | DynamoDB access, schedules + task rows, env config |
 
 ## Tests
@@ -177,10 +189,10 @@ checks that the record is in the caller's namespace first.
 | Command | What | Needs |
 |---|---|---|
 | `npm test` | 26 template tests: AgentCore resources, per-role least privilege, routes, shared asset | — |
-| `npm run test:app` | 61 Python unit tests: store (moto), sentinel, tasks, worker, API, and the agent on Strands' real loop with a scripted model | — |
+| `npm run test:app` | 71 Python unit tests: store (moto), sentinel, tasks, worker, API, and the agent on Strands' real loop with a scripted model | — |
 | `npm run test:browser` | The CDP client against headless Chrome in Docker | Docker |
 | `npm run test:live` | AgentCore Browser through our CDP client, and the agent browsing on Bedrock | AWS credentials |
-| `npm run test:e2e` | 9 deployed-stack tests: auth, chat, session history, approval flow, the agent scheduling through the sentinel, a scheduled task firing, memory extract + forget, audit | A deployed stack |
+| `npm run test:e2e` | 10 API tests (auth, chat, session history, refusal recovery, approval flow, the agent scheduling through the sentinel, a scheduled task firing, memory extract + forget, audit) and 11 UI tests in headless Chromium (sign-in, Markdown, approve in the panel, Auto-allow, history after reload, chats, task form, memories, sign-out) | A deployed stack |
 
 To run the bundled runtime locally the way AgentCore does (Linux arm64, `python main.py`
 on :8080):
@@ -218,4 +230,5 @@ tools return errors, but chat works.
 - **The browser's egress is not network-restricted**; the sentinel's checks happen
   before navigation. Redirects and links followed by the page itself aren't re-checked.
 - **Polling for chat.** It's fine for one user; WebSockets or streaming would be the upgrade.
+- **The chat list lives in the browser** (localStorage); the history of each chat comes from the API (turns are kept 7 days).
 - **The Cognito access token expires after 1 h** and the page doesn't refresh it; sign in again.

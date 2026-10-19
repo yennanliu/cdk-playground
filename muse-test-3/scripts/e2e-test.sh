@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
-# Run the deployed-stack tests (app/tests/integration/test_deployed.py) as a
-# throwaway Cognito user, created here and deleted on exit.
+# Run the deployed-stack tests -- the API (test_deployed.py) and the web UI in a
+# real browser (test_ui.py) -- as a throwaway Cognito user, deleted on exit.
 #
 #   scripts/e2e-test.sh            # after `npx cdk deploy`
+#   scripts/e2e-test.sh -k ui      # extra args go to pytest
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -26,4 +27,5 @@ token="$(aws cognito-idp initiate-auth --client-id "$client" --auth-flow USER_PA
   --auth-parameters "USERNAME=$user,PASSWORD=$password" --query AuthenticationResult.AccessToken --output text)"
 
 cd app
-MUSE_URL="$url" MUSE_TOKEN="$token" uv run pytest -m deployed -v "$@"
+uv run playwright install chromium >/dev/null
+MUSE_URL="$url" MUSE_TOKEN="$token" MUSE_EMAIL="$user" MUSE_PASSWORD="$password" uv run pytest -m deployed -v "$@"

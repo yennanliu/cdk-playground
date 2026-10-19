@@ -54,11 +54,16 @@ def api(store, tasks, memory, started):
     return Api(store, tasks, memory, "mem-1", started.append, {"region": "ap-northeast-1", "clientId": "abc"})
 
 
-def request(api, method, path, body=None, user=ALICE):
+def request(api, method, path, body=None, user=ALICE, query=None):
     context = {"http": {"method": method}}
     if user:
         context["authorizer"] = {"jwt": {"claims": {"sub": user}}}
-    event = {"rawPath": path, "requestContext": context, "body": json.dumps(body) if body is not None else None}
+    event = {
+        "rawPath": path,
+        "requestContext": context,
+        "body": json.dumps(body) if body is not None else None,
+        "queryStringParameters": query,
+    }
     response = api.handle(event)
     return response["statusCode"], json.loads(response["body"]) if "body" in response else None
 
@@ -155,3 +160,22 @@ def test_bad_json_is_400(api):
         "requestContext": {"http": {"method": "POST"}, "authorizer": {"jwt": {"claims": {"sub": ALICE}}}},
     }
     assert api.handle(event)["statusCode"] == 400
+
+
+def test_settings_round_trip(api, store):
+    assert request(api, "GET", "/settings") == (200, {"auto_allow": False})
+    assert request(api, "PUT", "/settings", {"auto_allow": True}) == (200, {"auto_allow": True})
+    assert store.settings(ALICE) == {"auto_allow": True} and store.settings(BOB) == {"auto_allow": False}
+    assert request(api, "PUT", "/settings", {"auto_allow": "yes"})[0] == 400
+    assert store.audit_log(ALICE)[0]["event"] == "settings"
+
+
+def test_chat_history_by_session(api, store, clock):
+    first = request(api, "POST", "/chat", {"message": "hi"})[1]["id"]
+    clock.now += 1
+    request(api, "POST", "/chat", {"message": "other", "session": "work"})
+    store.finish_turn(ALICE, first, "hello")
+    status, turns = request(api, "GET", "/chat", query={"session": "default"})
+    assert status == 200 and [(t["message"], t["reply"]) for t in turns] == [("hi", "hello")]
+    assert request(api, "GET", "/chat", query={"session": "../x"})[0] == 400
+    assert request(api, "GET", "/chat", user=BOB)[1] == []

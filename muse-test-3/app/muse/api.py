@@ -49,6 +49,13 @@ def _text(body, field, kind=str):
     return value
 
 
+def _session(params):
+    session = params.get("session", "default")
+    if not isinstance(session, str) or not SESSION.match(session):
+        raise HttpError(400, "'session' must be 1-40 chars of a-z, 0-9 and '-'")
+    return session
+
+
 class Api:
     def __init__(self, store, tasks, memory, memory_id, start_worker, ui_config):
         self.store = store
@@ -58,6 +65,9 @@ class Api:
         self.start_worker = start_worker
         self.ui_config = ui_config
         self.routes = [
+            ("GET", r"/settings", self.get_settings),
+            ("PUT", r"/settings", self.put_settings),
+            ("GET", r"/chat", self.history),
             ("POST", r"/chat", self.chat),
             ("GET", r"/chat/(?P<turn_id>\w+)", self.turn),
             ("GET", r"/memories", self.memories),
@@ -78,10 +88,13 @@ class Api:
             user = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
         except KeyError:
             return _json(401, {"detail": "unauthorized"})
-        try:
-            body = json.loads(event.get("body") or "{}")
-        except json.JSONDecodeError:
-            return _json(400, {"detail": "body must be JSON"})
+        if method == "GET":
+            body = event.get("queryStringParameters") or {}
+        else:
+            try:
+                body = json.loads(event.get("body") or "{}")
+            except json.JSONDecodeError:
+                return _json(400, {"detail": "body must be JSON"})
         for route_method, pattern, handler in self.routes:
             if method == route_method and (match := re.fullmatch(pattern, path)):
                 try:
@@ -94,12 +107,23 @@ class Api:
         html = UI.read_text().replace("/*CONFIG*/{}", json.dumps(self.ui_config))
         return {"statusCode": 200, "headers": {"content-type": "text/html; charset=utf-8"}, "body": html}
 
+    # --- settings ---------------------------------------------------------------
+    def get_settings(self, user, _body):
+        return _json(200, self.store.settings(user))
+
+    def put_settings(self, user, body):
+        settings = self.store.update_settings(user, _text(body, "auto_allow", bool))
+        self.store.audit(user, "settings", settings)
+        return _json(200, settings)
+
     # --- chat: start a turn, then poll it --------------------------------------
+    def history(self, user, query):
+        turns = self.store.turns(user, _session(query))
+        return _json(200, [{k: t.get(k) for k in ("id", "status", "message", "reply", "created")} for t in turns])
+
     def chat(self, user, body):
         message = _text(body, "message")
-        session = body.get("session", "default")
-        if not isinstance(session, str) or not SESSION.match(session):
-            raise HttpError(400, "'session' must be 1-40 chars of a-z, 0-9 and '-'")
+        session = _session(body)
         turn_id = self.store.start_turn(user, session, message)
         self.start_worker({"turn": {"user": user, "id": turn_id}})
         return _json(202, {"id": turn_id, "status": "running"})

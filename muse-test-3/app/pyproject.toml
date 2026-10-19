@@ -13,6 +13,7 @@ dependencies = [
 dev = [
     "httpx>=0.28.1",
     "moto[dynamodb]>=5.2.4",
+    "playwright>=1.64.0",
     "pytest>=9.1.1",
 ]
 

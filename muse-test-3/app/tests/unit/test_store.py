@@ -46,3 +46,17 @@ def test_audit_is_newest_first(store, clock):
         store.audit(ALICE, "tool", {"n": i})
     assert [e["detail"]["n"] for e in store.audit_log(ALICE)] == [2, 1, 0]
     assert store.audit_log(BOB) == []
+
+
+def test_settings_default_off_and_per_user(store):
+    assert store.settings(ALICE) == {"auto_allow": False}
+    assert store.update_settings(ALICE, True) == {"auto_allow": True}
+    assert store.settings(BOB) == {"auto_allow": False}
+
+
+def test_turns_of_a_session_oldest_first(store, clock):
+    for message, session in [("a", "s1"), ("b", "s2"), ("c", "s1")]:
+        clock.now += 1
+        store.start_turn(ALICE, session, message)
+    assert [t["message"] for t in store.turns(ALICE, "s1")] == ["a", "c"]
+    assert store.turns(BOB, "s1") == []

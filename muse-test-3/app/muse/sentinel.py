@@ -57,6 +57,11 @@ class Sentinel:
             return f"Refused: {reason}"
         host = urlparse(url).hostname.lower()
         if not domain_allowed(host, self.seeded | self.store.approved_domains(user)):
+            denied = any(a["domain"] == host and a["status"] == "denied" for a in self.store.approvals(user))
+            if not denied and self.store.settings(user)["auto_allow"]:
+                # The user chose not to be asked. Still audited, and an explicit denial still wins.
+                self.store.audit(user, "auto_allowed", {"domain": host, "url": url})
+                return self.browser.fetch(url)
             approval = self.store.request_domain(user, host)
             if approval["status"] == "denied":
                 return f"Blocked: the user denied access to {host}. Do not try again."
