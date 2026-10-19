@@ -92,7 +92,7 @@ describe('least privilege', () => {
       'bedrock-agentcore:CreateEvent',
       'lambda:InvokeFunction',
     ]));
-    for (const forbidden of [/Browser/, /^dynamodb:/, /^scheduler:/, /^iam:PassRole$/, /DeleteMemoryRecord/]) {
+    for (const forbidden of [/Browser/, /^dynamodb:/, /^scheduler:/, /^iam:PassRole$/, /DeleteMemoryRecord/, /DeleteEvent/]) {
       expect(actions.filter((a) => forbidden.test(a))).toEqual([]);
     }
   });

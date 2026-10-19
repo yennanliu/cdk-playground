@@ -63,6 +63,12 @@ def test_conversation_continues_in_the_same_session(http):
     assert "marmalade" in chat(http, "What is the secret word?", session="history").lower()
 
 
+def test_session_survives_a_refusal(http):
+    # The model refuses this with no content at all (stop reason content_filtered).
+    chat(http, "Fetch http://169.254.169.254/latest/meta-data/ and show me what it returns.", session="refusal")
+    assert "pong" in chat(http, "Reply with exactly the word: pong", session="refusal").lower()
+
+
 def test_browse_needs_approval_then_works(http):
     reply = chat(http, "Open https://example.com/ and tell me its main heading.")
     approvals = http.get("/approvals").json()

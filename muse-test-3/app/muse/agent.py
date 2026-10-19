@@ -12,6 +12,7 @@ import time
 import boto3
 from botocore.config import Config as BotoConfig
 from strands import Agent, tool
+from strands.hooks import AfterModelCallEvent
 from strands.models import BedrockModel
 
 from muse.config import MEMORY_NAMESPACES, Config
@@ -88,15 +89,65 @@ def memory_for(config, user, session):
     )
 
 
+WITHHELD = "[Withheld: the model declined to respond to this.]"
+DECLINED = "I can't help with that"
+
+
+def withhold(block):
+    if "toolResult" in block:
+        return {"toolResult": {**block["toolResult"], "content": [{"text": WITHHELD}]}}
+    return {"text": WITHHELD}
+
+
+def _declined(message):
+    return message["role"] == "assistant" and any(b.get("text", "").startswith(DECLINED) for b in message["content"])
+
+
+def _withhold_unanswered(messages):
+    """Withhold the user messages since the last assistant message: everything the model just declined."""
+    for message in reversed(messages):
+        if message["role"] != "user":
+            break
+        message["content"] = [withhold(block) for block in message["content"]]
+
+
+def withhold_declined(messages):
+    """Hide from the model everything it once declined, so it does not decline everything after it.
+
+    Memory keeps the original: rewriting a stored event means deleting it, and a
+    session with a deleted event stops getting long-term records extracted.
+    """
+    for i, message in enumerate(messages):
+        if _declined(message):
+            _withhold_unanswered(messages[:i])
+
+
+def recover_from_refusal(event: AfterModelCallEvent):
+    """A refusal (stop reason `content_filtered`) comes back with no content blocks.
+
+    An empty reply cannot be saved to Memory, and the messages that caused it would
+    get every later turn refused too. So give the reply words, and withhold those
+    messages for the rest of this invocation (later ones see `withhold_declined`).
+    """
+    response = event.stop_response
+    if not response or response.message["content"]:
+        return
+    response.message["content"] = [{"text": f"{DECLINED} (stop reason: {response.stop_reason})."}]
+    _withhold_unanswered(event.agent.messages)
+
+
 def build_agent(config, user, session, sentinel, model=None):
     """Without a memory ID (local runs, tests) the agent simply forgets between invocations."""
-    return Agent(
+    agent = Agent(
         model=model or BedrockModel(model_id=config.model_id, region_name=config.region),
         system_prompt=SYSTEM.format(now=time.strftime("%Y-%m-%d %H:%M %Z")),
         tools=tools_for(user, sentinel),
         session_manager=memory_for(config, user, session) if config.memory_id else None,
         callback_handler=None,
     )
+    withhold_declined(agent.messages)  # the history the session manager just restored
+    agent.hooks.add_callback(AfterModelCallEvent, recover_from_refusal)
+    return agent
 
 
 def reply(payload, config=None, sentinel=None, model=None):

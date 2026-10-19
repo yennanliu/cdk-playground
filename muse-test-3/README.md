@@ -130,6 +130,14 @@ Chat is asynchronous because API Gateway cuts a request off at 30 seconds, and a
 browses can take minutes. Turns and tasks are **never retried**, since a retry could
 repeat the agent's actions. A failure is recorded on the turn or task instead.
 
+**When the model refuses** (Bedrock stop reason `content_filtered`, e.g. "fetch the
+instance metadata"), it sends back no content at all. Left alone, that empty reply
+can't be saved, and the refused request stays in context, so every later turn in the
+session gets refused too. `recover_from_refusal` gives the reply text instead, and
+`withhold_declined` hides the refused messages from the model each time a session is
+loaded. The stored events are never rewritten: deleting an event from a session stops
+AgentCore Memory from extracting any more long-term records from it.
+
 ### Memory
 
 One AgentCore Memory with two built-in strategies, `facts` (semantic) and
