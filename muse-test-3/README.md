@@ -1,11 +1,16 @@
 # muse-test-3 — Serverless + Amazon Bedrock AgentCore
 
-Approach C of [`doc/build-your-own-muse.md`](doc/build-your-own-muse.md). It's the same
-personal agent as [muse-test-1](../muse-test-1) and [muse-test-2](../muse-test-2):
-chat, long-term memory, a real browser behind approvals, background tasks and an audit
-trail. This version has **no servers**. AgentCore runs each user session in its own
-microVM, and Memory and Browser are managed services. It's multi-user from day one, and
-the stack costs close to nothing while idle.
+> **Approach C — Serverless + Amazon Bedrock AgentCore (managed path)**, per [`doc/build-your-own-muse.md`](doc/build-your-own-muse.md#approach-c--serverless--amazon-bedrock-agentcore-managed-path).
+> Fit: 10–10k users · managed microVM per session · fast path to multi-user.
+>
+> Series (simplest → production): A · [`muse-test-1`](../muse-test-1) → B · [`muse-test-2`](../muse-test-2) → **C · `muse-test-3` (this)** → D · [`muse-test-4`](../muse-test-4) → E · EKS (not built) → F · Confidential compute (not built).
+> See the [side-by-side comparison](doc/build-your-own-muse.md#4-side-by-side-comparison) and [recommended roadmap](doc/build-your-own-muse.md#7-recommended-roadmap).
+
+It's the same personal agent as [muse-test-1](../muse-test-1) and
+[muse-test-2](../muse-test-2): chat, long-term memory, a real browser behind approvals,
+background tasks and an audit trail. This version has **no servers**. AgentCore runs each
+user session in its own microVM, and Memory and Browser are managed services. It's
+multi-user from day one, and the stack costs close to nothing while idle.
 
 ## Quick start
 
@@ -232,3 +237,15 @@ tools return errors, but chat works.
 - **Polling for chat.** It's fine for one user; WebSockets or streaming would be the upgrade.
 - **The chat list lives in the browser** (localStorage); the history of each chat comes from the API (turns are kept 7 days).
 - **The Cognito access token expires after 1 h** and the page doesn't refresh it; sign in again.
+
+## References
+
+- Design doc, Approach C: [`doc/build-your-own-muse.md` § Approach C](doc/build-your-own-muse.md#approach-c--serverless--amazon-bedrock-agentcore-managed-path)
+- Approach overview table: [`doc/build-your-own-muse.md` § 3](doc/build-your-own-muse.md#3-approaches--simplest--production-ready)
+- Building blocks (Muse feature → AWS component): [`doc/build-your-own-muse.md` § 2](doc/build-your-own-muse.md#2-building-blocks-muse-feature--aws--oss-component)
+- Security checklist: [`doc/build-your-own-muse.md` § 6](doc/build-your-own-muse.md#6-security-checklist-applies-to-b-and-up)
+- Sibling implementations: [`muse-test-1`](../muse-test-1) (Approach A), [`muse-test-2`](../muse-test-2) (Approach B), [`muse-test-4`](../muse-test-4) (Approach D)
+- Meta Muse product page: https://ai.meta.com/muse/
+- Amazon Bedrock AgentCore: https://aws.amazon.com/bedrock/agentcore/
+- Strands Agents: https://strandsagents.com/
+- Amazon EventBridge Scheduler: https://docs.aws.amazon.com/scheduler/latest/UserGuide/what-is-scheduler.html

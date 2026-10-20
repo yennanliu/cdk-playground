@@ -1,9 +1,14 @@
 # muse-test-2 — EC2 + Docker Compose (separated services)
 
-Approach B of [`doc/build-your-own-muse.md`](doc/build-your-own-muse.md). This is
-the same Muse-style personal agent as [`muse-test-1`](../muse-test-1), split into
-services, so that **the agent, the browser and the egress sentinel are separated
-on the network** and work runs on a durable queue.
+> **Approach B — EC2 + Docker Compose (separated services)**, per [`doc/build-your-own-muse.md`](doc/build-your-own-muse.md#approach-b--ec2--docker-compose-separated-services).
+> Fit: ≤20 users · container (shared-kernel) isolation · team pilot.
+>
+> Series (simplest → production): A · [`muse-test-1`](../muse-test-1) → **B · `muse-test-2` (this)** → C · [`muse-test-3`](../muse-test-3) → D · [`muse-test-4`](../muse-test-4) → E · EKS (not built) → F · Confidential compute (not built).
+> See the [side-by-side comparison](doc/build-your-own-muse.md#4-side-by-side-comparison) and [recommended roadmap](doc/build-your-own-muse.md#7-recommended-roadmap).
+
+This is the same Muse-style personal agent as [`muse-test-1`](../muse-test-1), split into
+services, so that **the agent, the browser and the egress sentinel are separated on the
+network** and work runs on a durable queue.
 
 ## Quick start
 
@@ -207,3 +212,15 @@ Every layer was test-driven. Postgres in tests is a real throwaway pgvector cont
 - **Containers share a kernel.** That's fine for separating one user's components, but it isn't multi-tenant isolation (Approach D/E).
 - **The Postgres volume lives on the root disk.** It survives releases but not a bootstrap change or `cdk destroy`.
 - **No credential vault, connectors or payments yet.**
+
+## References
+
+- Design doc, Approach B: [`doc/build-your-own-muse.md` § Approach B](doc/build-your-own-muse.md#approach-b--ec2--docker-compose-separated-services)
+- Approach overview table: [`doc/build-your-own-muse.md` § 3](doc/build-your-own-muse.md#3-approaches--simplest--production-ready)
+- Building blocks (Muse feature → AWS component): [`doc/build-your-own-muse.md` § 2](doc/build-your-own-muse.md#2-building-blocks-muse-feature--aws--oss-component)
+- Security checklist: [`doc/build-your-own-muse.md` § 6](doc/build-your-own-muse.md#6-security-checklist-applies-to-b-and-up)
+- Sibling implementations: [`muse-test-1`](../muse-test-1) (Approach A), [`muse-test-3`](../muse-test-3) (Approach C), [`muse-test-4`](../muse-test-4) (Approach D)
+- Meta Muse product page: https://ai.meta.com/muse/
+- Docker Compose: https://docs.docker.com/compose/
+- pgvector: https://github.com/pgvector/pgvector
+- Amazon Bedrock: https://aws.amazon.com/bedrock/

@@ -1,11 +1,17 @@
 # muse-test-4 — ECS Fargate, a sandbox task per user
 
-Approach D of [`doc/build-your-own-muse.md`](doc/build-your-own-muse.md). It's the same
-personal agent as [muse-test-1](../muse-test-1), [-2](../muse-test-2) and [-3](../muse-test-3):
-chat, long-term memory, a real browser behind approvals, background tasks and an audit trail.
-This time **every active user gets their own Fargate task** (a Firecracker microVM) that runs
-the agent and its Chromium. That task sits in a subnet with **no route out**: the only thing it
-can reach is the sentinel, which gates every connection and every stateful action for that user.
+> **Approach D — ECS Fargate, "task-per-session" sandboxes**, per [`doc/build-your-own-muse.md`](doc/build-your-own-muse.md#approach-d--ecs-fargate-task-per-session-sandboxes).
+> Fit: 100–5k users · Fargate task (Firecracker microVM) per user · real beta.
+>
+> Series (simplest → production): A · [`muse-test-1`](../muse-test-1) → B · [`muse-test-2`](../muse-test-2) → C · [`muse-test-3`](../muse-test-3) → **D · `muse-test-4` (this)** → E · EKS (not built) → F · Confidential compute (not built).
+> See the [side-by-side comparison](doc/build-your-own-muse.md#4-side-by-side-comparison) and [recommended roadmap](doc/build-your-own-muse.md#7-recommended-roadmap).
+
+It's the same personal agent as [muse-test-1](../muse-test-1), [-2](../muse-test-2) and
+[-3](../muse-test-3): chat, long-term memory, a real browser behind approvals, background
+tasks and an audit trail. This time **every active user gets their own Fargate task** (a
+Firecracker microVM) that runs the agent and its Chromium. That task sits in a subnet with
+**no route out**: the only thing it can reach is the sentinel, which gates every connection
+and every stateful action for that user.
 
 ## Quick start
 
@@ -229,3 +235,15 @@ crash heals while you watch.
 - **DNS from the sandbox.** The VPC resolver still answers sandbox DNS queries, a narrow exfiltration channel. Route 53 Resolver DNS Firewall on the isolated subnets would close it.
 - **No credential vault, connectors, payments, per-user KMS keys or LLM classifier in the sentinel yet.**
 - **Local runs hand the sandbox your AWS credentials** (Fargate uses the model-only task role), and local mode trusts unsigned tokens. Use it for debugging only.
+
+## References
+
+- Design doc, Approach D: [`doc/build-your-own-muse.md` § Approach D](doc/build-your-own-muse.md#approach-d--ecs-fargate-task-per-session-sandboxes)
+- Approach overview table: [`doc/build-your-own-muse.md` § 3](doc/build-your-own-muse.md#3-approaches--simplest--production-ready)
+- Building blocks (Muse feature → AWS component): [`doc/build-your-own-muse.md` § 2](doc/build-your-own-muse.md#2-building-blocks-muse-feature--aws--oss-component)
+- Security checklist: [`doc/build-your-own-muse.md` § 6](doc/build-your-own-muse.md#6-security-checklist-applies-to-b-and-up)
+- Sibling implementations: [`muse-test-1`](../muse-test-1) (Approach A), [`muse-test-2`](../muse-test-2) (Approach B), [`muse-test-3`](../muse-test-3) (Approach C)
+- Meta Muse product page: https://ai.meta.com/muse/
+- Amazon ECS on AWS Fargate: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/AWS_Fargate.html
+- Firecracker: https://firecracker-microvm.github.io/
+- Amazon ECS RunTask: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html
