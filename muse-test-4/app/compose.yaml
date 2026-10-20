@@ -1,0 +1,73 @@
+# Muse v4 on your laptop: the same image and the same isolation, with Docker in
+# place of Fargate and DynamoDB Local in place of DynamoDB.
+#
+#   backend  (internal)  dynamodb  api  sentinel
+#   sandbox  (internal)  sentinel  + one sandbox container per active user, started by the api
+#   egress               api  sentinel           <- the only network with a route out
+#
+# A sandbox sits on `sandbox` only: the sentinel is the one thing it can reach,
+# exactly as in the isolated subnet on AWS.
+#
+#   export AWS_REGION=ap-northeast-1; eval "$(aws configure export-credentials --format env)"
+#   docker compose up --build              # http://localhost:8080
+name: muse4
+
+x-app: &app
+  image: muse4:local
+  build: .
+  restart: unless-stopped
+  depends_on: [dynamodb]
+
+x-aws: &aws
+  AWS_REGION: ${AWS_REGION:?set AWS_REGION}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?export AWS credentials}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?export AWS credentials}
+  AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+  MUSE_TABLE: muse
+  MUSE_DYNAMODB_ENDPOINT: http://dynamodb:8000
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:3.3.0
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    networks: [backend]
+
+  api:
+    <<: *app
+    command: ["python", "-m", "muse.api"]
+    user: root  # to use the Docker socket
+    environment:
+      <<: *aws
+      MUSE_LAUNCHER: docker
+      MUSE_SANDBOX_IMAGE: muse4:local
+      MUSE_SANDBOX_NETWORK: muse4_sandbox
+      # Handed to each sandbox (Fargate gives it a task role instead).
+      MUSE_MODEL_ID: ${MUSE_MODEL_ID:-global.anthropic.claude-sonnet-5-5}
+      MUSE_IDLE_SECONDS: ${MUSE_IDLE_SECONDS:-300}
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock"]
+    ports: ["127.0.0.1:${MUSE_PORT:-8080}:8080"]
+    networks: [backend, egress]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8080/health')"]
+      interval: 2s
+      retries: 30
+
+  sentinel:
+    <<: *app
+    command: ["python", "-m", "muse.sentinel"]
+    environment:
+      <<: *aws
+      MUSE_ALLOWED_DOMAINS: ${MUSE_ALLOWED_DOMAINS:-}
+    networks: [backend, sandbox, egress]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8081/health')"]
+      interval: 2s
+      retries: 30
+
+networks:
+  backend:
+    internal: true
+  sandbox:
+    name: muse4_sandbox
+    internal: true
+  egress: {}

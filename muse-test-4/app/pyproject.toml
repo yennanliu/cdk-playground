@@ -1,0 +1,33 @@
+[project]
+name = "muse"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "boto3>=1.43.115",
+    "fastapi>=0.150.0",
+    "httpx>=0.28.1",
+    "playwright>=1.64.0",
+    "pyjwt[crypto]>=2.15.1",
+    "uvicorn>=0.54.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-m 'not browser and not compose and not live and not deployed'"
+markers = [
+    "browser: real headless Chromium behind the real sentinel proxy (uv run playwright install chromium)",
+    "compose: the whole docker compose stack, with real Bedrock (needs Docker + AWS credentials)",
+    "live: calls real Amazon Bedrock; set MUSE_LIVE=1",
+    "deployed: hits the deployed stack (see ../scripts/e2e-test.sh)",
+]
+
+[tool.ruff]
+line-length = 120
+
+[dependency-groups]
+dev = [
+    "moto[dynamodb]>=5.2.4",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
