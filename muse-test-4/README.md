@@ -223,7 +223,7 @@ crash heals while you watch.
 
 ## Known limits
 
-- **Cold start.** The first message after a sandbox sleeps waits for Fargate to pull the ~1.7 GB image and boot (expect about a minute). A warm pool, a smaller image (SOCI lazy loading) or a longer `idleMinutes` would hide it.
+- **Cold start.** The first message after a sandbox sleeps waits for Fargate to pull the ~1.7 GB image and boot (about 35 s measured on the deployed stack, including the first turn). A warm pool, a smaller image (SOCI lazy loading) or a longer `idleMinutes` would hide it.
 - **Turn durability is "at most once".** A sandbox that dies mid-turn fails that turn rather than retrying it, since a retry could repeat the agent's actions.
 - **The sentinel is a single task.** A second replica works for the gateway (every claim is conditional), but the proxy has no load balancer in front of it.
 - **DNS from the sandbox.** The VPC resolver still answers sandbox DNS queries, a narrow exfiltration channel. Route 53 Resolver DNS Firewall on the isolated subnets would close it.

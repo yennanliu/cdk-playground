@@ -259,6 +259,44 @@ Self-hosted version of C. Each active user session gets its **own Fargate task**
 | Fits the ECS patterns already used in this repo | Fargate $ per vCPU-hr higher than EC2 at scale |
 | Clean network enforcement of the Sentinel | No GPU, limited per-task customization (no custom kernel / nested virt) |
 
+#### As built in `muse-test-4`
+
+The implementation keeps the shape above (an isolated sandbox per user, a sentinel
+it can't get around, a control plane that starts sandboxes on demand) and
+simplifies it where a playground doesn't need the full design:
+
+```
+ Clients ─► CloudFront ─► internal ALB ─► api (UI · JSON API · session manager · scheduler)
+                                            │ RunTask(MUSE_TOKEN) per user
+                                            ▼
+   isolated subnet (no NAT, no inbound) ── sandbox task: agent + Chromium
+                                            │ the only peer: sentinel.muse.internal
+                                            ▼
+                     sentinel service ─ :8081 gateway (turns, tools, permits)
+                                       ─ :3128 egress proxy ─► NAT ─► Bedrock, the web
+                     DynamoDB (one table: turns · history · memories · tasks · approvals · audit · sandboxes)
+```
+
+| Doc design | As built | Why |
+|---|---|---|
+| Aurora Postgres + pgvector for memory | **DynamoDB**; Titan embeddings ranked by cosine in the sentinel | A user has few memories; no database to run or pay for while idle |
+| Step Functions for long goals and approvals | **A turn queue in DynamoDB** (claimed transactionally); approvals use the "agent stops, user approves, asks again" pattern | One fewer service; no `waitForTaskToken` resume yet |
+| EventBridge Scheduler | **A scheduler loop in the api** over a sparse `due` GSI; conditional writes make extra replicas safe | No per-task schedules to create and clean up |
+| api pushes work to the sandbox | **The sandbox pulls** (long poll to the sentinel) | No inbound rules at all; no reaper, because an idle sandbox signs off and exits |
+| Bedrock via a PrivateLink endpoint | **Model calls tunnel through the sentinel proxy** (TLS end to end) | Literally one way out of the sandbox; the same path works locally |
+| agent ⟂ browser ⟂ credential-filler containers | **One container** (agent + headless Chromium) | Containers in a task share a network namespace, so splitting adds no isolation; no vault yet |
+| EFS / S3 workspace snapshots | **A stateless sandbox**: history and memories come with each turn | Nothing to snapshot; a new sandbox picks up where the last left off |
+| Per-user KMS key | **Not yet** | — |
+| Sentinel = policy + LLM classifier | **Policy only**: per-user approvals, auto-allow, web ports, public IPs (connecting to the IP it checked) | Classifier left for later |
+| Warm pool | **Not yet**: a cold start (image pull + boot) on the first message after an idle stop | Tune with `idleMinutes`; SOCI or a warm pool later |
+
+The user is bound by infrastructure, not by the model. Each sandbox gets a fresh
+`<user>.<random>` token, and the sentinel checks it against that user's
+*current* sandbox record, so a replaced sandbox is locked out at once. Local
+debugging runs the same image in docker compose, where sandboxes are containers
+on an internal network with the sentinel as their only peer. See
+`muse-test-4/README.md` for details and tests.
+
 ---
 
 ### Approach E — EKS production platform (sandboxed pods)
