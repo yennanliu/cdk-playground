@@ -182,3 +182,34 @@ def test_the_page_signs_in_and_chats():
         expect(page.locator("#sandbox")).to_have_text("sandbox: awake")
         browser.close()
     assert len(sandboxes("dev-ui-tester")) == 1
+
+
+def test_the_page_survives_failed_polls_and_chat_switches():
+    """Regression: one failed GET /chat/{id} used to stop the watch for good, leaving the reply unshown."""
+    import re
+
+    from playwright.sync_api import expect, sync_playwright
+
+    failures = []
+
+    def flaky(route):
+        if len(failures) < 3:  # as when CloudFront drops a request
+            failures.append(route.request.url)
+            return route.fulfill(status=502, body="Bad Gateway")
+        return route.continue_()
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.route(re.compile(r"/chat/[0-9a-f]+$"), flaky)
+        page.goto(f"http://localhost:{PORT}/")
+        page.fill("#email", "UI Flaky")
+        page.click("#signin button")
+        page.fill("#input", "Reply with exactly the word: pong")
+        page.press("#input", "Enter")
+        page.click("#newChat")  # wander off and back while it works
+        page.select_option("#sessionSelect", "default")
+        expect(page.locator(".row.muse .bubble").last).to_contain_text("pong", ignore_case=True, timeout=180_000)
+        expect(page.locator(".row.muse .bubble")).to_have_count(1)
+        browser.close()
+    assert len(failures) == 3

@@ -241,7 +241,7 @@ async function api(path, opts = {}) {
   if (expired(token)) { signOut("Your session expired. Please sign in again."); throw new Error("signed out"); }
   const r = await fetch(path, { ...opts, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } });
   if (r.status === 401) { signOut("Your session expired. Please sign in again."); throw new Error("signed out"); }
-  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  if (!r.ok) throw Object.assign(new Error((await r.json().catch(() => ({}))).detail || r.statusText), { status: r.status });
   return r.status === 204 ? null : r.json();
 }
 
@@ -275,9 +275,12 @@ function settle(el, turn) {
   el.innerHTML = markdown(turn.reply || "(no reply)");
 }
 
+let loads = 0;
 async function loadHistory() {
-  $("log").innerHTML = "";
+  const mine = ++loads;
   const turns = await api(`/chat?session=${encodeURIComponent(session)}`);
+  if (mine !== loads) return; // a message was sent or another chat opened meanwhile; never paint over it
+  $("log").innerHTML = "";
   if (!turns.length) return emptyState();
   for (const t of turns) {
     say("me", t.message);
@@ -292,18 +295,24 @@ function showSandbox(s) {
   $("sandbox").textContent = `sandbox: ${SANDBOX[s.status] || s.status}`;
   $("sandbox").className = `chip ${s.status}`;
 }
+// Watch a turn until it settles. A failed poll (a dropped request at the edge, a deploy) is retried, never
+// fatal; the watch ends when its bubble leaves the page (another chat was opened; loadHistory re-watches).
 async function awaitTurn(id, el) {
-  for (;;) {
-    const turn = await api(`/chat/${id}`);
-    showSandbox(await api("/sandbox").catch(() => null));
-    if (!PENDING.includes(turn.status)) { settle(el, turn); el.parentElement.scrollIntoView({ block: "end" }); return turn; }
+  while (el.isConnected && token) {
+    try {
+      const turn = await api(`/chat/${id}`);
+      if (!PENDING.includes(turn.status)) { settle(el, turn); el.scrollIntoView({ block: "end" }); return; }
+      showSandbox(await api("/sandbox").catch(() => null));
+    } catch (err) {
+      if (err.status === 404) { el.classList.add("error"); el.textContent = err.message; return; }
+    }
     await sleep(1500);
   }
 }
 async function send() {
   const message = $("input").value.trim();
   if (!message || busy) return;
-  busy = true; $("send").disabled = true;
+  busy = true; $("send").disabled = true; loads++;
   $("input").value = ""; grow();
   say("me", message);
   const el = typing();
