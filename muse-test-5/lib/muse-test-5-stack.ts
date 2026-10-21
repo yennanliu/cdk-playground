@@ -22,6 +22,8 @@ const SENTINEL_HOST = `sentinel.${NS.sentinel}.svc.cluster.local`;
 /** Node label (and, on sandbox nodes, taint) that splits the cluster into its two pools. */
 const POOL = 'muse/pool';
 const UID = 1000; // the image's `muse` user
+/** gVisor release to install on sandbox nodes: https://github.com/google/gvisor/releases */
+const GVISOR_RELEASE = '20261012';
 
 /**
  * Installs gVisor's runsc as a containerd runtime. It runs after nodeadm has
@@ -36,11 +38,12 @@ Content-Type: text/x-shellscript; charset="us-ascii"
 
 #!/bin/bash
 set -euxo pipefail
-url=https://storage.googleapis.com/gvisor/releases/release/latest/$(uname -m)
+url=https://storage.googleapis.com/gvisor/releases/release/${GVISOR_RELEASE}/$(uname -m)
 cd /tmp
-for f in runsc containerd-shim-runsc-v1; do curl -fsSLO "$url/$f" -fsSLO "$url/$f.sha512"; done
-sha512sum -c runsc.sha512 containerd-shim-runsc-v1.sha512
-install -m 755 runsc containerd-shim-runsc-v1 /usr/local/bin/
+curl -fsSLO "$url/gvisor.tar.bz2" -fsSLO "$url/gvisor.tar.bz2.sha512"
+sha512sum -c gvisor.tar.bz2.sha512
+# runsc, containerd-shim-runsc-v1 and their gvisor-bin/ helpers
+tar -xjf gvisor.tar.bz2 -C /usr/local/bin
 config=/etc/containerd/config.toml
 # containerd 2 (config version 3) moved the CRI runtime settings to a new plugin.
 if grep -q '^version = 3' "$config"; then cri=io.containerd.cri.v1.runtime; else cri=io.containerd.grpc.v1.cri; fi

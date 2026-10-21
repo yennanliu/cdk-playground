@@ -73,7 +73,7 @@ describe('cluster', () => {
     const data = launchTemplate.Properties.LaunchTemplateData;
     expect(data.MetadataOptions).toEqual({ HttpTokens: 'required', HttpPutResponseHopLimit: 1 });
     const userData = data.UserData['Fn::Base64'];
-    expect(userData).toContain('install -m 755 runsc containerd-shim-runsc-v1');
+    expect(userData).toContain('releases/release/20261012/$(uname -m)');
     expect(userData).toContain('runtime_type = "io.containerd.runsc.v1"');
   });
 

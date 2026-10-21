@@ -165,7 +165,7 @@ These are the same as [v4's](../muse-test-4/README.md#app-modules-appmuse), exce
 
 ## Known limits
 
-- **gVisor setup on the node is the least-tested part.** The launch template downloads `runsc` (the `latest` release, checked against its SHA-512) and appends the `runsc` handler to containerd's config, which nodeadm has already written. If a node comes up without it, sandbox pods fail with `no runtime for "runsc"`; check the node's `/var/log/cloud-init-output.log`. Pin a gVisor release for production.
+- **gVisor comes from Google's release bucket at node boot.** The launch template downloads a pinned release (`GVISOR_RELEASE` in the stack), checks it against its SHA-512, and appends the `runsc` handler to containerd's config, which nodeadm has already written by then. If a node comes up without it, sandbox pods fail with `no runtime for "runsc"`; check `/var/log/cloud-init-output.log` on the node. To upgrade, change the release and redeploy, which replaces the sandbox nodes. For production, bake gVisor into a custom AMI instead.
 - **DNS from the sandbox** is allowed (to kube-dns), the same narrow exfiltration channel as v4.
 - **No autoscaling of sandbox nodes**, warm pool or hibernation (see Deviations).
 - **Local runs hand the sandbox your AWS credentials**, and local mode trusts unsigned tokens, as in v4.
