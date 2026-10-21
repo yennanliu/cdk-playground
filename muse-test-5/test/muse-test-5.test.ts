@@ -210,6 +210,7 @@ describe('ingress', () => {
     for (const name of ['api', 'sentinel']) {
       const container = object('Deployment', name).spec.template.spec.containers[0];
       expect(container.startupProbe.httpGet.path).toBe('/health');
+      expect(container.startupProbe.initialDelaySeconds).toBeGreaterThanOrEqual(5); // measured start: 1-4 s
       expect(container.startupProbe.failureThreshold * container.startupProbe.periodSeconds).toBeGreaterThanOrEqual(60);
     }
   });

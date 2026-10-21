@@ -292,9 +292,10 @@ export class MuseTest5Stack extends Stack {
                   command: ['python', '-m', `muse.${name}`],
                   env: env(values),
                   ports: ports.map((containerPort) => ({ containerPort })),
-                  // Python takes a few seconds to start: no readiness failures meanwhile.
+                  // Python takes 1-4 s to start (measured): first probe after that, so none fails meanwhile.
                   startupProbe: {
                     httpGet: { path: '/health', port: ports[0] },
+                    initialDelaySeconds: 5,
                     periodSeconds: 2,
                     failureThreshold: 30,
                   },
