@@ -56,9 +56,8 @@ def ip_refusal(ip, allow_private=False):
     addr = ipaddress.ip_address(ip)
     if addr.is_link_local:  # instance and task metadata: would leak AWS credentials
         return f"{ip} is link-local"
-    if not allow_private and (
-        addr.is_private or addr.is_loopback or addr.is_unspecified or addr.is_reserved or addr.is_multicast
-    ):
+    # Not just private ranges: shared space (100.64.0.0/10) is pod IPs under EKS custom networking.
+    if not allow_private and (not addr.is_global or addr.is_multicast):
         return f"{ip} is not a public address"
     return None
 

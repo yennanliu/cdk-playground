@@ -38,7 +38,7 @@ Context flags for `cdk deploy`:
 | `-c allowedDomains=wikipedia.org,example.com` | none | Pre-approves domains for everyone |
 | `-c bedrockModelId=...` | `global.anthropic.claude-sonnet-5-5` | |
 | `-c idleMinutes=5` | 10 | How long an idle sandbox lives |
-| `-c maxSandboxNodes=6` | 3 | Size limit of the sandbox node group (m7g.large, about 3 sandboxes each) |
+| `-c sandboxNodes=3` | 1 | Sandbox nodes (m7g.large, about 3 concurrent sandboxes each). A fixed size: nothing autoscales them |
 
 ### Run it on your laptop
 
@@ -76,7 +76,7 @@ model endpoint.
 **Deviations from the doc (kept simple on purpose):**
 
 - **No operator / `AgentSession` CRD.** The session manager is still v4's `Sandboxes` class in the api: a conditional DynamoDB write picks the one live sandbox per user, and a Job is the "VM". This is enough until warm pools or hibernation need a reconcile loop.
-- **No Karpenter.** There are two managed node groups, system (2× t4g.large) and sandbox (m7g.large, 1 to `maxSandboxNodes`). A sandbox that doesn't fit stays Pending until the 5‑minute boot timeout.
+- **No Karpenter.** There are two managed node groups, system (2× t4g.large) and sandbox (`sandboxNodes`× m7g.large, fixed). A sandbox that doesn't fit stays Pending until the 5‑minute boot timeout.
 - **gVisor, not Kata.** gVisor runs on ordinary Graviton instances. Kata/Firecracker would need bare-metal nodes.
 - **No Temporal, model gateway, service mesh, Argo CD, WAF or Grafana.** It's the same DynamoDB-queue design as v4, deployed by `cdk deploy`.
 
@@ -137,7 +137,7 @@ An idle sandbox calls `/bye` and exits, and Kubernetes then deletes its Job.
 |---|---|
 | VPC | 2 AZs, public and private subnets, 1 NAT; DynamoDB gateway endpoint |
 | EKS | 1.35 (`aws-eks-v2`), managed `vpc-cni` with `enableNetworkPolicy`, AWS Load Balancer Controller |
-| Node groups | `system`: 2–3× t4g.large · `sandbox`: m7g.large, taint `muse/pool=sandbox:NoSchedule`, gVisor user data |
+| Node groups | `system`: 2–3× t4g.large · `sandbox`: `sandboxNodes`× m7g.large (default 1), taint `muse/pool=sandbox:NoSchedule`, gVisor user data |
 | Kubernetes | namespaces `control`, `sentinel`, `sandboxes`; RuntimeClass `gvisor`, which adds the node selector and toleration; Deployments, Services, Role(Binding), NetworkPolicy, TargetGroupBinding |
 | Image | one arm64 asset (Python 3.13 + headless Chromium), three roles |
 | DynamoDB, Cognito, CloudFront | as in v4 |
@@ -150,8 +150,8 @@ These are the same as [v4's](../muse-test-4/README.md#app-modules-appmuse), exce
 
 | Command | What | Needs |
 |---|---|---|
-| `npm test` | 13 template tests: gVisor nodes, taint and IMDS, RuntimeClass, restricted pod security, the sandbox NetworkPolicy (exact egress), least-privilege IRSA roles and RBAC, CloudFront → ALB → TargetGroupBinding | — |
-| `npm run test:app` | 76 Python unit tests (v4's suite plus `KubeLauncher`) | — |
+| `npm test` | 14 template tests: gVisor nodes, taint and IMDS, RuntimeClass, restricted pod security, the sandbox NetworkPolicy (exact egress), least-privilege IRSA roles and RBAC, CloudFront → ALB → TargetGroupBinding | — |
+| `npm run test:app` | 85 Python unit tests (v4's suite plus `KubeLauncher`, failed launches, the address check) | — |
 | `npm run test:browser`, `test:compose` | as in v4 | Chromium; Docker + AWS credentials |
 | `npm run test:e2e` | the deployed stack as a throwaway Cognito user | a deployed stack |
 

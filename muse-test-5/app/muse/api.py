@@ -77,7 +77,12 @@ def create_app(store, auth, sandboxes, ui_config):
     @app.post("/chat", status_code=202)
     def chat(body: ChatIn, user: User):
         turn_id = store.enqueue_turn(user, body.session, body.message)
-        ensure_sandbox(user)  # after queueing: see Store.stop_sandbox
+        try:
+            ensure_sandbox(user)  # after queueing: see Store.stop_sandbox
+        except HTTPException:
+            # Don't leave it to run unseen later: the user gets the 503 and may well send it again.
+            store.cancel_turn(user, turn_id, "Not run: your sandbox could not start.")
+            raise
         return {"id": turn_id, "status": "queued"}
 
     @app.get("/chat")
@@ -187,9 +192,11 @@ def main():
     sandboxes = Sandboxes(store, launcher_for(config))
     if config.user_pool_id:
         auth = CognitoAuth(config.region, config.user_pool_id, config.user_pool_client_id)
-    else:
+    elif config.launcher == "docker":
         log.warning("no user pool: trusting unsigned tokens (local runs only)")
         auth = DevAuth()
+    else:  # a missing setting must not turn off sign-in
+        raise SystemExit("MUSE_USER_POOL_ID is required outside local (MUSE_LAUNCHER=docker) runs")
     Scheduler(store, sandboxes).start()
     ui_config = {"region": config.region, "clientId": config.user_pool_client_id}
     uvicorn.run(create_app(store, auth, sandboxes, ui_config), host="0.0.0.0", port=8080)

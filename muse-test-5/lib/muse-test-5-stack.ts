@@ -60,8 +60,8 @@ export interface MuseTest5StackProps extends StackProps {
   readonly allowedDomains?: string[];
   /** A sandbox stops itself after this long with nothing to do. */
   readonly idleMinutes?: number;
-  /** The most sandbox nodes (m7g.large, about 3 sandboxes each). */
-  readonly maxSandboxNodes?: number;
+  /** Sandbox nodes (m7g.large, about 3 sandboxes each). A fixed size: nothing autoscales them. */
+  readonly sandboxNodes?: number;
   /** An IAM principal ARN (your role or user) to make cluster admin, for kubectl. */
   readonly adminPrincipalArn?: string;
 }
@@ -122,11 +122,13 @@ export class MuseTest5Stack extends Stack {
       requireImdsv2: true,
       httpPutResponseHopLimit: 1,
     });
+    const sandboxNodes = props.sandboxNodes ?? 1;
     cluster.addNodegroupCapacity('Sandbox', {
       ...arm,
       instanceTypes: [new ec2.InstanceType('m7g.large')],
-      minSize: 1,
-      maxSize: props.maxSandboxNodes ?? 3,
+      minSize: sandboxNodes,
+      desiredSize: sandboxNodes,
+      maxSize: sandboxNodes,
       labels: { [POOL]: 'sandbox' },
       taints: [{ key: POOL, value: 'sandbox', effect: eks.TaintEffect.NO_SCHEDULE }],
       launchTemplateSpec: { id: sandboxTemplate.launchTemplateId!, version: sandboxTemplate.latestVersionNumber },

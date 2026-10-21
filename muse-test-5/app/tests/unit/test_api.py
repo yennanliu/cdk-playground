@@ -107,6 +107,9 @@ def test_launch_failure_is_a_503_and_retried_next_time(store, app, clock):
     r = http.post("/chat", json={"message": "hi"})
     assert r.status_code == 503 and "no capacity" in r.json()["detail"]
     assert http.get("/sandbox").json()["status"] == "stopped"
+    # The turn is not left queued, to run unseen and twice once the user retries.
+    assert [t["status"] for t in http.get("/chat").json()] == ["failed"]
+    assert not store.has_queued(ALICE)
 
 
 def test_chat_validation(http):

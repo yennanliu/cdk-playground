@@ -77,6 +77,17 @@ describe('cluster', () => {
     expect(userData).toContain('runtime_type = "io.containerd.runsc.v1"');
   });
 
+  test('the sandbox pool has the size asked for, since nothing autoscales it', () => {
+    template.hasResourceProperties('AWS::EKS::Nodegroup', {
+      Labels: { 'muse/pool': 'sandbox' },
+      ScalingConfig: { MinSize: 1, DesiredSize: 1, MaxSize: 1 },
+    });
+    synth({ sandboxNodes: 4 }).hasResourceProperties('AWS::EKS::Nodegroup', {
+      Labels: { 'muse/pool': 'sandbox' },
+      ScalingConfig: { MinSize: 4, DesiredSize: 4, MaxSize: 4 },
+    });
+  });
+
   test('the gvisor RuntimeClass schedules onto sandbox nodes', () => {
     const runtime = object('RuntimeClass', 'gvisor');
     expect(runtime.handler).toBe('runsc');

@@ -283,6 +283,31 @@ class Store:
             return self.turn(user, turn_id)
         return None
 
+    def cancel_turn(self, user, turn_id, reply):
+        """Take a queued turn back off the queue as failed. False if a sandbox already claimed it."""
+        try:
+            self._transact(
+                {
+                    "Delete": {
+                        "Key": {"user": user, "sk": f"queue#{turn_id}"},
+                        "ConditionExpression": "attribute_exists(sk)",
+                    }
+                },
+                {
+                    "Update": {
+                        "Key": {"user": user, "sk": f"turn#{turn_id}"},
+                        "UpdateExpression": "SET #status = :failed, reply = :reply, finished = :now",
+                        "ExpressionAttributeNames": {"#status": "status"},
+                        "ExpressionAttributeValues": {":failed": "failed", ":reply": reply, ":now": _num(self.clock())},
+                    }
+                },
+            )
+        except ClientError as e:
+            if _failed(e, "TransactionCanceledException"):
+                return False
+            raise
+        return True
+
     def turn(self, user, turn_id):
         return self._get(user, f"turn#{turn_id}")
 

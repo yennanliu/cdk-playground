@@ -10,6 +10,6 @@ new MuseTest5Stack(app, 'MuseTest5Stack', {
   bedrockModelId: context('bedrockModelId'),
   allowedDomains: context('allowedDomains')?.split(','),
   idleMinutes: context('idleMinutes') ? Number(context('idleMinutes')) : undefined,
-  maxSandboxNodes: context('maxSandboxNodes') ? Number(context('maxSandboxNodes')) : undefined,
+  sandboxNodes: context('sandboxNodes') ? Number(context('sandboxNodes')) : undefined,
   adminPrincipalArn: context('adminPrincipalArn'),
 });

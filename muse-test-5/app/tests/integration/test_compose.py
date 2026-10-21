@@ -23,7 +23,7 @@ pytestmark = [
 
 APP = Path(__file__).parents[2]
 PORT = 18080
-IDLE = 20  # sandboxes sleep after this many idle seconds
+IDLE = 60  # sandboxes sleep after this many idle seconds; long enough for the probes to share one
 
 
 def dev_token(sub):
@@ -57,9 +57,10 @@ def wait_for(check, timeout, every=1):
 def stack():
     compose("up", "-d", "--build", "--wait")
     yield
-    compose("down")
+    # Sandboxes first: they hold the sandbox network, which `down` can't remove while they're attached.
     for container in sandboxes():
         subprocess.run(["docker", "rm", "-f", container], check=False, capture_output=True)
+    compose("down")
 
 
 def client(user):

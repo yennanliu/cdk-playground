@@ -5,7 +5,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from muse.sentinel import Policy, Proxy, create_gateway, refusal, sandbox_user
+from muse.sentinel import Policy, Proxy, create_gateway, ip_refusal, refusal, sandbox_user
 from muse.store import new_token, token_hash
 from tests.conftest import ALICE, BOB
 
@@ -151,6 +151,19 @@ def test_unknown_and_bad_tools_are_answers_not_crashes(gateway, store):
     assert act(gateway, "rm_rf") == "Unknown tool: rm_rf"
     assert act(gateway, "remember", wrong="arg").startswith("Error")
     assert {e["event"] for e in store.audit_log(ALICE)} == {"tool"}
+
+
+@pytest.mark.parametrize(
+    "ip", ["10.0.0.1", "100.64.0.5", "127.0.0.1", "169.254.169.254", "192.0.2.1", "224.0.0.1", "::1", "fd00::1"]
+)
+def test_only_public_addresses_are_connected_to(ip):
+    assert ip_refusal(ip)
+
+
+def test_public_addresses_pass_and_metadata_never_does():
+    assert ip_refusal("93.184.215.14") is None and ip_refusal("2606:4700::1111") is None
+    assert ip_refusal("100.64.0.5", allow_private=True) is None  # tests reach a local server
+    assert ip_refusal("169.254.169.254", allow_private=True)
 
 
 def test_refusal_rules():
