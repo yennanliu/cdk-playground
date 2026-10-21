@@ -173,6 +173,7 @@ These are the same as [v4's](../muse-test-4/README.md#app-modules-appmuse), exce
 ## References
 
 - Design doc, Approach E: [`doc/build-your-own-muse.md` § Approach E](doc/build-your-own-muse.md#approach-e--eks-production-platform-sandboxed-pods)
+- Sibling implementations: [`muse-test-1`](../muse-test-1) (Approach A), [`muse-test-2`](../muse-test-2) (Approach B), [`muse-test-3`](../muse-test-3) (Approach C), [`muse-test-4`](../muse-test-4) (Approach D)
 - gVisor: https://gvisor.dev/docs/user_guide/containerd/quick_start/
 - Kubernetes RuntimeClass: https://kubernetes.io/docs/concepts/containers/runtime-class/
 - EKS network policies (VPC CNI): https://docs.aws.amazon.com/eks/latest/userguide/cni-network-policy.html

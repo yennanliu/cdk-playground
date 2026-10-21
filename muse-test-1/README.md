@@ -3,7 +3,7 @@
 > **Approach A — Single EC2 "agent box" (simplest)**, per [`doc/build-your-own-muse.md`](doc/build-your-own-muse.md#approach-a--single-ec2-agent-box-simplest).
 > Fit: 1 user · no per-user isolation · personal prototype / demo.
 >
-> Series (simplest → production): **A · `muse-test-1` (this)** → B · [`muse-test-2`](../muse-test-2) → C · [`muse-test-3`](../muse-test-3) → D · [`muse-test-4`](../muse-test-4) → E · EKS (not built) → F · Confidential compute (not built).
+> Series (simplest → production): **A · `muse-test-1` (this)** → B · [`muse-test-2`](../muse-test-2) → C · [`muse-test-3`](../muse-test-3) → D · [`muse-test-4`](../muse-test-4) → E · [`muse-test-5`](../muse-test-5) → F · Confidential compute (not built).
 > See the [side-by-side comparison](doc/build-your-own-muse.md#4-side-by-side-comparison) and [recommended roadmap](doc/build-your-own-muse.md#7-recommended-roadmap).
 
 This is a Meta-Muse-style personal AI agent on **one EC2 instance**. It's for a single user,
@@ -231,7 +231,7 @@ Tear down: `npx cdk destroy MuseTest1Stack`.
 - Approach overview table: [`doc/build-your-own-muse.md` § 3](doc/build-your-own-muse.md#3-approaches--simplest--production-ready)
 - Building blocks (Muse feature → AWS component): [`doc/build-your-own-muse.md` § 2](doc/build-your-own-muse.md#2-building-blocks-muse-feature--aws--oss-component)
 - Security checklist: [`doc/build-your-own-muse.md` § 6](doc/build-your-own-muse.md#6-security-checklist-applies-to-b-and-up)
-- Sibling implementations: [`muse-test-2`](../muse-test-2) (Approach B), [`muse-test-3`](../muse-test-3) (Approach C), [`muse-test-4`](../muse-test-4) (Approach D)
+- Sibling implementations: [`muse-test-2`](../muse-test-2) (Approach B), [`muse-test-3`](../muse-test-3) (Approach C), [`muse-test-4`](../muse-test-4) (Approach D), [`muse-test-5`](../muse-test-5) (Approach E)
 - Meta Muse product page: https://ai.meta.com/muse/
 - Amazon EC2: https://aws.amazon.com/ec2/
 - AWS Systems Manager Session Manager port forwarding: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html#sessions-remote-port-forwarding

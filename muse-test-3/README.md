@@ -3,7 +3,7 @@
 > **Approach C — Serverless + Amazon Bedrock AgentCore (managed path)**, per [`doc/build-your-own-muse.md`](doc/build-your-own-muse.md#approach-c--serverless--amazon-bedrock-agentcore-managed-path).
 > Fit: 10–10k users · managed microVM per session · fast path to multi-user.
 >
-> Series (simplest → production): A · [`muse-test-1`](../muse-test-1) → B · [`muse-test-2`](../muse-test-2) → **C · `muse-test-3` (this)** → D · [`muse-test-4`](../muse-test-4) → E · EKS (not built) → F · Confidential compute (not built).
+> Series (simplest → production): A · [`muse-test-1`](../muse-test-1) → B · [`muse-test-2`](../muse-test-2) → **C · `muse-test-3` (this)** → D · [`muse-test-4`](../muse-test-4) → E · [`muse-test-5`](../muse-test-5) → F · Confidential compute (not built).
 > See the [side-by-side comparison](doc/build-your-own-muse.md#4-side-by-side-comparison) and [recommended roadmap](doc/build-your-own-muse.md#7-recommended-roadmap).
 
 It's the same personal agent as [muse-test-1](../muse-test-1) and
@@ -244,7 +244,7 @@ tools return errors, but chat works.
 - Approach overview table: [`doc/build-your-own-muse.md` § 3](doc/build-your-own-muse.md#3-approaches--simplest--production-ready)
 - Building blocks (Muse feature → AWS component): [`doc/build-your-own-muse.md` § 2](doc/build-your-own-muse.md#2-building-blocks-muse-feature--aws--oss-component)
 - Security checklist: [`doc/build-your-own-muse.md` § 6](doc/build-your-own-muse.md#6-security-checklist-applies-to-b-and-up)
-- Sibling implementations: [`muse-test-1`](../muse-test-1) (Approach A), [`muse-test-2`](../muse-test-2) (Approach B), [`muse-test-4`](../muse-test-4) (Approach D)
+- Sibling implementations: [`muse-test-1`](../muse-test-1) (Approach A), [`muse-test-2`](../muse-test-2) (Approach B), [`muse-test-4`](../muse-test-4) (Approach D), [`muse-test-5`](../muse-test-5) (Approach E)
 - Meta Muse product page: https://ai.meta.com/muse/
 - Amazon Bedrock AgentCore: https://aws.amazon.com/bedrock/agentcore/
 - Strands Agents: https://strandsagents.com/
