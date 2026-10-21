@@ -59,6 +59,17 @@ class Sandboxes:
         self.store.update_sandbox(user, token_hash(token), task=task)
         self.store.audit(user, "sandbox_started", {"task": task})
 
+    def stop(self, user):
+        """Stop the user's sandbox now, not after it idles out. Queued turns wait for the next one."""
+        box = self.store.sandbox(user)
+        if self.state(box) == "stopped" or not self.store.update_sandbox(user, box["token_hash"], status="stopped"):
+            return False
+        self.store.fail_running(user, "The sandbox was stopped before finishing this.")
+        with contextlib.suppress(Exception):
+            self.launcher.stop(box.get("task"))
+        self.store.audit(user, "sandbox_stopped", {"by": "user"})
+        return True
+
 
 class KubeLauncher:
     """One Kubernetes Job per sandbox, made from the stack's template; the api's service account may create them.

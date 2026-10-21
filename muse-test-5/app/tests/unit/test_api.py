@@ -90,6 +90,17 @@ def test_a_sandbox_that_never_boots_is_replaced(http, launcher, clock):
     assert len(launcher.launched) == 3
 
 
+def test_a_user_can_stop_their_sandbox(http, store, launcher):
+    http.post("/chat", json={"message": "one"})
+    store.claim_turn(ALICE)
+    assert http.delete("/sandbox").status_code == 204
+    assert http.get("/sandbox").json()["status"] == "stopped" and launcher.stopped == ["task-1"]
+    assert http.get("/chat").json()[0]["status"] == "failed"  # it was running in the stopped sandbox
+    assert http.delete("/sandbox").status_code == 204  # nothing to stop: still fine
+    http.post("/chat", json={"message": "two"})
+    assert len(launcher.launched) == 2
+
+
 def test_a_stopped_sandbox_is_restarted_without_failing_anything(http, store, launcher):
     turn_id = http.post("/chat", json={"message": "one"}).json()["id"]
     store.claim_turn(ALICE)

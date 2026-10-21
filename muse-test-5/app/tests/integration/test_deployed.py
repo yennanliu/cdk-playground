@@ -24,6 +24,8 @@ pytestmark = [
 def http():
     with httpx.Client(base_url=URL, timeout=30, headers={"Authorization": f"Bearer {TOKEN}"}) as client:
         yield client
+        # Free the sandbox slot now: the throwaway user is deleted and would never come back.
+        client.delete("/sandbox")
 
 
 def wait_for(check, timeout, every=3):

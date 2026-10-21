@@ -94,6 +94,27 @@ describe('cluster', () => {
     expect(runtime.scheduling.nodeSelector).toEqual({ 'muse/pool': 'sandbox' });
   });
 
+  test('metrics-server and CloudWatch observability are installed, with log groups the stack owns', () => {
+    template.hasResourceProperties('AWS::EKS::Addon', { AddonName: 'metrics-server' });
+    const [id] = Object.keys(
+      template.findResources('AWS::EKS::Addon', { Properties: { AddonName: 'amazon-cloudwatch-observability' } }),
+    );
+    const groups = template.findResources('AWS::Logs::LogGroup', { DeletionPolicy: 'Delete' });
+    const names = Object.values(groups).map((g: any) => text(g.Properties.LogGroupName));
+    expect(names).toEqual(
+      ['application', 'dataplane', 'host', 'performance'].map((n) => `/aws/containerinsights/<token>/${n}`),
+    );
+    expect(Object.values(groups).every((g: any) => g.Properties.RetentionInDays === 30)).toBe(true);
+    expect(template.toJSON().Resources[id].DependsOn).toEqual(expect.arrayContaining(Object.keys(groups)));
+    const nodeRoles = Object.values(template.findResources('AWS::IAM::Role')).filter((r: any) =>
+      JSON.stringify(r.Properties.ManagedPolicyArns ?? []).includes('AmazonEKSWorkerNodePolicy'),
+    );
+    expect(nodeRoles).toHaveLength(2);
+    for (const role of nodeRoles as any[]) {
+      expect(JSON.stringify(role.Properties.ManagedPolicyArns)).toContain('CloudWatchAgentServerPolicy');
+    }
+  });
+
   test('an admin principal is optional', () => {
     const admin = { PrincipalArn: 'arn:aws:iam::123456789012:role/Admin' };
     expect(template.findResources('AWS::EKS::AccessEntry', { Properties: admin })).toEqual({});
@@ -112,6 +133,7 @@ describe('sandboxes', () => {
       securityContext: { runAsNonRoot: true },
     });
     expect(pod.containers[0].securityContext.capabilities.drop).toEqual(['ALL']);
+    expect(pod.containers[0].resources.requests).toEqual({ cpu: '250m', memory: '1Gi' });
     expect(object('Namespace', 'sandboxes').metadata.labels).toMatchObject({
       'pod-security.kubernetes.io/enforce': 'restricted',
     });
@@ -182,6 +204,15 @@ describe('ingress', () => {
     template.hasResourceProperties('AWS::ElasticLoadBalancingV2::TargetGroup', { TargetType: 'ip', Port: 8080 });
     const binding = object('TargetGroupBinding', 'api');
     expect(binding.spec.serviceRef).toEqual({ name: 'api', port: 8080 });
+  });
+
+  test('services have a startup probe, so starting pods are not reported unhealthy', () => {
+    for (const name of ['api', 'sentinel']) {
+      const container = object('Deployment', name).spec.template.spec.containers[0];
+      expect(container.startupProbe.httpGet.path).toBe('/health');
+      expect(container.startupProbe.initialDelaySeconds).toBeGreaterThanOrEqual(5); // measured start: 1-4 s
+      expect(container.startupProbe.failureThreshold * container.startupProbe.periodSeconds).toBeGreaterThanOrEqual(60);
+    }
   });
 
   test('the api launches sandboxes on Kubernetes', () => {

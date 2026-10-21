@@ -385,11 +385,13 @@ async def _respond(writer, status, message, extra_headers=""):
 def main():
     import uvicorn
 
+    from muse import logs
     from muse.config import Config
     from muse.llm import Embedder
     from muse.store import connect
 
-    logging.basicConfig(level=logging.INFO)
+    # Every sandbox heartbeats every 15 s and long-polls for turns: log only the turns it gets.
+    logs.setup(lambda path, status: status == 204 and path in ("/heartbeat", "/next"))
     config = Config.from_env(os.environ)
     store = connect(config)
     policy = Policy(store, config.allowed_domains)

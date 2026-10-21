@@ -11,6 +11,7 @@ import { DockerImageAsset, Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import * as eks from 'aws-cdk-lib/aws-eks-v2';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 const APP_DIR = path.join(__dirname, '..', 'app');
 /** Must match the ports in app/muse/sentinel.py. */
@@ -63,7 +64,7 @@ export interface MuseTest5StackProps extends StackProps {
   readonly allowedDomains?: string[];
   /** A sandbox stops itself after this long with nothing to do. */
   readonly idleMinutes?: number;
-  /** Sandbox nodes (m7g.large, about 3 sandboxes each). A fixed size: nothing autoscales them. */
+  /** Sandbox nodes (m7g.large, about 6 sandboxes each). A fixed size: nothing autoscales them. */
   readonly sandboxNodes?: number;
   /** An IAM principal ARN (your role or user) to make cluster admin, for kubectl. */
   readonly adminPrincipalArn?: string;
@@ -112,7 +113,7 @@ export class MuseTest5Stack extends Stack {
     });
 
     const arm = { amiType: eks.NodegroupAmiType.AL2023_ARM_64_STANDARD };
-    cluster.addNodegroupCapacity('System', {
+    const systemNodes = cluster.addNodegroupCapacity('System', {
       ...arm,
       instanceTypes: [new ec2.InstanceType('t4g.large')],
       minSize: 2,
@@ -126,7 +127,7 @@ export class MuseTest5Stack extends Stack {
       httpPutResponseHopLimit: 1,
     });
     const sandboxNodes = props.sandboxNodes ?? 1;
-    cluster.addNodegroupCapacity('Sandbox', {
+    const sandboxPool = cluster.addNodegroupCapacity('Sandbox', {
       ...arm,
       instanceTypes: [new ec2.InstanceType('m7g.large')],
       minSize: sandboxNodes,
@@ -136,6 +137,28 @@ export class MuseTest5Stack extends Stack {
       taints: [{ key: POOL, value: 'sandbox', effect: eks.TaintEffect.NO_SCHEDULE }],
       launchTemplateSpec: { id: sandboxTemplate.launchTemplateId!, version: sandboxTemplate.latestVersionNumber },
     });
+
+    // --- observability: `kubectl top`, and every container's logs in CloudWatch -------------------
+    new eks.CfnAddon(this, 'MetricsServer', { clusterName: cluster.clusterName, addonName: 'metrics-server' });
+    // Fluent Bit and the CloudWatch agent on every node, sandbox nodes included: a sandbox's logs
+    // outlive its pod (deleted a minute after it exits). They write with the node role.
+    for (const nodes of [systemNodes, sandboxPool]) {
+      nodes.role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
+    }
+    // Created here, before the add-on would create them, so they expire and go with the stack.
+    const logGroups = ['application', 'dataplane', 'host', 'performance'].map(
+      (name) =>
+        new logs.LogGroup(this, `ContainerInsights-${name}`, {
+          logGroupName: `/aws/containerinsights/${cluster.clusterName}/${name}`,
+          retention: logs.RetentionDays.ONE_MONTH,
+          removalPolicy: RemovalPolicy.DESTROY,
+        }),
+    );
+    const observability = new eks.CfnAddon(this, 'CloudWatchObservability', {
+      clusterName: cluster.clusterName,
+      addonName: 'amazon-cloudwatch-observability',
+    });
+    observability.node.addDependency(...logGroups, sandboxPool);
 
     // --- state and users -------------------------------------------------------------------
     const table = new dynamodb.TableV2(this, 'Table', {
@@ -237,7 +260,8 @@ export class MuseTest5Stack extends Stack {
                   MUSE_PROXY_URL: `http://${SENTINEL_HOST}:${SENTINEL_PORTS.proxy}`,
                   MUSE_IDLE_SECONDS: String((props.idleMinutes ?? 10) * 60),
                 }),
-                resources: { requests: { cpu: '500m', memory: '1Gi' }, limits: { memory: '2Gi' } },
+                // Mostly waiting on the model: a small request packs ~6 per node, and it may burst.
+                resources: { requests: { cpu: '250m', memory: '1Gi' }, limits: { memory: '2Gi' } },
                 securityContext: locked,
               },
             ],
@@ -268,6 +292,13 @@ export class MuseTest5Stack extends Stack {
                   command: ['python', '-m', `muse.${name}`],
                   env: env(values),
                   ports: ports.map((containerPort) => ({ containerPort })),
+                  // Python takes 1-4 s to start (measured): first probe after that, so none fails meanwhile.
+                  startupProbe: {
+                    httpGet: { path: '/health', port: ports[0] },
+                    initialDelaySeconds: 5,
+                    periodSeconds: 2,
+                    failureThreshold: 30,
+                  },
                   readinessProbe: { httpGet: { path: '/health', port: ports[0] }, periodSeconds: 5 },
                   resources: { requests: { cpu: '250m', memory: '512Mi' }, limits: { memory: '1Gi' } },
                   securityContext: locked,
@@ -394,6 +425,7 @@ export class MuseTest5Stack extends Stack {
     new CfnOutput(this, 'UserPoolId', { value: users.userPoolId });
     new CfnOutput(this, 'UserPoolClientId', { value: webClient.userPoolClientId });
     new CfnOutput(this, 'ClusterName', { value: cluster.clusterName });
+    new CfnOutput(this, 'LogGroup', { value: logGroups[0].logGroupName });
     new CfnOutput(this, 'CreateUserCommand', {
       description: 'Create a user (replace EMAIL and PASSWORD), then sign in at Url',
       value:

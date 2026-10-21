@@ -140,6 +140,7 @@ def main():
     from muse.llm import Bedrock
 
     logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.WARNING)  # a line per sentinel request otherwise
     config = Config.from_env(os.environ)
     # Every AWS call goes through the sentinel: the model, and STS for this pod's IAM role (IRSA).
     os.environ["HTTPS_PROXY"] = with_credentials(config.proxy_url, config.token)
