@@ -101,6 +101,12 @@ def create_app(store, auth, sandboxes, ui_config):
     def sandbox(user: User):
         return sandboxes.status(user)
 
+    @app.delete("/sandbox", status_code=204)
+    def stop_sandbox(user: User):
+        """Free the user's sandbox now; the next message starts a new one."""
+        sandboxes.stop(user)
+        return Response(status_code=204)
+
     # --- settings, approvals ---------------------------------------------------------
     @app.get("/settings")
     def get_settings(user: User):
@@ -180,13 +186,14 @@ def launcher_for(config):
 def main():
     import uvicorn
 
+    from muse import logs
     from muse.auth import CognitoAuth, DevAuth
     from muse.config import Config
     from muse.sandboxes import Sandboxes
     from muse.scheduler import Scheduler
     from muse.store import connect
 
-    logging.basicConfig(level=logging.INFO)
+    logs.setup()
     config = Config.from_env(os.environ)
     store = connect(config, create=bool(config.dynamodb_endpoint))  # DynamoDB Local starts empty
     sandboxes = Sandboxes(store, launcher_for(config))

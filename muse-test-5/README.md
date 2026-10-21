@@ -38,7 +38,7 @@ Context flags for `cdk deploy`:
 | `-c allowedDomains=wikipedia.org,example.com` | none | Pre-approves domains for everyone |
 | `-c bedrockModelId=...` | `global.anthropic.claude-sonnet-5-5` | |
 | `-c idleMinutes=5` | 10 | How long an idle sandbox lives |
-| `-c sandboxNodes=3` | 1 | Sandbox nodes (m7g.large, about 3 concurrent sandboxes each). A fixed size: nothing autoscales them |
+| `-c sandboxNodes=3` | 1 | Sandbox nodes (m7g.large, about 6 concurrent sandboxes each). A fixed size: nothing autoscales them |
 
 ### Run it on your laptop
 
@@ -150,8 +150,8 @@ These are the same as [v4's](../muse-test-4/README.md#app-modules-appmuse), exce
 
 | Command | What | Needs |
 |---|---|---|
-| `npm test` | 14 template tests: gVisor nodes, taint and IMDS, RuntimeClass, restricted pod security, the sandbox NetworkPolicy (exact egress), least-privilege IRSA roles and RBAC, CloudFront → ALB → TargetGroupBinding | — |
-| `npm run test:app` | 85 Python unit tests (v4's suite plus `KubeLauncher`, failed launches, the address check) | — |
+| `npm test` | 16 template tests: gVisor nodes, taint and IMDS, RuntimeClass, restricted pod security, the sandbox NetworkPolicy (exact egress), least-privilege IRSA roles and RBAC, CloudFront → ALB → TargetGroupBinding, observability add-ons, startup probes | — |
+| `npm run test:app` | 88 Python unit tests (v4's suite plus `KubeLauncher`, failed launches, the address check, stopping a sandbox, quiet access logs) | — |
 | `npm run test:browser`, `test:compose` | as in v4 | Chromium; Docker + AWS credentials |
 | `npm run test:e2e` | the deployed stack as a throwaway Cognito user | a deployed stack |
 
@@ -159,7 +159,9 @@ These are the same as [v4's](../muse-test-4/README.md#app-modules-appmuse), exce
 
 - **Who has a sandbox**: `kubectl -n sandboxes get pods -l muse/user=<sub>`
 - **Is it really gVisor**: `kubectl -n sandboxes exec <pod> -- dmesg` prints gVisor's boot banner, not the node's kernel log.
-- **Logs**: `kubectl -n control logs deploy/api`, `kubectl -n sentinel logs deploy/sentinel`, `kubectl -n sandboxes logs <pod>`
+- **Logs**: every container's logs go to CloudWatch (`LogGroup` output, `/aws/containerinsights/<cluster>/application`, kept 30 days), including sandboxes whose pods are gone. Live: `kubectl -n control logs deploy/api`, `kubectl -n sentinel logs deploy/sentinel`, `kubectl -n sandboxes logs <pod>`. Health checks, heartbeats and empty long-polls are left out of the access logs.
+- **Usage**: `kubectl top pods -A` (metrics-server); Container Insights metrics in CloudWatch.
+- **Free a sandbox now**: `DELETE /sandbox` as that user (the e2e tests do this when they finish).
 - **Release**: `npx cdk deploy`. The Deployments roll; running sandboxes finish on the old image.
 - **Cost while idle**: roughly $9–10/day. That's the EKS control plane ($0.10/h), 3 nodes, the NAT gateway and the ALB.
 
