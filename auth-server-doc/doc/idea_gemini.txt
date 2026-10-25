@@ -1,0 +1,118 @@
+## 架構方案比較表
+
+| 方案級別 | 實作與維護成本 | 規格合規風險 (Conformance) | 系統自訂彈性與代碼體積 | 最適用場景 |
+| --- | --- | --- | --- | --- |
+| **1. 獨立開源引擎**<br>
+
+<br>(如 Ory Hydra) | 低 ～ 中 | 極低（已獲官方認證） | 中（嚴格遵循標準協定） | 團隊人力有限，想最快獲得完整資安與標準背書 |
+| **2. 嵌入成熟套件**<br>
+
+<br>(如 Authlib / oidc-provider) | 中 | 低 ～ 中（需自行跑測試集） | 高（與現有程式庫深度整合） | 維持既有單體架構，不想額外開獨立服務容器 |
+| **3. 自建最小 Provider**<br>
+
+<br>(即 PR 目前規劃) | 高 | 高（需自行通過官方驗證） | 最高（僅實作 5 個端點，零冗餘） | 希望對 KMS 簽章、加密細節與邏輯擁有 100% 控制權 |
+| **4. 完整集中式身分平台**<br>
+
+<br>(如 Keycloak / 企業級 IAM) | 極高 | 低（功能全面但肥大） | 低（架構重且維運成本高） | 長期規劃支援外部第三方生態系、複雜權限與完整登出 |
+
+---
+
+### 方案 1：採用 Headless OIDC 引擎（以 Ory Hydra 為例）—— 最快且資安風險最低
+
+不從零編寫加密簽章、Token 儲存與協定端點，而是在現有系統旁部署一個無介面（Headless）、已獲 OpenID 認證的輕量服務。
+
+* **運作機制：**
+* Hydra 負責對外提供所有標準 OIDC 端點：`/.well-known/openid-configuration`、`/oauth2/auth`、`/oauth2/token`、`/oauth2/keys` 與 `/userinfo`。
+* 當使用者造訪 `/oauth2/auth` 時，Hydra 會轉導至現有的登入頁面驗證 Session。
+* 驗證通過後呼叫 Hydra API：「該使用者已驗證，其 ID 為 `<UserData.uuid>`，舊 ID 為 `<legacy_user_id>`」。
+* 由 Hydra 負責 RS256 簽章、一次性 Code 兌換驗證、PKCE 檢查與 JWKS 公鑰發布。
+
+
+* **主要優勢：**
+* **零 Conformance 風險：** Hydra 已通過 OpenID Foundation 官方認證，不需自行承擔協定實作漏洞或邊界錯誤。
+* **直接支援 Cloud KMS：** 內建金鑰輪替與雲端密鑰庫整合。
+
+
+* **潛在代價：** 架構中需新增一個 Go 語言服務容器進行維運與監控。
+
+---
+
+### 方案 2：在現有後端嵌入成熟 OIDC 函式庫 —— 架構變動最小
+
+直接在現有的後端專案中（例如 Python/Django 搭配 Authlib，或 Node.js 搭配 oidc-provider），掛載 OIDC 伺服器端點。
+
+* **運作機制：**
+* 直接在現有 Web 路由掛載標準端點。
+* 套件負責處理協定邏輯，只需實作資料儲存介面（例如：用 Redis 儲存具備 600 秒壽命的一致性驗證碼，用現有資料庫註冊 RP Client）。
+* UserInfo 端點可直接存取 UserData 模型，省去跨服務 RPC 呼叫。
+
+
+* **主要優勢：**
+* 直接取用現有登入 Cookie 與 Session Middleware，無需 Webhook 跳轉。
+* 過渡期能輕鬆在 UserInfo 注入 `legacy_user_id` 等自訂 Claims。
+
+
+* **代價：** 金鑰輪替邏輯（JWKS）仍需自行串接 Cloud KMS，並自行執行 OIDF Conformance 測試。
+
+---
+
+### 方案 3：自建專屬最小化 OIDC Provider —— 既定 PR 藍圖
+
+專為內部各產品/子系統（Relying Parties, RP）打造一個最小可行、完全客製的 OIDC 服務。
+
+* **實作的 5 個核心端點：**
+1. `GET /.well-known/openid-configuration`（靜態 JSON 設定清單）。
+2. `GET /oauth/authorize`（驗證 client、redirect_uri、state、PKCE code_challenge，於 session 綁定並生成原子 code）。
+3. `POST /oauth/token`（驗證 client credentials、PKCE code_verifier，原子兌換 code 並簽發 RS256 ID Token）。
+4. `GET /oauth/userinfo`（驗證 Bearer Token，回傳 `sub = uuid` 與 `legacy_user_id`）。
+5. `GET /.well-known/jwks.json`（對外發布 Cloud KMS 的公開金鑰集）。
+
+
+* **核心實作細節：**
+* **Cloud KMS 簽章抽象層：** 透過非對稱金鑰 API 於雲端完成簽章，私鑰完全不落地。
+* **Redis 原子性保證：** 透過 Redis 交易或 Lua Script（如 GETDEL）確保驗證碼僅能兌換一次且具嚴格 600 秒 TTL。
+
+
+* **代價：** 需自行承擔規格細節的邊界測試，並手動跑完官方 OpenID Conformance Suite 才能確保安全性。
+
+---
+
+### 方案 4：完整集中式身分平台與事件驅動 Session 同步 —— 長期願景
+
+超出單純「登入升級」範疇，一併處理各產品「登出不對稱」的架構性解法。
+
+* **核心擴充元件：**
+* **全站 Session 追蹤：** 在 ID Token 中注入 OIDC sid（Session ID），精確對應使用者在主平台與各產品間的特定登入階段。
+* **Back-Channel Logout：** 當使用者在主平台發起「登出所有產品」時，主平台伺服器主動發送經簽章的 Logout Token 至各 RP 後端，強制撤銷其本地 session/憑證。
+* **帳號異動 Event Bus：** 當主平台發生帳號合併、刪除或資料變更時，透過 Pub/Sub 即時通知各 RP 資料庫同步。
+
+
+* **代價：** 架構複雜度極高，建議嚴格維持原 PR 的決策，將此方案拆分至後續專屬專案處理。
+
+---
+
+## 關鍵保障：RP 端資料對應與隨時 Rollback 機制
+
+無論伺服器端採上述哪種方式建置，RP（各產品端）的帳號對應邏輯皆須遵循以下規則，才能確保「絕不建立重複會員」且「可安全退回舊 SSO」：
+
+```text
+                    [ RP 接收到 OIDC ID Token / UserInfo ]
+                                     |
+                          檢查 RP 本地會員資料庫中
+                           是否存在 user_uuid == sub ?
+                                   /    \
+                                (是)    (否)
+                                 /        \
+                    以現有會員身分登入     檢查資料庫中是否存在
+                                      legacy_user_id == claims.legacy_user_id ?
+                                            /           \
+                                         (找到)        (未找到)
+                                          /                \
+                                更新該筆現有紀錄：       建立全新 RP 會員資料，
+                                寫入 user_uuid = sub    並綁定 user_uuid = sub
+
+```
+
+1. **雙欄位並存（Phase 0）：** 各 RP 會員資料表同時保留 `legacy_user_id`，並新增允許為空的 `user_uuid` 欄位。
+2. **首次登入自動補正：** 當既有會員以 OIDC 登入時，RP 透過過渡期的 `legacy_user_id` 找到原帳號，並將新的 `sub`（UUID）回填至該帳號。往後即可直接透過 UUID 辨識。
+3. **緊急復原安全網（Rollback Safety）：** 若上線後發現嚴重問題切回 Legacy SSO，由於 RP 本地的 `legacy_user_id` 完全未被刪除，使用者依然能無縫登入原本的資料，絕不卡死或重複建號。
